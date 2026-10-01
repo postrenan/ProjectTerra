@@ -6,6 +6,7 @@ namespace ProjectTerra.Planet
     [Serializable]
     public class RegionData
     {
+        public int id;
         public string name;
         public string country;
         public string type;

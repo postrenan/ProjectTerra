@@ -21,6 +21,9 @@ namespace ProjectTerra.Planet
         [SerializeField] private Vector3 selectedWorldPoint;
 
         private RegionDatabase database;
+        private byte[] regionIdMap;
+        private const int MapWidth = 2048;
+        private const int MapHeight = 1024;
         private bool isDatabaseLoaded = false;
 
         private Rect lastCardRect;
@@ -33,7 +36,6 @@ namespace ProjectTerra.Planet
         private GUIStyle headerSubtitleStyle;
         private GUIStyle labelStyle;
         private GUIStyle valueStyle;
-        private GUIStyle barBackgroundStyle;
         private GUIStyle buttonStyle;
         private Texture2D whiteTex;
 
@@ -55,7 +57,7 @@ namespace ProjectTerra.Planet
         {
             if (planet == null)
             {
-                planet = FindFirstObjectByType<CubeSpherePlanet>();
+                planet = FindAnyObjectByType<CubeSpherePlanet>();
             }
             if (mainCamera == null)
             {
@@ -75,12 +77,14 @@ namespace ProjectTerra.Planet
 
         private void LoadDatabase()
         {
-            string path = Path.Combine(Application.streamingAssetsPath, "regions_database.json");
-            if (File.Exists(path))
+            string dbPath = Path.Combine(Application.streamingAssetsPath, "regions_database.json");
+            string binPath = Path.Combine(Application.streamingAssetsPath, "region_id_map.bin");
+
+            if (File.Exists(dbPath))
             {
                 try
                 {
-                    string json = File.ReadAllText(path);
+                    string json = File.ReadAllText(dbPath);
                     database = JsonUtility.FromJson<RegionDatabase>(json);
                     isDatabaseLoaded = database != null && database.regions.Count > 0;
                     Debug.Log($"[PlanetInteraction] Base de dados carregada com {database.regions.Count} regiões.");
@@ -92,7 +96,24 @@ namespace ProjectTerra.Planet
             }
             else
             {
-                Debug.LogWarning($"[PlanetInteraction] Arquivo de regiões não encontrado em {path}");
+                Debug.LogWarning($"[PlanetInteraction] Arquivo de regiões não encontrado em {dbPath}");
+            }
+
+            if (File.Exists(binPath))
+            {
+                try
+                {
+                    regionIdMap = File.ReadAllBytes(binPath);
+                    Debug.Log($"[PlanetInteraction] Mapa binário de IDs geográficos carregado ({regionIdMap.Length} bytes).");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[PlanetInteraction] Erro ao carregar region_id_map.bin: {ex.Message}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[PlanetInteraction] Arquivo region_id_map.bin não encontrado em {binPath}");
             }
         }
 
@@ -130,7 +151,7 @@ namespace ProjectTerra.Planet
         {
             if (planet == null)
             {
-                planet = CubeSpherePlanet.Instance ?? FindFirstObjectByType<CubeSpherePlanet>();
+                planet = CubeSpherePlanet.Instance ?? FindAnyObjectByType<CubeSpherePlanet>();
             }
             if (mainCamera == null)
             {
@@ -176,46 +197,64 @@ namespace ProjectTerra.Planet
 
         private void SelectRegionAt(float lat, float lon)
         {
-            if (!isDatabaseLoaded)
+            if (!isDatabaseLoaded || database == null || database.regions.Count == 0)
             {
-                selectedRegion = GenerateFallbackRegion(lat, lon);
+                LoadDatabase();
+            }
+
+            RegionData match = null;
+
+            // 1. Amostragem direta de altíssima precisão no mapa binário de IDs geográficos (2048 x 1024)
+            if (regionIdMap != null && regionIdMap.Length == MapWidth * MapHeight * 2)
+            {
+                int px = Mathf.Clamp((int)((lon + 180.0f) / 360.0f * (MapWidth - 1)), 0, MapWidth - 1);
+                int py = Mathf.Clamp((int)((90.0f - lat) / 180.0f * (MapHeight - 1)), 0, MapHeight - 1);
+
+                ushort id = GetIdAt(px, py);
+
+                // Se cair em água rasa / costa costeira com id 0, faz uma pequena tolerância litorânea de 2 pixels
+                if (id == 0)
+                {
+                    int[] offsets = { -1, 1, -2, 2 };
+                    foreach (int ox in offsets)
+                    {
+                        foreach (int oy in offsets)
+                        {
+                            int nx = Mathf.Clamp(px + ox, 0, MapWidth - 1);
+                            int ny = Mathf.Clamp(py + oy, 0, MapHeight - 1);
+                            ushort neighborId = GetIdAt(nx, ny);
+                            if (neighborId > 0 && database != null && neighborId <= database.regions.Count)
+                            {
+                                float nLon = (nx / (float)(MapWidth - 1)) * 360.0f - 180.0f;
+                                float nLat = 90.0f - (ny / (float)(MapHeight - 1)) * 180.0f;
+                                float dLat = lat - nLat;
+                                float dLon = lon - nLon;
+                                // Só aceita se estiver a menos de ~0.2 graus da borda litorânea
+                                if (dLat * dLat + dLon * dLon < 0.05f)
+                                {
+                                    id = neighborId;
+                                    break;
+                                }
+                            }
+                        }
+                        if (id > 0) break;
+                    }
+                }
+
+                if (id > 0 && database != null && id <= database.regions.Count)
+                {
+                    match = database.regions[id - 1];
+                }
+            }
+
+            // 2. Se o ID for 0 (ou nenhuma terra encontrada), é 100% GARANTIDO OCEANO!
+            if (match == null)
+            {
+                selectedRegion = GenerateOceanRegion(lat, lon);
             }
             else
             {
-                RegionData bestMatch = null;
-                float smallestArea = float.MaxValue;
-                float closestDistSqr = float.MaxValue;
-
-                // 1. Procura primeiro o estado/província/país com a menor área delimitadora (mais específico)
-                for (int i = 0; i < database.regions.Count; i++)
-                {
-                    var r = database.regions[i];
-                    if (r.Contains(lat, lon))
-                    {
-                        if (r.BoundingArea < smallestArea)
-                        {
-                            smallestArea = r.BoundingArea;
-                            bestMatch = r;
-                        }
-                    }
-                }
-
-                // 2. Se não estiver no bounding box exato (ex: ilha ou litoral costeiro), busca pelo centroide mais próximo
-                if (bestMatch == null)
-                {
-                    for (int i = 0; i < database.regions.Count; i++)
-                    {
-                        var r = database.regions[i];
-                        float d = r.DistanceSqr(lat, lon);
-                        if (d < closestDistSqr && d < 25.0f) // raio de ~5 graus max (apenas zonas litorâneas imediatas)
-                        {
-                            closestDistSqr = d;
-                            bestMatch = r;
-                        }
-                    }
-                }
-
-                selectedRegion = bestMatch ?? GenerateOceanRegion(lat, lon);
+                selectedRegion = match;
             }
 
             hasSelection = true;
@@ -228,14 +267,39 @@ namespace ProjectTerra.Planet
             }
         }
 
+        private ushort GetIdAt(int px, int py)
+        {
+            int idx = (py * MapWidth + px) * 2;
+            return (ushort)(regionIdMap[idx] | (regionIdMap[idx + 1] << 8));
+        }
+
         private RegionData GenerateOceanRegion(float lat, float lon)
         {
             string oceanName = "Oceano Global";
-            if (lon > -70 && lon < 20 && lat > -60 && lat < 60) oceanName = "Oceano Atlântico";
-            else if (lon > 20 && lon < 100 && lat < 30) oceanName = "Oceano Índico";
-            else if (lat > 65) oceanName = "Oceano Ártico";
-            else if (lat < -60) oceanName = "Oceano Antártico";
-            else oceanName = "Oceano Pacífico";
+            if (lat > 65.0f)
+            {
+                oceanName = "Oceano Ártico";
+            }
+            else if (lat < -60.0f)
+            {
+                oceanName = "Oceano Antártico";
+            }
+            else if (lat >= 30.0f && lat <= 46.0f && lon >= -6.0f && lon <= 36.0f)
+            {
+                oceanName = "Mar Mediterrâneo";
+            }
+            else if (lon >= -75.0f && lon <= 20.0f)
+            {
+                oceanName = lat >= 0 ? "Oceano Atlântico Norte" : "Oceano Atlântico Sul";
+            }
+            else if (lon > 20.0f && lon <= 100.0f && lat <= 30.0f)
+            {
+                oceanName = "Oceano Índico";
+            }
+            else
+            {
+                oceanName = lat >= 0 ? "Oceano Pacífico Norte" : "Oceano Pacífico Sul";
+            }
 
             return new RegionData
             {
@@ -245,7 +309,7 @@ namespace ProjectTerra.Planet
                 centerLat = lat,
                 centerLon = lon,
                 forestPercent = 0,
-                mineralsPercent = 45,
+                mineralsPercent = 40,
                 arablePercent = 0,
                 waterPercent = 100
             };

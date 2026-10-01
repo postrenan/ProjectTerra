@@ -37,7 +37,7 @@ namespace ProjectTerra.Cameras
         {
             if (target == null)
             {
-                var planet = FindFirstObjectByType<ProjectTerra.Planet.CubeSpherePlanet>();
+                var planet = FindAnyObjectByType<ProjectTerra.Planet.CubeSpherePlanet>();
                 if (planet != null)
                 {
                     target = planet.transform;
