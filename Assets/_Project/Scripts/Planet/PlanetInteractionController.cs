@@ -2,9 +2,11 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using ProjectTerra.Gameplay;
 using ProjectTerra.UI;
 using ProjectTerra.Planet.TerrainStreaming;
+using ProjectTerra.Cameras;
 
 namespace ProjectTerra.Planet
 {
@@ -43,6 +45,7 @@ namespace ProjectTerra.Planet
         // Estado do Formulário de Novo Jogo
         private string newGameSaveName = "";
         private long newGameBudget = 500000;
+        private StarterCareer selectedCareer = StarterCareer.Farmer;
         private readonly long[] BudgetPresets = { 100000, 250000, 500000, 1000000, 2500000, 5000000 };
         private readonly string[] BudgetLabels = { "$100k", "$250k", "$500k", "$1M", "$2.5M", "$5M" };
 
@@ -131,17 +134,31 @@ namespace ProjectTerra.Planet
 
         private void LoadDatabase()
         {
-            string dbPath = Path.Combine(Application.streamingAssetsPath, "regions_database.json");
+            string binDbPath = Path.Combine(Application.streamingAssetsPath, "regions_database.bin");
+            string jsonDbPath = Path.Combine(Application.streamingAssetsPath, "regions_database.json");
             string binPath = Path.Combine(Application.streamingAssetsPath, "region_id_map.bin");
 
-            if (File.Exists(dbPath))
+            if (File.Exists(binDbPath))
             {
                 try
                 {
-                    string json = File.ReadAllText(dbPath);
+                    database = RegionDatabase.LoadFromBinary(binDbPath);
+                    isDatabaseLoaded = database != null && database.regions.Count > 0;
+                    Debug.Log($"[PlanetInteraction] Base de dados binária carregada com {database.regions.Count} regiões ({new FileInfo(binDbPath).Length / 1024} KB).");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[PlanetInteraction] Erro ao carregar regions_database.bin: {ex.Message}");
+                }
+            }
+            else if (File.Exists(jsonDbPath))
+            {
+                try
+                {
+                    string json = File.ReadAllText(jsonDbPath);
                     database = JsonUtility.FromJson<RegionDatabase>(json);
                     isDatabaseLoaded = database != null && database.regions.Count > 0;
-                    Debug.Log($"[PlanetInteraction] Base de dados carregada com {database.regions.Count} regiões.");
+                    Debug.Log($"[PlanetInteraction] Base de dados legada (JSON) carregada com {database.regions.Count} regiões.");
                 }
                 catch (Exception ex)
                 {
@@ -150,7 +167,7 @@ namespace ProjectTerra.Planet
             }
             else
             {
-                Debug.LogWarning($"[PlanetInteraction] Arquivo de regiões não encontrado em {dbPath}");
+                Debug.LogWarning($"[PlanetInteraction] Arquivo de regiões não encontrado em {binDbPath} nem {jsonDbPath}");
             }
 
             if (File.Exists(binPath))
@@ -513,8 +530,8 @@ namespace ProjectTerra.Planet
             InitStyles();
 
             // Dimensões dinâmicas do card conforme a aba
-            float width = currentCardMode == CardMode.RegionDetails ? 330f : 390f;
-            float height = currentCardMode == CardMode.RegionDetails ? 315f : 380f;
+            float width = currentCardMode == CardMode.RegionDetails ? 330f : (currentCardMode == CardMode.NewGamePrompt ? 420f : 390f);
+            float height = currentCardMode == CardMode.RegionDetails ? 315f : (currentCardMode == CardMode.NewGamePrompt ? 520f : 380f);
             float x = Mathf.Clamp(screenPos.x + 25f, 20f, Screen.width - width - 20f);
             float y = Mathf.Clamp(Screen.height - screenPos.y - height * 0.5f, 20f, Screen.height - height - 20f);
 
@@ -627,17 +644,79 @@ namespace ProjectTerra.Planet
         {
             GUILayout.Label("🎮 Configurar Nova Partida", headerTitleStyle);
             GUILayout.Label($"Região: {selectedRegion.name} ({selectedRegion.country})", headerSubtitleStyle);
-            GUILayout.Space(6);
+            GUILayout.Space(4);
 
             GUI.color = new Color(1f, 1f, 1f, 0.15f);
             GUILayout.Box("", GUILayout.Height(1), GUILayout.ExpandWidth(true));
             GUI.color = Color.white;
+            GUILayout.Space(4);
+
+            // 1. Escolha da Carreira Inicial (Marco 1)
+            GUILayout.Label("Escolha sua Primeira Jornada (Ofício Inicial):", labelStyle);
+            GUILayout.BeginHorizontal();
+
+            // Botão Agricultor
+            bool isFarmer = selectedCareer == StarterCareer.Farmer;
+            GUI.color = isFarmer ? new Color(0.3f, 1f, 0.4f) : Color.white;
+            if (GUILayout.Button("🌾 Agricultor", buttonStyle, GUILayout.Height(26)))
+            {
+                selectedCareer = StarterCareer.Farmer;
+            }
+
+            // Botão Motorista
+            bool isTrucker = selectedCareer == StarterCareer.Trucker;
+            GUI.color = isTrucker ? new Color(1f, 0.85f, 0.3f) : Color.white;
+            if (GUILayout.Button("🚛 Motorista", buttonStyle, GUILayout.Height(26)))
+            {
+                selectedCareer = StarterCareer.Trucker;
+            }
+
+            // Botão Aviador
+            bool isAviator = selectedCareer == StarterCareer.Aviator;
+            GUI.color = isAviator ? new Color(0.4f, 0.85f, 1f) : Color.white;
+            if (GUILayout.Button("🛩️ Aviador", buttonStyle, GUILayout.Height(26)))
+            {
+                selectedCareer = StarterCareer.Aviator;
+            }
+
+            // Botão Pescador
+            bool isFisherman = selectedCareer == StarterCareer.Fisherman;
+            GUI.color = isFisherman ? new Color(0.3f, 0.95f, 0.95f) : Color.white;
+            if (GUILayout.Button("🎣 Pescador", buttonStyle, GUILayout.Height(26)))
+            {
+                selectedCareer = StarterCareer.Fisherman;
+            }
+            GUI.color = Color.white;
+            GUILayout.EndHorizontal();
+
+            // Descrição da Carreira Selecionada
+            GUI.color = new Color(0.85f, 0.92f, 1f, 0.9f);
+            string careerDesc = "";
+            switch (selectedCareer)
+            {
+                case StarterCareer.Farmer:
+                    careerDesc = "🌾 Comece em uma fazenda rural com um trator utilitário e campo cultivável para semear, colher e levar a safra à cooperativa.";
+                    break;
+                case StarterCareer.Trucker:
+                    careerDesc = "🚛 Comece em um galpão logístico na cidade com caminhonete/caminhão de carga e cumpra contratos de frete rodoviário.";
+                    break;
+                case StarterCareer.Aviator:
+                    careerDesc = "🛩️ Comece em uma pista de pouso com avião monomotor leve utilitário para missões aéreas, inspeção e entrega expressa.";
+                    break;
+                case StarterCareer.Fisherman:
+                    careerDesc = "🎣 Comece no cais do porto costeiro com um barco pesqueiro para pescas em alto-mar e venda direta na lota da cidade.";
+                    break;
+            }
+            GUILayout.Label(careerDesc, headerSubtitleStyle);
+            GUI.color = Color.white;
             GUILayout.Space(6);
 
-            GUILayout.Label("Nome da Partida / Governo:", labelStyle);
-            newGameSaveName = GUILayout.TextField(newGameSaveName, 40, textFieldStyle, GUILayout.Height(26));
-            GUILayout.Space(8);
+            // 2. Nome da Partida
+            GUILayout.Label("Nome da Empresa / Partida:", labelStyle);
+            newGameSaveName = GUILayout.TextField(newGameSaveName, 40, textFieldStyle, GUILayout.Height(24));
+            GUILayout.Space(6);
 
+            // 3. Orçamento Inicial
             GUILayout.BeginHorizontal();
             GUILayout.Label("Orçamento Inicial:", labelStyle);
             GUILayout.Label($"${newGameBudget:N0}", valueStyle);
@@ -649,44 +728,61 @@ namespace ProjectTerra.Planet
             {
                 bool isSelected = newGameBudget == BudgetPresets[i];
                 GUI.color = isSelected ? new Color(1f, 0.9f, 0.3f) : Color.white;
-                if (GUILayout.Button(BudgetLabels[i], buttonStyle, GUILayout.Height(22)))
+                if (GUILayout.Button(BudgetLabels[i], buttonStyle, GUILayout.Height(20)))
                 {
                     newGameBudget = BudgetPresets[i];
                 }
             }
             GUI.color = Color.white;
             GUILayout.EndHorizontal();
-            GUILayout.Space(4);
+            GUILayout.Space(2);
 
             // Slider livre para ajuste fino
             newGameBudget = (long)(GUILayout.HorizontalSlider(newGameBudget, 50000, 10000000) / 10000) * 10000;
-            GUILayout.Space(12);
+            GUILayout.Space(8);
 
-            // Botão Iniciar Partida
-            if (GUILayout.Button("▶ Iniciar & Salvar Partida", primaryButtonStyle, GUILayout.Height(32)))
+            // 4. Botão Iniciar Partida
+            if (GUILayout.Button("▶ Iniciar & Desembarcar na Região", primaryButtonStyle, GUILayout.Height(32)))
             {
                 RegionSaveData save = null;
                 if (SaveManager.Instance != null)
                 {
-                    save = SaveManager.Instance.CreateNewSave(selectedRegion, newGameSaveName, newGameBudget);
-                    notificationMessage = $"Partida '{save.saveName}' iniciada com ${save.startingMoney:N0}!";
-                    notificationTimer = 4.0f;
+                    save = SaveManager.Instance.CreateNewSave(selectedRegion, newGameSaveName, newGameBudget, selectedCareer);
+                    SaveManager.Instance.ActiveSave = save;
                 }
                 currentCardMode = CardMode.RegionDetails;
                 hasSelection = false;
                 lastCardRect = Rect.zero;
 
-                if (LoadingScreenController.Instance != null)
+                // Aciona o mergulho cinemático da câmera orbital antes de abrir a tela de carregamento
+                OrbitCameraController orbitCam = mainCamera != null ? mainCamera.GetComponent<OrbitCameraController>() : null;
+                if (orbitCam != null && selectedWorldPoint != Vector3.zero)
                 {
-                    LoadingScreenController.Instance.Show(selectedRegion, save, () =>
+                    orbitCam.DiveTowardsPoint(selectedWorldPoint, 1.8f, () =>
                     {
-                        Debug.Log($"[PlanetInteraction] Entrada na partida '{newGameSaveName}' confirmada.");
+                        if (LoadingScreenController.Instance != null)
+                        {
+                            LoadingScreenController.Instance.Show(selectedRegion, save, () =>
+                            {
+                                SceneManager.LoadScene("RegionalSandboxScene");
+                            });
+                        }
                     });
+                }
+                else
+                {
+                    if (LoadingScreenController.Instance != null)
+                    {
+                        LoadingScreenController.Instance.Show(selectedRegion, save, () =>
+                        {
+                            SceneManager.LoadScene("RegionalSandboxScene");
+                        });
+                    }
                 }
             }
 
             GUILayout.Space(4);
-            if (GUILayout.Button("↩ Voltar aos Detalhes", buttonStyle, GUILayout.Height(24)))
+            if (GUILayout.Button("↩ Voltar aos Detalhes", buttonStyle, GUILayout.Height(22)))
             {
                 currentCardMode = CardMode.RegionDetails;
             }
@@ -723,9 +819,12 @@ namespace ProjectTerra.Planet
                     GUILayout.BeginVertical(saveCardBoxStyle);
                     GUI.color = Color.white;
 
-                    // Título do save e Verba
+                    // Título do save, Carreira e Verba
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label(save.saveName, labelStyle);
+                    string icon = save.starterCareer == StarterCareer.Farmer ? "🌾" :
+                                  save.starterCareer == StarterCareer.Trucker ? "🚛" :
+                                  save.starterCareer == StarterCareer.Aviator ? "🛩️" : "🎣";
+                    GUILayout.Label($"{icon} {save.saveName}", labelStyle);
                     GUILayout.Label(save.GetFormattedMoney(), valueStyle);
                     GUILayout.EndHorizontal();
 
@@ -741,20 +840,42 @@ namespace ProjectTerra.Planet
 
                     // Botões Carregar e Excluir
                     GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("▶ Carregar", primaryButtonStyle, GUILayout.Height(22)))
+                    if (GUILayout.Button("▶ Carregar & Entrar", primaryButtonStyle, GUILayout.Height(22)))
                     {
+                        if (SaveManager.Instance != null)
+                        {
+                            SaveManager.Instance.ActiveSave = save;
+                        }
                         notificationMessage = $"Partida '{save.saveName}' carregada! Verba: {save.GetFormattedMoney()}";
                         notificationTimer = 4.0f;
                         currentCardMode = CardMode.RegionDetails;
                         hasSelection = false;
                         lastCardRect = Rect.zero;
 
-                        if (LoadingScreenController.Instance != null)
+                        // Mergulho e transição
+                        OrbitCameraController orbitCam = mainCamera != null ? mainCamera.GetComponent<OrbitCameraController>() : null;
+                        if (orbitCam != null && selectedWorldPoint != Vector3.zero)
                         {
-                            LoadingScreenController.Instance.Show(selectedRegion, save, () =>
+                            orbitCam.DiveTowardsPoint(selectedWorldPoint, 1.8f, () =>
                             {
-                                Debug.Log($"[PlanetInteraction] Partida '{save.saveName}' carregada e pronta para jogar.");
+                                if (LoadingScreenController.Instance != null)
+                                {
+                                    LoadingScreenController.Instance.Show(selectedRegion, save, () =>
+                                    {
+                                        SceneManager.LoadScene("RegionalSandboxScene");
+                                    });
+                                }
                             });
+                        }
+                        else
+                        {
+                            if (LoadingScreenController.Instance != null)
+                            {
+                                LoadingScreenController.Instance.Show(selectedRegion, save, () =>
+                                {
+                                    SceneManager.LoadScene("RegionalSandboxScene");
+                                });
+                            }
                         }
                     }
                     if (GUILayout.Button("🗑 Excluir", dangerButtonStyle, GUILayout.Width(70), GUILayout.Height(22)))

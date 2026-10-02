@@ -14,6 +14,8 @@ namespace ProjectTerra.Gameplay
     {
         public static SaveManager Instance { get; private set; }
 
+        public RegionSaveData ActiveSave { get; set; }
+
         private string saveDirectory;
         private Dictionary<string, RegionSaveData> loadedSaves = new Dictionary<string, RegionSaveData>();
 
@@ -22,6 +24,7 @@ namespace ProjectTerra.Gameplay
             if (Instance == null)
             {
                 Instance = this;
+                DontDestroyOnLoad(gameObject);
             }
             else
             {
@@ -38,13 +41,44 @@ namespace ProjectTerra.Gameplay
             LoadAllSaves();
         }
 
+        private const uint SaveMagic = 0x56415350; // 'PSAV'
+        private const byte SaveVersion = 1;
+
         public void LoadAllSaves()
         {
             loadedSaves.Clear();
             if (!Directory.Exists(saveDirectory)) return;
 
-            string[] files = Directory.GetFiles(saveDirectory, "*.json");
-            foreach (var file in files)
+            // 1. Carregar saves binários (.bin)
+            string[] binFiles = Directory.GetFiles(saveDirectory, "*.bin");
+            foreach (var file in binFiles)
+            {
+                try
+                {
+                    using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (var reader = new BinaryReader(fs, System.Text.Encoding.UTF8))
+                    {
+                        uint magic = reader.ReadUInt32();
+                        if (magic == SaveMagic)
+                        {
+                            byte ver = reader.ReadByte();
+                            var save = RegionSaveData.ReadBinary(reader, ver);
+                            if (save != null && !string.IsNullOrEmpty(save.saveId))
+                            {
+                                loadedSaves[save.saveId] = save;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[SaveManager] Erro ao carregar save binário {file}: {ex.Message}");
+                }
+            }
+
+            // 2. Migrar automaticamente quaisquer saves legados em .json
+            string[] jsonFiles = Directory.GetFiles(saveDirectory, "*.json");
+            foreach (var file in jsonFiles)
             {
                 try
                 {
@@ -52,19 +86,26 @@ namespace ProjectTerra.Gameplay
                     var save = JsonUtility.FromJson<RegionSaveData>(json);
                     if (save != null && !string.IsNullOrEmpty(save.saveId))
                     {
-                        loadedSaves[save.saveId] = save;
+                        if (!loadedSaves.ContainsKey(save.saveId))
+                        {
+                            loadedSaves[save.saveId] = save;
+                        }
+                        SaveToFile(save);
+                        File.Delete(file);
+                        Debug.Log($"[SaveManager] Save legado {file} migrado para formato binário (.bin).");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"[SaveManager] Erro ao carregar save {file}: {ex.Message}");
+                    Debug.LogWarning($"[SaveManager] Erro ao migrar save legado {file}: {ex.Message}");
                 }
             }
+
             if (loadedSaves.Count == 0)
             {
                 SeedDemoSavesIfEmpty();
             }
-            Debug.Log($"[SaveManager] Total de {loadedSaves.Count} partidas salvas carregadas.");
+            Debug.Log($"[SaveManager] Total de {loadedSaves.Count} partidas salvas carregadas (formato binário).");
         }
 
         private void SeedDemoSavesIfEmpty()
@@ -132,7 +173,7 @@ namespace ProjectTerra.Gameplay
             return list;
         }
 
-        public RegionSaveData CreateNewSave(RegionData region, string saveName, long startingMoney)
+        public RegionSaveData CreateNewSave(RegionData region, string saveName, long startingMoney, StarterCareer career = StarterCareer.Farmer)
         {
             if (region == null) return null;
 
@@ -151,6 +192,9 @@ namespace ProjectTerra.Gameplay
                 countryName = region.country,
                 regionType = region.type,
                 lastSavedDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                starterCareer = career,
+                reputation = 100,
+                completedDeliveries = 0,
                 startingMoney = startingMoney,
                 currentMoney = startingMoney,
                 forestPercent = region.forestPercent,
@@ -165,16 +209,22 @@ namespace ProjectTerra.Gameplay
 
             SaveToFile(save);
             loadedSaves[save.saveId] = save;
-            Debug.Log($"[SaveManager] Nova partida criada: {save.saveName} na região {save.regionName} com verba de ${save.startingMoney:N0}");
+            ActiveSave = save;
+            Debug.Log($"[SaveManager] Nova partida criada: {save.saveName} na região {save.regionName} com verba de ${save.startingMoney:N0} e carreira {save.starterCareer}");
             return save;
         }
 
         public void SaveToFile(RegionSaveData save)
         {
             if (save == null) return;
-            string filePath = Path.Combine(saveDirectory, $"save_{save.saveId}.json");
-            string json = JsonUtility.ToJson(save, true);
-            File.WriteAllText(filePath, json);
+            string filePath = Path.Combine(saveDirectory, $"save_{save.saveId}.bin");
+            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var writer = new BinaryWriter(fs, System.Text.Encoding.UTF8))
+            {
+                writer.Write(SaveMagic);
+                writer.Write(SaveVersion);
+                save.WriteBinary(writer);
+            }
         }
 
         public void DeleteSave(string saveId)
@@ -183,12 +233,17 @@ namespace ProjectTerra.Gameplay
             {
                 loadedSaves.Remove(saveId);
             }
-            string filePath = Path.Combine(saveDirectory, $"save_{saveId}.json");
-            if (File.Exists(filePath))
+            string binPath = Path.Combine(saveDirectory, $"save_{saveId}.bin");
+            if (File.Exists(binPath))
             {
-                File.Delete(filePath);
-                Debug.Log($"[SaveManager] Save {saveId} excluído com sucesso.");
+                File.Delete(binPath);
             }
+            string jsonPath = Path.Combine(saveDirectory, $"save_{saveId}.json");
+            if (File.Exists(jsonPath))
+            {
+                File.Delete(jsonPath);
+            }
+            Debug.Log($"[SaveManager] Save {saveId} excluído com sucesso.");
         }
     }
 }

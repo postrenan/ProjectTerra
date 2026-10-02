@@ -243,11 +243,38 @@ def generate_regions_db_and_id_map(states_path, countries_path):
     png_img.save(png_path, "PNG", optimize=False)
     print(f"[MAP] Saved region_id_map.png ({os.path.getsize(png_path)} bytes)")
 
-    # 3. Export JSON database
-    db_path = os.path.join(STREAMING_DIR, "regions_database.json")
-    with open(db_path, "w", encoding='utf-8') as f:
-        json.dump({'regions': regions}, f, ensure_ascii=False, indent=2)
-    print(f"[DB] Saved {len(regions)} regions into {db_path} ({os.path.getsize(db_path)} bytes)")
+    # 3. Export Binary database (PTRD)
+    db_bin_path = os.path.join(STREAMING_DIR, "regions_database.bin")
+    out = bytearray()
+    out.extend(b'PTRD')
+    out.extend(struct.pack('<HI', 1, len(regions)))
+    def pack_str(s):
+        b = (s or '').encode('utf-8')
+        return struct.pack('<H', len(b)) + b
+
+    for r in regions:
+        out.extend(struct.pack('<i', r.get('id', 0)))
+        out.extend(pack_str(r.get('name', '')))
+        out.extend(pack_str(r.get('country', '')))
+        out.extend(pack_str(r.get('type', '')))
+        out.extend(struct.pack('<ffffffiiiiiii',
+            float(r.get('centerLat', 0.0)),
+            float(r.get('centerLon', 0.0)),
+            float(r.get('minLat', 0.0)),
+            float(r.get('maxLat', 0.0)),
+            float(r.get('minLon', 0.0)),
+            float(r.get('maxLon', 0.0)),
+            int(r.get('forestPercent', 0)),
+            int(r.get('mineralsPercent', 0)),
+            int(r.get('arablePercent', 0)),
+            int(r.get('waterPercent', 0)),
+            int(r.get('realWidthMeters', 0)),
+            int(r.get('realLengthMeters', 0)),
+            int(r.get('realAreaKm2', 0))
+        ))
+    with open(db_bin_path, "wb") as f:
+        f.write(out)
+    print(f"[DB] Saved {len(regions)} regions into {db_bin_path} ({len(out)} bytes)")
 
 def main():
     print("=== NATURAL EARTH 10M 4K BORDERS & REGION DATABASE BUILDER ===")

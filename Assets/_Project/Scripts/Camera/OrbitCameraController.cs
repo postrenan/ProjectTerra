@@ -55,8 +55,12 @@ namespace ProjectTerra.Cameras
             UpdateCameraTransform();
         }
 
+        private bool isDiving = false;
+
         private void HandleInput()
         {
+            if (isDiving) return;
+
             double altitude = Mathf.Max((float)(currentDistance - planetRadius), 1.0f);
 
             // Adapta a velocidade de rotação à altitude: rápida no espaço, precisa e suave a 50m
@@ -136,6 +140,45 @@ namespace ProjectTerra.Cameras
             target = newTarget;
             planetRadius = radius;
             currentDistance = radius * 2.5;
+        }
+
+        public void DiveTowardsPoint(Vector3 worldPoint, float duration, System.Action onComplete = null)
+        {
+            if (isDiving) return;
+            StartCoroutine(DiveCoroutine(worldPoint, duration, onComplete));
+        }
+
+        private System.Collections.IEnumerator DiveCoroutine(Vector3 worldPoint, float duration, System.Action onComplete)
+        {
+            isDiving = true;
+            Vector3 center = target != null ? target.position : Vector3.zero;
+            Vector3 dir = (worldPoint - center).normalized;
+
+            // Converter direção normalizada em Pitch e Yaw
+            float targetPitchDeg = -Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg;
+            float targetYawDeg = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+
+            double startDist = currentDistance;
+            double endDist = planetRadius + 15000.0; // 15km acima da superfície
+
+            float startPitch = targetPitch;
+            float startYaw = targetYaw;
+
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+
+                targetPitch = Mathf.LerpAngle(startPitch, targetPitchDeg, t);
+                targetYaw = Mathf.LerpAngle(startYaw, targetYawDeg, t);
+                currentDistance = System.Math.Max(planetRadius + 1000.0, startDist + (endDist - startDist) * t);
+
+                yield return null;
+            }
+
+            isDiving = false;
+            onComplete?.Invoke();
         }
     }
 }

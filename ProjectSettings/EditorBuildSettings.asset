@@ -8,4 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Project/Scenes/MainEarthScene.unity
     guid: 1f97b579d028460eb629788198b547fc
+  - enabled: 1
+    path: Assets/_Project/Scenes/RegionalSandboxScene.unity
+    guid: 3e765ba890124de3bc56789012345678
   m_configObjects: {}

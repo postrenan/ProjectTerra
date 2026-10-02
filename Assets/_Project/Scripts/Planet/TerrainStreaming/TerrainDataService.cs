@@ -130,17 +130,17 @@ namespace ProjectTerra.Planet.TerrainStreaming
             activeDownloads.Add(tileKey);
             string url = string.Format(AwsTerrariumUrlTemplate, zoom, tileX, tileY);
 
-            using (UnityWebRequest uwr = UnityWebRequestTexture.GetTexture(url))
+            using (UnityWebRequest uwr = UnityWebRequest.Get(url))
             {
                 uwr.timeout = 10;
                 yield return uwr.SendWebRequest();
 
                 activeDownloads.Remove(tileKey);
 
-                if (uwr.result == UnityWebRequest.Result.Success)
+                if (uwr.result == UnityWebRequest.Result.Success && uwr.downloadHandler != null && uwr.downloadHandler.data != null)
                 {
-                    Texture2D downloadedTex = DownloadHandlerTexture.GetContent(uwr);
-                    if (downloadedTex != null)
+                    Texture2D downloadedTex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    if (downloadedTex.LoadImage(uwr.downloadHandler.data))
                     {
                         Color32[] pixels = downloadedTex.GetPixels32();
                         float[] heights = new float[TileResolution * TileResolution];
