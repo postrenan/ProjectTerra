@@ -3,6 +3,8 @@ using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectTerra.Gameplay;
+using ProjectTerra.UI;
+using ProjectTerra.Planet.TerrainStreaming;
 
 namespace ProjectTerra.Planet
 {
@@ -87,18 +89,28 @@ namespace ProjectTerra.Planet
                 mainCamera = Camera.main;
             }
 
-            EnsureSaveManagerExists();
+            EnsureServicesExist();
             ResolveEarthMaterial();
             LoadDatabase();
             CreateTextures();
         }
 
-        private void EnsureSaveManagerExists()
+        private void EnsureServicesExist()
         {
             if (SaveManager.Instance == null && FindAnyObjectByType<SaveManager>() == null)
             {
                 var go = new GameObject("SaveManager");
                 go.AddComponent<SaveManager>();
+            }
+            if (TerrainDataService.Instance == null && FindAnyObjectByType<TerrainDataService>() == null)
+            {
+                var go = new GameObject("TerrainDataService");
+                go.AddComponent<TerrainDataService>();
+            }
+            if (LoadingScreenController.Instance == null && FindAnyObjectByType<LoadingScreenController>() == null)
+            {
+                var go = new GameObject("LoadingScreenController");
+                go.AddComponent<LoadingScreenController>();
             }
         }
 
@@ -653,13 +665,24 @@ namespace ProjectTerra.Planet
             // Botão Iniciar Partida
             if (GUILayout.Button("▶ Iniciar & Salvar Partida", primaryButtonStyle, GUILayout.Height(32)))
             {
+                RegionSaveData save = null;
                 if (SaveManager.Instance != null)
                 {
-                    var save = SaveManager.Instance.CreateNewSave(selectedRegion, newGameSaveName, newGameBudget);
+                    save = SaveManager.Instance.CreateNewSave(selectedRegion, newGameSaveName, newGameBudget);
                     notificationMessage = $"Partida '{save.saveName}' iniciada com ${save.startingMoney:N0}!";
                     notificationTimer = 4.0f;
                 }
                 currentCardMode = CardMode.RegionDetails;
+                hasSelection = false;
+                lastCardRect = Rect.zero;
+
+                if (LoadingScreenController.Instance != null)
+                {
+                    LoadingScreenController.Instance.Show(selectedRegion, save, () =>
+                    {
+                        Debug.Log($"[PlanetInteraction] Entrada na partida '{newGameSaveName}' confirmada.");
+                    });
+                }
             }
 
             GUILayout.Space(4);
@@ -723,6 +746,16 @@ namespace ProjectTerra.Planet
                         notificationMessage = $"Partida '{save.saveName}' carregada! Verba: {save.GetFormattedMoney()}";
                         notificationTimer = 4.0f;
                         currentCardMode = CardMode.RegionDetails;
+                        hasSelection = false;
+                        lastCardRect = Rect.zero;
+
+                        if (LoadingScreenController.Instance != null)
+                        {
+                            LoadingScreenController.Instance.Show(selectedRegion, save, () =>
+                            {
+                                Debug.Log($"[PlanetInteraction] Partida '{save.saveName}' carregada e pronta para jogar.");
+                            });
+                        }
                     }
                     if (GUILayout.Button("🗑 Excluir", dangerButtonStyle, GUILayout.Width(70), GUILayout.Height(22)))
                     {
