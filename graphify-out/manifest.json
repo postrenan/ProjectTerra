@@ -1,0 +1,314 @@
+{
+  ".vscode/extensions.json": {
+    "mtime": 1790876950.445294,
+    "seen": 1790913701.7331467,
+    "ast_hash": "a9819ba4d76ccd81cf1f7b18e06c77d0",
+    "semantic_hash": "a9819ba4d76ccd81cf1f7b18e06c77d0"
+  },
+  ".vscode/launch.json": {
+    "mtime": 1790876950.4653883,
+    "seen": 1790913701.7331467,
+    "ast_hash": "b939dea735cf9d32842d6a2c44474427",
+    "semantic_hash": "b939dea735cf9d32842d6a2c44474427"
+  },
+  ".vscode/settings.json": {
+    "mtime": 1790876950.4653883,
+    "seen": 1790913701.7331467,
+    "ast_hash": "61eceb0e096cb906bb8fcc12c9ed9183",
+    "semantic_hash": "61eceb0e096cb906bb8fcc12c9ed9183"
+  },
+  "Assets/StreamingAssets/regions_infrastructure.json": {
+    "mtime": 1790911791.104955,
+    "seen": 1790913701.7331467,
+    "ast_hash": "50e9d0cd79e743290774ab99fb6071fc",
+    "semantic_hash": "50e9d0cd79e743290774ab99fb6071fc"
+  },
+  "Assets/_Project/Scripts/Camera/OrbitCameraController.cs": {
+    "mtime": 1790908984.2500553,
+    "seen": 1790913701.7331467,
+    "ast_hash": "ba0c5cef572900688b20e559755d0174",
+    "semantic_hash": "ba0c5cef572900688b20e559755d0174"
+  },
+  "Assets/_Project/Scripts/Core/FloatingOrigin.cs": {
+    "mtime": 1790877486.0847018,
+    "seen": 1790913701.7331467,
+    "ast_hash": "668bb7e2c5366a253290af0c77045e16",
+    "semantic_hash": "668bb7e2c5366a253290af0c77045e16"
+  },
+  "Assets/_Project/Scripts/Core/Vector3d.cs": {
+    "mtime": 1790875747.971292,
+    "seen": 1790913701.7331467,
+    "ast_hash": "d018bb49cdada2e0850a8a17c9771461",
+    "semantic_hash": "d018bb49cdada2e0850a8a17c9771461"
+  },
+  "Assets/_Project/Scripts/Gameplay/RegionSaveData.cs": {
+    "mtime": 1790911117.7284262,
+    "seen": 1790913701.7331467,
+    "ast_hash": "318ae10c5f593623df58cb83fa6f4d4e",
+    "semantic_hash": "318ae10c5f593623df58cb83fa6f4d4e"
+  },
+  "Assets/_Project/Scripts/Gameplay/SaveManager.cs": {
+    "mtime": 1790911141.9478946,
+    "seen": 1790913701.7331467,
+    "ast_hash": "c6c07582095a8bc54d3986fbd144191b",
+    "semantic_hash": "c6c07582095a8bc54d3986fbd144191b"
+  },
+  "Assets/_Project/Scripts/Planet/CubeSphereFace.cs": {
+    "mtime": 1790894046.3457918,
+    "seen": 1790913701.7331467,
+    "ast_hash": "7c55b5d14507ca7f500a0fa2d38a2f4c",
+    "semantic_hash": "7c55b5d14507ca7f500a0fa2d38a2f4c"
+  },
+  "Assets/_Project/Scripts/Planet/CubeSpherePlanet.cs": {
+    "mtime": 1790879995.5423849,
+    "seen": 1790913701.7331467,
+    "ast_hash": "53a95dc65bd4e1f30fabf919c24fa3e7",
+    "semantic_hash": "53a95dc65bd4e1f30fabf919c24fa3e7"
+  },
+  "Assets/_Project/Scripts/Planet/PlanetConfig.cs": {
+    "mtime": 1790875762.3676424,
+    "seen": 1790913701.7331467,
+    "ast_hash": "b855713e1f307fcc1b562d435f80d04c",
+    "semantic_hash": "b855713e1f307fcc1b562d435f80d04c"
+  },
+  "Assets/_Project/Scripts/Planet/PlanetInteractionController.cs": {
+    "mtime": 1790911892.7320578,
+    "seen": 1790913701.7331467,
+    "ast_hash": "711996a38c41f0882f6c4392453f2522",
+    "semantic_hash": "711996a38c41f0882f6c4392453f2522"
+  },
+  "Assets/_Project/Scripts/Planet/PlanetQuadTreeNode.cs": {
+    "mtime": 1790894084.806942,
+    "seen": 1790913701.7331467,
+    "ast_hash": "79e0dda0450e327a79fcb5883775f6a5",
+    "semantic_hash": "79e0dda0450e327a79fcb5883775f6a5"
+  },
+  "Assets/_Project/Scripts/Planet/RegionData.cs": {
+    "mtime": 1790911062.8631563,
+    "seen": 1790913701.7331467,
+    "ast_hash": "0e6983392f7287ae41fc8ab42aa3d414",
+    "semantic_hash": "0e6983392f7287ae41fc8ab42aa3d414"
+  },
+  "Assets/_Project/Scripts/Planet/RegionInfrastructure.cs": {
+    "mtime": 1790911806.2766628,
+    "seen": 1790913701.7331467,
+    "ast_hash": "4f431ff0ef6688e346f6a96c606131fd",
+    "semantic_hash": "4f431ff0ef6688e346f6a96c606131fd"
+  },
+  "Assets/_Project/Scripts/Planet/TerrainStreaming/GeographicDataLoader.cs": {
+    "mtime": 1790911107.2438703,
+    "seen": 1790913701.7331467,
+    "ast_hash": "591d5dd29fa8e0b14367b58e57921884",
+    "semantic_hash": "591d5dd29fa8e0b14367b58e57921884"
+  },
+  "Assets/_Project/Scripts/Planet/TerrainStreaming/TerrainDataService.cs": {
+    "mtime": 1790909021.8195324,
+    "seen": 1790913701.7331467,
+    "ast_hash": "3b0ca21d1ac20aaf8f693867c0321bdb",
+    "semantic_hash": "3b0ca21d1ac20aaf8f693867c0321bdb"
+  },
+  "Assets/_Project/Scripts/Planet/TerrainStreaming/TerrainPBRFactory.cs": {
+    "mtime": 1790913362.614216,
+    "seen": 1790913701.7331467,
+    "ast_hash": "77f08aa971f368b0dd792abcea8967b1",
+    "semantic_hash": "77f08aa971f368b0dd792abcea8967b1"
+  },
+  "Assets/_Project/Scripts/Sandbox/HDRPAtmosphereController.cs": {
+    "mtime": 1790913643.312533,
+    "seen": 1790913701.7331467,
+    "ast_hash": "52e651946dc2da4005cf1378cb850583",
+    "semantic_hash": "52e651946dc2da4005cf1378cb850583"
+  },
+  "Assets/_Project/Scripts/Sandbox/MissionManager.cs": {
+    "mtime": 1790913628.9992576,
+    "seen": 1790913701.7331467,
+    "ast_hash": "57ab21b5ec63b3554af0a66422a6c82d",
+    "semantic_hash": "57ab21b5ec63b3554af0a66422a6c82d"
+  },
+  "Assets/_Project/Scripts/Sandbox/PlayerCharacterController.cs": {
+    "mtime": 1790913440.927807,
+    "seen": 1790913701.7331467,
+    "ast_hash": "2090f7dd6814e530fcb9d752c20a11f0",
+    "semantic_hash": "2090f7dd6814e530fcb9d752c20a11f0"
+  },
+  "Assets/_Project/Scripts/Sandbox/RegionalSandboxManager.cs": {
+    "mtime": 1790913377.4532986,
+    "seen": 1790913701.7331467,
+    "ast_hash": "64c738982d658651d0183a4a6576b31d",
+    "semantic_hash": "64c738982d658651d0183a4a6576b31d"
+  },
+  "Assets/_Project/Scripts/Sandbox/SandboxHUD.cs": {
+    "mtime": 1790913425.0444362,
+    "seen": 1790913701.7331467,
+    "ast_hash": "7db928ca4d693bfe5532781d0c1accc5",
+    "semantic_hash": "7db928ca4d693bfe5532781d0c1accc5"
+  },
+  "Assets/_Project/Scripts/Sandbox/VehicleBuilder.cs": {
+    "mtime": 1790910797.5917714,
+    "seen": 1790913701.7331467,
+    "ast_hash": "8ca9024159cbd4f2e3c6b2c3ca354e38",
+    "semantic_hash": "8ca9024159cbd4f2e3c6b2c3ca354e38"
+  },
+  "Assets/_Project/Scripts/Sandbox/VehicleController.cs": {
+    "mtime": 1790910781.2967064,
+    "seen": 1790913701.7331467,
+    "ast_hash": "f7b9d9c1bbab6f333f414ea71c0ec42d",
+    "semantic_hash": "f7b9d9c1bbab6f333f414ea71c0ec42d"
+  },
+  "Assets/_Project/Scripts/UI/LoadingScreenController.cs": {
+    "mtime": 1790911996.33832,
+    "seen": 1790913701.7331467,
+    "ast_hash": "fedc55fb01db65a7f77e10160bf2a5ff",
+    "semantic_hash": "fedc55fb01db65a7f77e10160bf2a5ff"
+  },
+  "Packages/manifest.json": {
+    "mtime": 1790876699.2558134,
+    "seen": 1790913701.7331467,
+    "ast_hash": "ad1739bb9a9440f7acd3151ff430007c",
+    "semantic_hash": "ad1739bb9a9440f7acd3151ff430007c"
+  },
+  "Packages/packages-lock.json": {
+    "mtime": 1790876870.0482168,
+    "seen": 1790913701.7331467,
+    "ast_hash": "392444a3d4c90e7eea71c786ef3e0c0b",
+    "semantic_hash": "392444a3d4c90e7eea71c786ef3e0c0b"
+  },
+  "Tools/BatchGeographicDataProcessor.py": {
+    "mtime": 1790911160.9982731,
+    "seen": 1790913701.7331467,
+    "ast_hash": "b28397278fc6d0a3154a5663a47b807a",
+    "semantic_hash": "b28397278fc6d0a3154a5663a47b807a"
+  },
+  "Tools/DataBackup/regions_database.json": {
+    "mtime": 1790911038.729503,
+    "seen": 1790913701.7331467,
+    "ast_hash": "9fc76933e04cc8706e647a3aa00e803d",
+    "semantic_hash": "9fc76933e04cc8706e647a3aa00e803d"
+  },
+  "Tools/DownloadData/build_borders_and_database.py": {
+    "mtime": 1790911238.9332304,
+    "seen": 1790913701.7331467,
+    "ast_hash": "b98fee58eb8a124cc472316eb246da8a",
+    "semantic_hash": "b98fee58eb8a124cc472316eb246da8a"
+  },
+  "Tools/DownloadData/download_dataset.py": {
+    "mtime": 1790875651.658461,
+    "seen": 1790913701.7331467,
+    "ast_hash": "696c2a3dbf929edbb946dec0dff9f1a8",
+    "semantic_hash": "696c2a3dbf929edbb946dec0dff9f1a8"
+  },
+  "Tools/DownloadData/generate_assets_meta.py": {
+    "mtime": 1790875823.5460818,
+    "seen": 1790913701.7331467,
+    "ast_hash": "089e1cbda7e46dfdfb97131935b4da61",
+    "semantic_hash": "089e1cbda7e46dfdfb97131935b4da61"
+  },
+  "Tools/DownloadData/generate_scene.py": {
+    "mtime": 1790875873.1625035,
+    "seen": 1790913701.7331467,
+    "ast_hash": "7b01d2cc9c0e9d98fb612fca4a8ac7ee",
+    "semantic_hash": "7b01d2cc9c0e9d98fb612fca4a8ac7ee"
+  },
+  "Tools/DownloadData/generate_scripts_meta.py": {
+    "mtime": 1790875834.6994858,
+    "seen": 1790913701.7331467,
+    "ast_hash": "39eb28a84dbb44152a02cd1426811148",
+    "semantic_hash": "39eb28a84dbb44152a02cd1426811148"
+  },
+  "Tools/GenerateRegionInfrastructure.py": {
+    "mtime": 1790911785.1456861,
+    "seen": 1790913701.7331467,
+    "ast_hash": "d51090f7ffab9d3967f638c4cd3ddc77",
+    "semantic_hash": "d51090f7ffab9d3967f638c4cd3ddc77"
+  },
+  "Tools/ImportPBRTextures.py": {
+    "mtime": 1790913291.3482125,
+    "seen": 1790913701.7331467,
+    "ast_hash": "573aa79dcfe9ffea0b1d9eac3d191ac4",
+    "semantic_hash": "573aa79dcfe9ffea0b1d9eac3d191ac4"
+  },
+  "Tools/MigrateToBinary.py": {
+    "mtime": 1790911033.5513222,
+    "seen": 1790913701.7331467,
+    "ast_hash": "10896c7e3efec2125c90f0816db79117",
+    "semantic_hash": "10896c7e3efec2125c90f0816db79117"
+  },
+  "Tools/UpdateRealWorldDimensions.py": {
+    "mtime": 1790911177.899065,
+    "seen": 1790913701.7331467,
+    "ast_hash": "85c7c1b489d0cf2a4c43f8ef5cf900e7",
+    "semantic_hash": "85c7c1b489d0cf2a4c43f8ef5cf900e7"
+  },
+  "package/ProjectData~/Packages/manifest.json": {
+    "mtime": 1780334400.0,
+    "seen": 1790913701.7331467,
+    "ast_hash": "9e0a99bc569f441d33368711350255ae",
+    "semantic_hash": "9e0a99bc569f441d33368711350255ae"
+  },
+  "testejogo.slnx": {
+    "mtime": 1790876950.6220345,
+    "seen": 1790913701.7331467,
+    "ast_hash": "503dcdaf58d81abe5d27a8d26adcb664",
+    "semantic_hash": "503dcdaf58d81abe5d27a8d26adcb664"
+  },
+  "ProjectSettings/ProjectVersion.txt": {
+    "mtime": 1790875619.6457663,
+    "seen": 1790913701.7331467,
+    "ast_hash": "4301f2c19351fd7d1b4b72454b6f5697",
+    "semantic_hash": "4301f2c19351fd7d1b4b72454b6f5697"
+  },
+  "README.md": {
+    "mtime": 1790911177.5942962,
+    "seen": 1790913701.7331467,
+    "ast_hash": "f74db8b6d2d696ea80fbf6e0fe532e8e",
+    "semantic_hash": "f74db8b6d2d696ea80fbf6e0fe532e8e"
+  },
+  "docs/ARCHITECTURE_1_TO_1_SCALE_TERRAIN.md": {
+    "mtime": 1790907991.9441397,
+    "seen": 1790913701.7331467,
+    "ast_hash": "e0fb67eba41a28d6bbbce112a226ba0f",
+    "semantic_hash": "e0fb67eba41a28d6bbbce112a226ba0f"
+  },
+  "Assets/_Project/Textures/Earth/2k_earth_daymap.jpg": {
+    "mtime": 1790875683.638169,
+    "seen": 1790913701.7331467,
+    "ast_hash": "eec7a2f8c47c27b5c5904b484b717986",
+    "semantic_hash": "eec7a2f8c47c27b5c5904b484b717986"
+  },
+  "Assets/_Project/Textures/Earth/4k_earth_borders.png": {
+    "mtime": 1790905950.4348166,
+    "seen": 1790913701.7331467,
+    "ast_hash": "544c7b6c0bf3814e7b4eeb4b2ff9f72c",
+    "semantic_hash": "544c7b6c0bf3814e7b4eeb4b2ff9f72c"
+  },
+  "Assets/_Project/Textures/Earth/8k_earth_daymap.jpg": {
+    "mtime": 1790875692.4790294,
+    "seen": 1790913701.7331467,
+    "ast_hash": "45ae6884f17efcd6ad13d7071f3bb2b8",
+    "semantic_hash": "45ae6884f17efcd6ad13d7071f3bb2b8"
+  },
+  "Assets/_Project/Textures/Earth/region_id_map.png": {
+    "mtime": 1790905953.3876123,
+    "seen": 1790913701.7331467,
+    "ast_hash": "daa9e06fe45f0f37906743c425de7625",
+    "semantic_hash": "daa9e06fe45f0f37906743c425de7625"
+  },
+  "Assets/_Project/Textures/Loading/coastal_bg.jpg": {
+    "mtime": 1790907533.7063503,
+    "seen": 1790913701.7331467,
+    "ast_hash": "0242d390b17e32e92ada92ed5d8c9bf3",
+    "semantic_hash": "0242d390b17e32e92ada92ed5d8c9bf3"
+  },
+  "Assets/_Project/Textures/Loading/metropolis_bg.jpg": {
+    "mtime": 1790907505.846378,
+    "seen": 1790913701.7331467,
+    "ast_hash": "6515bc33ecbf20a405f9db3b1161841f",
+    "semantic_hash": "6515bc33ecbf20a405f9db3b1161841f"
+  },
+  "Assets/_Project/Textures/Loading/plantation_bg.jpg": {
+    "mtime": 1790907484.0510974,
+    "seen": 1790913701.7331467,
+    "ast_hash": "723942d351f98d431bbb6c6bf3c2a367",
+    "semantic_hash": "723942d351f98d431bbb6c6bf3c2a367"
+  }
+}

@@ -96,8 +96,45 @@ Scripts auxiliares em Python integrados ao fluxo de desenvolvimento:
 | **Frear / Ré do Veículo** | `S` |
 | **Curva / Direção** | `A` / `D` |
 | **Freio de Mão** | `Espaço` |
-| **Alternar Câmera (1ª/3ª Pessoa)** | `V` |
-| **Pausar / Menu** | `Esc` |
+| **Alternar Câmera no Veículo** | `C` ou `V` (3ª Pessoa Perto, Panorâmica, Cockpit e Capô) |
+| **Lanterna / Faróis Dianteiros** | `L` (Lanterna a pé ou Faróis no veículo) |
+| **Alternar Veículo em Posse** | `Tab` (Troca direta entre os veículos do jogador) |
+| **Abrir Chat / Console de Comandos** | `/` (ou Teclado Numérico `/`) |
+| **Mapa Regional Tático GIS** | `M` |
+| **Pausar / Menu de Opções** | `Esc` ou `Alt Esquerdo` |
+
+---
+
+### 💬 Console de Comandos In-Game (`/`)
+
+Pressione a tecla `/` para abrir o chat de comandos com auto-complete (`Tab`) e histórico (`Setas Cima/Baixo`):
+
+| Comando | Descrição | Exemplo |
+| :--- | :--- | :--- |
+| `/help [comando]` | Exibe o manual ou ajuda específica | `/help spawn` |
+| `/spawn <tipo>` | Cria veículos na sua posse | `/spawn truck`, `/spawn car`, `/spawn plane`, `/spawn police`, `/spawn all` |
+| `/time <hora/preset>` | Altera o horário solar (0 a 24) ou presets | `/time 14`, `/time day`, `/time night`, `/time sunset`, `/time cycle on` |
+| `/timescale <mult>` | Altera a velocidade da simulação | `/timescale 2`, `/timescale 0.5` |
+| `/weather <clima>` | Altera condições atmosféricas e neblina | `/weather clear`, `/weather fog`, `/weather storm`, `/weather overcast` |
+| `/tp <local/coords>` | Teleporta jogador e veículo | `/tp town`, `/tp base`, `/tp airport`, `/tp 1500 -800` |
+| `/speed <mult>` | Multiplicador de velocidade a pé | `/speed 3`, `/speed 1` |
+| `/fly` | Alterna modo voo livre (Noclip) | `/fly` (WASD + Espaço/Ctrl) |
+| `/god` | Combustível infinito e invulnerabilidade | `/god` |
+| `/money <quantia>` | Adiciona fundos ao saldo da partida | `/money 500000` |
+| `/setmoney <quantia>` | Define o saldo monetário exato | `/setmoney 1000000` |
+| `/refuel` | Abastece o tanque a 100% | `/refuel` |
+| `/repair` | Repara e desvira o veículo atual | `/repair` |
+| `/unflip` | Alinha o veículo capotado ao solo | `/unflip` |
+| `/cargo <load/unload>` | Gerencia a carga do veículo | `/cargo load Soja`, `/cargo unload` |
+| `/mission <complete/new>` | Conclui ou gera contratos | `/mission complete` |
+| `/vehicles` | Lista toda a frota com distâncias | `/vehicles` |
+| `/switch [índice]` | Troca para veículo específico | `/switch 2` |
+| `/clearvehicles` | Remove veículos adicionais criados | `/clearvehicles` |
+| `/light` | Alterna lanterna ou faróis | `/light` |
+| `/camera <modo>` | Altera visão da câmera veicular | `/camera cockpit`, `/camera hood`, `/camera far` |
+| `/coords` | Exibe coordenadas X, Y, Z e rumo | `/coords` |
+| `/save` | Salva a partida imediatamente | `/save` |
+| `/clear` | Limpa o log do chat | `/clear` |
 
 ---
 

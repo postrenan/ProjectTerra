@@ -53,6 +53,16 @@ CATEGORIES = {
         "detail_noise": "steel",
         "roughness": 80
     },
+    "Ground/DryGrass": {
+        "color": (155, 145, 68),
+        "detail_noise": "grass",
+        "roughness": 200
+    },
+    "Ground/Snow": {
+        "color": (230, 235, 245),
+        "detail_noise": "pebbles",
+        "roughness": 120
+    },
     "Vegetation/Foliage": {
         "color": (48, 125, 38),
         "detail_noise": "leaves",
@@ -60,28 +70,36 @@ CATEGORIES = {
     }
 }
 
-def create_tga_image(width, height, get_pixel_func):
+def create_tga_image(width, height, get_pixel_func, is_rgba=False):
     """Gera uma imagem TGA não comprimida de 24-bit RGB ou 32-bit RGBA nativamente sem dependências externas."""
-    # TGA Header (18 bytes)
     header = bytearray(18)
     header[2] = 2  # Uncompressed True-Color
     header[12] = width & 0xFF
     header[13] = (width >> 8) & 0xFF
     header[14] = height & 0xFF
     header[15] = (height >> 8) & 0xFF
-    header[16] = 24 # 24 bits por pixel (RGB)
+    header[16] = 32 if is_rgba else 24
     header[17] = 0x20 # Top-to-bottom
 
-    pixels = bytearray(width * height * 3)
+    bytes_per_px = 4 if is_rgba else 3
+    pixels = bytearray(width * height * bytes_per_px)
     idx = 0
     for y in range(height):
         for x in range(width):
-            r, g, b = get_pixel_func(x, y, width, height)
-            # TGA armazena BGR
-            pixels[idx] = max(0, min(255, int(b)))
-            pixels[idx + 1] = max(0, min(255, int(g)))
-            pixels[idx + 2] = max(0, min(255, int(r)))
-            idx += 3
+            px = get_pixel_func(x, y, width, height)
+            if is_rgba:
+                r, g, b, a = px
+                pixels[idx] = max(0, min(255, int(b)))
+                pixels[idx + 1] = max(0, min(255, int(g)))
+                pixels[idx + 2] = max(0, min(255, int(r)))
+                pixels[idx + 3] = max(0, min(255, int(a)))
+                idx += 4
+            else:
+                r, g, b = px
+                pixels[idx] = max(0, min(255, int(b)))
+                pixels[idx + 1] = max(0, min(255, int(g)))
+                pixels[idx + 2] = max(0, min(255, int(r)))
+                idx += 3
 
     return bytes(header) + bytes(pixels)
 
@@ -97,13 +115,12 @@ def generate_pbr_set(category_name, info, size=512):
     def albedo_func(x, y, w, h):
         nx = x / float(w)
         ny = y / float(h)
-        # Ruído multi-escala procedural
         n1 = math.sin(nx * 32.0 * math.pi) * math.cos(ny * 32.0 * math.pi)
         n2 = math.sin(nx * 128.0 * math.pi + 1.2) * math.cos(ny * 128.0 * math.pi + 0.8) * 0.5
         var = (n1 + n2) * 18.0
         return (base_r + var, base_g + var, base_b + var)
 
-    albedo_bytes = create_tga_image(size, size, albedo_func)
+    albedo_bytes = create_tga_image(size, size, albedo_func, is_rgba=False)
     with open(os.path.join(cat_dir, "Albedo.tga"), "wb") as f:
         f.write(albedo_bytes)
 
@@ -111,27 +128,36 @@ def generate_pbr_set(category_name, info, size=512):
     def normal_func(x, y, w, h):
         nx = x / float(w)
         ny = y / float(h)
-        # Gradientes do relevo
         dx = math.cos(nx * 64.0 * math.pi) * 35.0
         dy = math.sin(ny * 64.0 * math.pi) * 35.0
-        # Normal tangente: R = X (128 + dx), G = Y (128 + dy), B = Z (255)
         return (128 + dx, 128 + dy, 240)
 
-    normal_bytes = create_tga_image(size, size, normal_func)
+    normal_bytes = create_tga_image(size, size, normal_func, is_rgba=False)
     with open(os.path.join(cat_dir, "Normal.tga"), "wb") as f:
         f.write(normal_bytes)
 
-    # 3. Mask Map HDRP (R = Metallic, G = Ambient Occlusion, B = Detail Mask, A = Smoothness)
-    # Como TGA padrão RGB 24-bit: R=Metallic, G=AO (220), B=Smoothness (255 - roughness)
-    smoothness = 255 - roughness_val
+    # 3. Mask Map (R = Metallic, G = Ambient Occlusion, B = Detail Height, A = Smoothness)
+    smoothness = max(20, min(180, 255 - roughness_val))
     def mask_func(x, y, w, h):
         metallic = 210 if "Metal" in category_name else 0
-        ao = 225
-        return (metallic, ao, smoothness)
+        ao = 230
+        height = 128
+        return (metallic, ao, height, smoothness)
 
-    mask_bytes = create_tga_image(size, size, mask_func)
+    mask_bytes = create_tga_image(size, size, mask_func, is_rgba=True)
     with open(os.path.join(cat_dir, "MaskMap.tga"), "wb") as f:
         f.write(mask_bytes)
+
+    # Exportar também PNGs via PIL se disponível
+    try:
+        from PIL import Image
+        for name in ["Albedo", "Normal", "MaskMap"]:
+            tga_p = os.path.join(cat_dir, f"{name}.tga")
+            png_p = os.path.join(cat_dir, f"{name}.png")
+            img = Image.open(tga_p)
+            img.save(png_p, "PNG")
+    except Exception:
+        pass
 
 def main():
     print("=========================================================")

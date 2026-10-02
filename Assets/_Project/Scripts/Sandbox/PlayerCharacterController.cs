@@ -5,8 +5,10 @@ namespace ProjectTerra.Sandbox
 {
     public enum VehicleCameraMode
     {
-        FirstPerson,
-        ThirdPerson
+        ThirdPersonClose,
+        ThirdPersonFar,
+        FirstPersonCockpit,
+        BumperOrHood
     }
 
     /// <summary>
@@ -14,7 +16,7 @@ namespace ProjectTerra.Sandbox
     /// Permite caminhar, correr, pular, interagir e alternar visões em veículos [V/C].
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
-    public class PlayerCharacterController : MonoBehaviour
+    public partial class PlayerCharacterController : MonoBehaviour
     {
         public static PlayerCharacterController Instance { get; private set; }
 
@@ -30,9 +32,13 @@ namespace ProjectTerra.Sandbox
         public float maxPitchOnFoot = 85f;
 
         [Header("Câmera do Veículo (1ª e 3ª Pessoa)")]
-        [Tooltip("Modo de câmera ao dirigir: FirstPerson (Cockpit) ou ThirdPerson (Externa). Alternável via [V] ou [C]")]
-        public VehicleCameraMode vehicleCameraMode = VehicleCameraMode.ThirdPerson;
+        [Tooltip("Modo de câmera ao dirigir: Cockpit, Capô, 3ª Pessoa Perto/Far. Alternável via [V] ou [C]")]
+        public VehicleCameraMode vehicleCameraMode = VehicleCameraMode.ThirdPersonClose;
         public float vehicleThirdPersonDistance = 6.0f;
+
+        [Header("Lanterna do Personagem [L]")]
+        public bool isFlashlightOn = false;
+        private Light flashlight;
 
         [Header("Ponto da Câmera")]
         public Transform cameraFollowPoint;
@@ -79,7 +85,7 @@ namespace ProjectTerra.Sandbox
                 camObj.AddComponent<AudioListener>();
             }
 
-            activeCamera.nearClipPlane = 0.05f;
+            activeCamera.nearClipPlane = 0.2f;
 
             yaw = transform.eulerAngles.y;
             pitch = 0f;
@@ -101,6 +107,12 @@ namespace ProjectTerra.Sandbox
         {
             HandleCursorLock();
 
+            // Interrompe movimentação se o Menu de Opções ou Mapa Regional estiver aberto
+            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen))
+            {
+                return;
+            }
+
             if (isDriving)
             {
                 UpdateInVehicle();
@@ -113,11 +125,25 @@ namespace ProjectTerra.Sandbox
 
         private void LateUpdate()
         {
+            // Não rotaciona a câmera com o mouse se o cursor estiver livre para o Mapa ou Menu
+            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen))
+            {
+                return;
+            }
+
             UpdateCamera();
         }
 
         private void HandleCursorLock()
         {
+            // Se o Mapa Regional ou Menu de Opções estiver aberto, mantém o cursor liberado
+            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen))
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+                return;
+            }
+
             if (Input.GetMouseButtonDown(0))
             {
                 Cursor.lockState = CursorLockMode.Locked;
@@ -170,6 +196,12 @@ namespace ProjectTerra.Sandbox
 
             // Verificar veículos próximos
             CheckNearbyVehicles();
+
+            // Tecla L para alternar lanterna
+            if (Input.GetKeyDown(KeyCode.L))
+            {
+                ToggleFlashlight();
+            }
 
             // Tecla E para embarcar
             if (Input.GetKeyDown(KeyCode.E) && nearbyVehicle != null)
@@ -260,94 +292,45 @@ namespace ProjectTerra.Sandbox
             Debug.Log("[Player] Desembarcou do veículo.");
         }
 
-        private void UpdateInVehicle()
+        #region Lanterna do Personagem [L]
+
+        public void ToggleFlashlight()
         {
-            // Alternar entre 1ª Pessoa e 3ª Pessoa com [V] ou [C]
-            if (Input.GetKeyDown(KeyCode.V) || Input.GetKeyDown(KeyCode.C))
-            {
-                vehicleCameraMode = (vehicleCameraMode == VehicleCameraMode.ThirdPerson) ?
-                    VehicleCameraMode.FirstPerson : VehicleCameraMode.ThirdPerson;
-
-                vehicleYawLook = 0f;
-                vehiclePitchLook = 0f;
-                thirdPersonYaw = currentVehicle.transform.eulerAngles.y;
-                thirdPersonPitch = 15f;
-            }
-
-            float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-            float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
-
-            if (vehicleCameraMode == VehicleCameraMode.FirstPerson)
-            {
-                // Olhar livre dentro do cockpit (1ª pessoa)
-                vehicleYawLook += mouseX;
-                vehiclePitchLook -= mouseY;
-                vehicleYawLook = Mathf.Clamp(vehicleYawLook, -90f, 90f);
-                vehiclePitchLook = Mathf.Clamp(vehiclePitchLook, -45f, 45f);
-            }
-            else
-            {
-                // Câmera orbital externa (3ª pessoa)
-                thirdPersonYaw += mouseX;
-                thirdPersonPitch -= mouseY;
-                thirdPersonPitch = Mathf.Clamp(thirdPersonPitch, -15f, 65f);
-
-                // Auto-alinhar suavemente atrás do veículo em movimento caso o jogador não esteja movendo o mouse
-                if (Mathf.Abs(mouseX) < 0.02f && currentVehicle.currentSpeedKmh > 2.0f)
-                {
-                    float targetYaw = currentVehicle.transform.eulerAngles.y;
-                    thirdPersonYaw = Mathf.LerpAngle(thirdPersonYaw, targetYaw, Time.deltaTime * 3.5f);
-                }
-
-                // Zoom na 3ª pessoa com roda de scroll
-                float scroll = Input.GetAxis("Mouse ScrollWheel");
-                if (Mathf.Abs(scroll) > 0.01f)
-                {
-                    vehicleThirdPersonDistance = Mathf.Clamp(vehicleThirdPersonDistance - scroll * 4f, 3.5f, 25f);
-                }
-            }
-
-            // Tecla E para desembarcar
-            if (Input.GetKeyDown(KeyCode.E))
-            {
-                ExitVehicle();
-            }
+            SetFlashlight(!isFlashlightOn);
         }
 
-        private void UpdateCamera()
+        public void SetFlashlight(bool state)
         {
-            if (activeCamera == null) return;
-
-            if (!isDriving || currentVehicle == null)
+            isFlashlightOn = state;
+            if (flashlight == null)
             {
-                // 1ª PESSOA A PÉ
-                Vector3 eyePos = cameraFollowPoint != null ? cameraFollowPoint.position : transform.position + Vector3.up * 1.65f;
-                activeCamera.transform.position = eyePos;
-                activeCamera.transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+                CreateFlashlight();
             }
-            else
+            if (flashlight != null)
             {
-                // VEÍCULO: 1ª PESSOA (Cockpit) ou 3ª PESSOA (Externa)
-                if (vehicleCameraMode == VehicleCameraMode.FirstPerson)
-                {
-                    Vector3 cockpitPos = currentVehicle.GetCockpitPosition();
-                    activeCamera.transform.position = cockpitPos;
-
-                    Quaternion vehicleRot = currentVehicle.transform.rotation;
-                    Quaternion lookOffset = Quaternion.Euler(vehiclePitchLook, vehicleYawLook, 0f);
-                    activeCamera.transform.rotation = vehicleRot * lookOffset;
-                }
-                else
-                {
-                    Vector3 focusPoint = currentVehicle.transform.position + Vector3.up * (currentVehicle.category == VehicleCategory.Plane ? 1.0f : 1.5f);
-                    Quaternion camRot = Quaternion.Euler(thirdPersonPitch, thirdPersonYaw, 0f);
-                    Vector3 desiredCamPos = focusPoint - (camRot * Vector3.forward * vehicleThirdPersonDistance);
-
-                    // Amortecimento suave da câmera externa
-                    activeCamera.transform.position = Vector3.Lerp(activeCamera.transform.position, desiredCamPos, Time.deltaTime * 18f);
-                    activeCamera.transform.LookAt(focusPoint);
-                }
+                flashlight.enabled = isFlashlightOn;
             }
+            SandboxHUD.Instance?.ShowToast(isFlashlightOn ? "🔦 Lanterna: Ligada" : "🔦 Lanterna: Desligada", 1.8f);
         }
+
+        private void CreateFlashlight()
+        {
+            var obj = new GameObject("Player_Flashlight");
+            Transform parent = cameraFollowPoint != null ? cameraFollowPoint : transform;
+            obj.transform.SetParent(parent);
+            obj.transform.localPosition = new Vector3(0.25f, -0.1f, 0.2f);
+            obj.transform.localRotation = Quaternion.identity;
+
+            flashlight = obj.AddComponent<Light>();
+            flashlight.type = LightType.Spot;
+            flashlight.spotAngle = 55f;
+            flashlight.range = 55f;
+            flashlight.color = new Color(1f, 0.98f, 0.92f);
+            flashlight.intensity = 2.4f;
+            flashlight.shadows = LightShadows.Soft;
+            flashlight.enabled = isFlashlightOn;
+        }
+
+        #endregion
     }
 }

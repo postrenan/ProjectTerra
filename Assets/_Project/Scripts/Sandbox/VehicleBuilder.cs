@@ -28,14 +28,27 @@ namespace ProjectTerra.Sandbox
             vehicle.enginePower = 3200f;
             vehicle.maxCargoCapacityKg = 2000f;
 
-            // Chassi / Capô
-            var body = CreatePart(root.transform, new Vector3(0f, 1.1f, 0.4f), new Vector3(1.6f, 1.2f, 2.4f), new Color(0.2f, 0.65f, 0.25f), "Capo_Motor");
+            // Modelo 3D Importado ou Procedural
+            var meshPrefab = Resources.Load<GameObject>("Models/Vehicles/tractor");
+            if (meshPrefab != null)
+            {
+                var visual = Object.Instantiate(meshPrefab, root.transform);
+                visual.name = "Visual_Trator3D";
+                visual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
+                visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                visual.transform.localScale = Vector3.one * 1.6f;
+            }
+            else
+            {
+                // Chassi / Capô
+                var body = CreatePart(root.transform, new Vector3(0f, 1.1f, 0.4f), new Vector3(1.6f, 1.2f, 2.4f), new Color(0.2f, 0.65f, 0.25f), "Capo_Motor");
 
-            // Cabine de Vidro
-            var cab = CreatePart(root.transform, new Vector3(0f, 1.9f, -0.6f), new Vector3(1.7f, 1.5f, 1.5f), new Color(0.2f, 0.25f, 0.3f), "Cabine_Cab");
+                // Cabine de Vidro
+                var cab = CreatePart(root.transform, new Vector3(0f, 1.9f, -0.6f), new Vector3(1.7f, 1.5f, 1.5f), new Color(0.2f, 0.25f, 0.3f), "Cabine_Cab");
 
-            // Escapamento
-            var exhaust = CreatePart(root.transform, new Vector3(0.7f, 2.2f, 0.8f), new Vector3(0.15f, 1.6f, 0.15f), new Color(0.1f, 0.1f, 0.12f), "Escapamento");
+                // Escapamento
+                var exhaust = CreatePart(root.transform, new Vector3(0.7f, 2.2f, 0.8f), new Vector3(0.15f, 1.6f, 0.15f), new Color(0.1f, 0.1f, 0.12f), "Escapamento");
+            }
 
             // Rodas Traseiras Grandes
             var rWheelL = CreateWheel(root.transform, new Vector3(-1.1f, 0.9f, -0.8f), new Vector3(0.5f, 1.8f, 1.8f), "RodaTraseiraEsq");
@@ -54,6 +67,7 @@ namespace ProjectTerra.Sandbox
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(0f, 1.8f, -0.6f), "DriverSeat");
             vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(0f, 2.1f, -0.35f), "CockpitCam");
             vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-1.8f, 0.2f, -0.6f), "ExitPoint");
+            vehicle.CreateDefaultHeadlights();
 
             return vehicle;
         }
@@ -75,17 +89,30 @@ namespace ProjectTerra.Sandbox
             vehicle.enginePower = 4800f;
             vehicle.maxCargoCapacityKg = 6000f;
 
-            // Cabine Frontal
-            var cab = CreatePart(root.transform, new Vector3(0f, 1.8f, 2.2f), new Vector3(2.5f, 2.4f, 2.2f), new Color(0.15f, 0.35f, 0.75f), "Cabine_Caminhao");
+            // Modelo 3D Importado ou Procedural
+            var meshPrefab = Resources.Load<GameObject>("Models/Vehicles/truck");
+            if (meshPrefab != null)
+            {
+                var visual = Object.Instantiate(meshPrefab, root.transform);
+                visual.name = "Visual_Caminhao3D";
+                visual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
+                visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                visual.transform.localScale = Vector3.one * 1.8f;
+            }
+            else
+            {
+                // Cabine Frontal
+                var cab = CreatePart(root.transform, new Vector3(0f, 1.8f, 2.2f), new Vector3(2.5f, 2.4f, 2.2f), new Color(0.15f, 0.35f, 0.75f), "Cabine_Caminhao");
 
-            // Para-brisa
-            var windshield = CreatePart(root.transform, new Vector3(0f, 2.2f, 3.2f), new Vector3(2.2f, 1.0f, 0.2f), new Color(0.15f, 0.2f, 0.25f), "Parabrisa");
+                // Para-brisa
+                var windshield = CreatePart(root.transform, new Vector3(0f, 2.2f, 3.2f), new Vector3(2.2f, 1.0f, 0.2f), new Color(0.15f, 0.2f, 0.25f), "Parabrisa");
 
-            // Chassi / Longarinas
-            var chassis = CreatePart(root.transform, new Vector3(0f, 0.7f, -0.5f), new Vector3(2.4f, 0.5f, 6.8f), new Color(0.18f, 0.18f, 0.2f), "Chassi");
+                // Chassi / Longarinas
+                var chassis = CreatePart(root.transform, new Vector3(0f, 0.7f, -0.5f), new Vector3(2.4f, 0.5f, 6.8f), new Color(0.18f, 0.18f, 0.2f), "Chassi");
 
-            // Carroceria / Caçamba de Carga Traseira
-            var cargoBed = CreatePart(root.transform, new Vector3(0f, 1.6f, -1.2f), new Vector3(2.4f, 1.4f, 4.4f), new Color(0.6f, 0.6f, 0.65f), "Carroceria_Carga");
+                // Carroceria / Caçamba de Carga Traseira
+                var cargoBed = CreatePart(root.transform, new Vector3(0f, 1.6f, -1.2f), new Vector3(2.4f, 1.4f, 4.4f), new Color(0.6f, 0.6f, 0.65f), "Carroceria_Carga");
+            }
 
             // Rodas Dianteiras
             var fWheelL = CreateWheel(root.transform, new Vector3(-1.25f, 0.55f, 2.2f), new Vector3(0.45f, 1.1f, 1.1f), "RodaDiantEsq");
@@ -103,6 +130,7 @@ namespace ProjectTerra.Sandbox
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(-0.6f, 1.9f, 2.1f), "DriverSeat");
             vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(-0.6f, 2.2f, 2.3f), "CockpitCam");
             vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-2.1f, 0.2f, 2.1f), "ExitPoint");
+            vehicle.CreateDefaultHeadlights();
 
             return vehicle;
         }
@@ -151,6 +179,7 @@ namespace ProjectTerra.Sandbox
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(0f, 1.3f, 0.3f), "DriverSeat");
             vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(0f, 1.6f, 0.5f), "CockpitCam");
             vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-1.8f, 0.2f, 0.3f), "ExitPoint");
+            vehicle.CreateDefaultHeadlights();
 
             return vehicle;
         }
@@ -190,7 +219,59 @@ namespace ProjectTerra.Sandbox
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(0f, 2.0f, 0.8f), "DriverSeat");
             vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(0f, 2.35f, 1.1f), "CockpitCam");
             vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-2.2f, 0.8f, 0.8f), "ExitPoint");
+            vehicle.CreateDefaultHeadlights();
 
+            return vehicle;
+        }
+
+        public static VehicleController CreateCar(Vector3 position, string modelName = "sedan", string displayName = "Sedan Executivo", VehicleCategory category = VehicleCategory.Car)
+        {
+            var root = new GameObject($"Veiculo_{modelName}");
+            root.transform.position = position;
+
+            var rb = root.GetComponent<Rigidbody>();
+            var col = root.AddComponent<BoxCollider>();
+            col.size = new Vector3(2.1f, 1.7f, 4.6f);
+            col.center = new Vector3(0f, 0.85f, 0f);
+
+            var vehicle = root.AddComponent<VehicleController>();
+            vehicle.category = category;
+            vehicle.vehicleName = displayName;
+            vehicle.maxSpeedKmh = modelName.Contains("race") || modelName.Contains("sports") ? 180f : (modelName.Contains("suv") ? 130f : 140f);
+            vehicle.enginePower = 4400f;
+            vehicle.maxCargoCapacityKg = 500f;
+
+            var meshPrefab = Resources.Load<GameObject>($"Models/Vehicles/{modelName}");
+            if (meshPrefab != null)
+            {
+                var visual = Object.Instantiate(meshPrefab, root.transform);
+                visual.name = $"Visual_{modelName}3D";
+                visual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
+                visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                visual.transform.localScale = Vector3.one * 1.55f;
+            }
+            else
+            {
+                // Corpo procedural de carro
+                var body = CreatePart(root.transform, new Vector3(0f, 0.65f, 0f), new Vector3(1.9f, 0.7f, 4.2f), new Color(0.2f, 0.45f, 0.85f), "Chassi_Carro");
+                var cabin = CreatePart(root.transform, new Vector3(0f, 1.2f, -0.2f), new Vector3(1.6f, 0.65f, 2.2f), new Color(0.15f, 0.18f, 0.22f), "Cabine_Carro");
+            }
+
+            var fWheelL = CreateWheel(root.transform, new Vector3(-0.95f, 0.45f, 1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaDiantEsq");
+            var fWheelR = CreateWheel(root.transform, new Vector3(0.95f, 0.45f, 1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaDiantDir");
+            var rWheelL = CreateWheel(root.transform, new Vector3(-0.95f, 0.45f, -1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaTrasEsq");
+            var rWheelR = CreateWheel(root.transform, new Vector3(0.95f, 0.45f, -1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaTrasDir");
+
+            vehicle.frontLeftWheel = fWheelL.transform;
+            vehicle.frontRightWheel = fWheelR.transform;
+            vehicle.rearLeftWheel = rWheelL.transform;
+            vehicle.rearRightWheel = rWheelR.transform;
+
+            vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(-0.45f, 0.85f, 0f), "DriverSeat");
+            vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(-0.45f, 1.2f, 0.1f), "CockpitCam");
+            vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-1.6f, 0.2f, 0f), "ExitPoint");
+
+            vehicle.CreateDefaultHeadlights();
             return vehicle;
         }
 

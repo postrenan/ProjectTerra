@@ -1,33 +1,80 @@
 using System;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using ProjectTerra.Gameplay;
 
 namespace ProjectTerra.Sandbox
 {
     /// <summary>
-    /// HUD imersivo e moderno da Cena Sandbox Regional:
-    /// Exibe conta bancária, reputação da empresa, objetivos comerciais com distância da rota,
-    /// velocímetro analógico/digital, nível de combustível, capacidade de carga e alertas.
+    /// HUD e Gerenciador de Interface da Cena Sandbox Regional:
+    /// 1. Layout UI/UX limpo e moderno (Status Pill no topo-esquerdo, Bússola 360° no topo-central, Rastreador no topo-direito e Telemetria no canto inferior).
+    /// 2. Atalho [M]: Abre o Mapa Regional Tático GIS interativo com Pan, Zoom, marcadores e criação de waypoints customizados ao clicar.
+    /// 3. Atalho [Alt Esquerdo]: Abre o Menu de Opções / Pausa com Salvar, Retornar ao Globo Terrestre, Salvar e Voltar ao Menu, e Ajustes de Som/Gráficos.
+    /// 4. Atalho [H]: Alterna visibilidade total do HUD para imersão e capturas de tela.
     /// </summary>
-    public class SandboxHUD : MonoBehaviour
+    public partial class SandboxHUD : MonoBehaviour
     {
+        public static SandboxHUD Instance { get; private set; }
+
         private RegionSaveData activeSave;
         private Texture2D whiteTex;
+        private Texture2D regionalMapTex;
 
-        // Estilos GUI
-        private GUIStyle panelBoxStyle;
+        // Estados de Telas
+        public bool IsRegionalMapOpen { get; private set; } = false;
+        public bool IsOptionsMenuOpen { get; private set; } = false;
+        public bool IsHudVisible { get; private set; } = true;
+        public bool ShowCompass { get; private set; } = true;
+        public bool ShowMissionTracker { get; private set; } = true;
+        public bool ShowTelemetry { get; private set; } = true;
+
+        // Waypoint Customizado
+        public Vector3? CustomWaypoint { get; private set; }
+        private GameObject waypointWorldMarker;
+
+        // Controle do Mapa Regional (Pan & Zoom)
+        private float mapZoom = 1.0f;
+        private Vector2 mapPanOffset = Vector2.zero;
+        private bool isDraggingMap = false;
+        private Vector2 dragStartMouse;
+        private Vector2 dragStartPan;
+        private Rect lastMapRect;
+
+        // Submenu de Configurações no Menu Alt
+        private bool isSettingsSubmenuOpen = false;
+        private string saveToastMessage = "";
+        private float saveToastTimer = 0f;
+
+        // Time Warp
+        private readonly int[] timeWarpPresets = { 1, 2, 4, 8, 16 };
+        private int currentTimeWarpIdx = 0;
+        private float previousTimeScale = 1.0f;
+
+        // GUIStyles
+        private GUIStyle pillStyle;
         private GUIStyle titleStyle;
         private GUIStyle moneyStyle;
         private GUIStyle subtitleStyle;
-        private GUIStyle badgeStyle;
+        private GUIStyle timeWarpStyle;
+        private GUIStyle missionCardStyle;
         private GUIStyle missionTitleStyle;
         private GUIStyle missionDescStyle;
+        private GUIStyle telemetryBoxStyle;
         private GUIStyle speedValueStyle;
         private GUIStyle speedUnitStyle;
         private GUIStyle hintBoxStyle;
-        private GUIStyle successBannerStyle;
+        private GUIStyle compassLabelStyle;
+        private GUIStyle modalBoxStyle;
+        private GUIStyle modalTitleStyle;
+        private GUIStyle menuButtonStyle;
+        private GUIStyle menuButtonPrimaryStyle;
+        private GUIStyle menuButtonDangerStyle;
+        private GUIStyle toastStyle;
         private bool stylesReady = false;
+
+        private void Awake()
+        {
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -39,29 +86,71 @@ namespace ProjectTerra.Sandbox
             {
                 activeSave = SaveManager.Instance.ActiveSave;
             }
-        }
 
-        private readonly int[] timeWarpPresets = { 1, 2, 4, 8, 16 };
-        private int currentTimeWarpIdx = 0;
+            GenerateRegionalMapTexture();
+        }
 
         private void Update()
         {
-            // Atalho de teclado [M] para retornar ao Globo Terrestre
-            if (Input.GetKeyDown(KeyCode.M))
+            HandleKeyInputs();
+
+            if (saveToastTimer > 0f)
             {
-                ReturnToGlobe();
+                saveToastTimer -= Time.unscaledDeltaTime;
+                if (saveToastTimer <= 0f) saveToastMessage = "";
             }
 
-            // Atalhos para aceleração de tempo [ e ]
-            if (Input.GetKeyDown(KeyCode.RightBracket) || Input.GetKeyDown(KeyCode.Period))
+            UpdateWaypointVisualMarker();
+        }
+
+        private void HandleKeyInputs()
+        {
+            // Não processa atalhos do HUD se o console de comandos estiver aberto digitando
+            if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpen)
             {
-                SetTimeWarp(currentTimeWarpIdx + 1);
+                return;
             }
-            else if (Input.GetKeyDown(KeyCode.LeftBracket) || Input.GetKeyDown(KeyCode.Comma))
+
+            // Atalho [M]: Abre/Fecha o Mapa Regional Tático
+            if (Input.GetKeyDown(KeyCode.M))
             {
-                SetTimeWarp(currentTimeWarpIdx - 1);
+                if (IsOptionsMenuOpen)
+                {
+                    CloseOptionsMenu();
+                }
+                ToggleRegionalMap();
+            }
+
+            // Atalho [Alt Esquerdo]: Abre/Fecha o Menu de Opções do Jogo
+            if (Input.GetKeyDown(KeyCode.LeftAlt) || (Input.GetKeyDown(KeyCode.Escape) && !IsRegionalMapOpen))
+            {
+                ToggleOptionsMenu();
+            }
+            else if (Input.GetKeyDown(KeyCode.Escape) && IsRegionalMapOpen)
+            {
+                CloseRegionalMap();
+            }
+
+            // Atalho [H]: Alterna visibilidade do HUD
+            if (Input.GetKeyDown(KeyCode.H))
+            {
+                IsHudVisible = !IsHudVisible;
+            }
+
+            // Time Warp via [ e ] ou , e . (Apenas se não estiver no menu de pausa)
+            if (!IsOptionsMenuOpen)
+            {
+                if (Input.GetKeyDown(KeyCode.RightBracket) || Input.GetKeyDown(KeyCode.Period))
+                {
+                    SetTimeWarp(currentTimeWarpIdx + 1);
+                }
+                else if (Input.GetKeyDown(KeyCode.LeftBracket) || Input.GetKeyDown(KeyCode.Comma))
+                {
+                    SetTimeWarp(currentTimeWarpIdx - 1);
+                }
             }
         }
+
 
         public void SetTimeWarp(int newIdx)
         {
@@ -69,366 +158,58 @@ namespace ProjectTerra.Sandbox
             int multiplier = timeWarpPresets[currentTimeWarpIdx];
             Time.timeScale = multiplier;
             Time.fixedDeltaTime = 0.02f * multiplier;
+            previousTimeScale = Time.timeScale;
             Debug.Log($"[TimeWarp] Simulação acelerada: {multiplier}x");
         }
 
-        public void ReturnToGlobe()
+        private void RestoreGameplayCursor()
         {
-            Time.timeScale = 1.0f;
-            Time.fixedDeltaTime = 0.02f;
-
-            // Salva antes de sair
-            if (SaveManager.Instance != null && SaveManager.Instance.ActiveSave != null)
+            if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpen)
             {
-                SaveManager.Instance.SaveToFile(SaveManager.Instance.ActiveSave);
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+                return;
             }
-            SceneManager.LoadScene("MainEarthScene");
-        }
 
-        private void InitStyles()
-        {
-            if (stylesReady) return;
-
-            panelBoxStyle = new GUIStyle(GUI.skin.box);
-            panelBoxStyle.normal.background = whiteTex;
-
-            titleStyle = new GUIStyle(GUI.skin.label)
+            if (!IsRegionalMapOpen && !IsOptionsMenuOpen)
             {
-                fontSize = 17,
-                fontStyle = FontStyle.Bold
-            };
-            titleStyle.normal.textColor = Color.white;
-
-            moneyStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 19,
-                fontStyle = FontStyle.Bold
-            };
-            moneyStyle.normal.textColor = new Color(0.3f, 1f, 0.45f);
-
-            subtitleStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 12,
-                fontStyle = FontStyle.Normal
-            };
-            subtitleStyle.normal.textColor = new Color(0.7f, 0.85f, 1f);
-
-            badgeStyle = new GUIStyle(GUI.skin.box)
-            {
-                fontSize = 12,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
-            };
-            badgeStyle.normal.background = whiteTex;
-            badgeStyle.normal.textColor = Color.white;
-
-            missionTitleStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 15,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleLeft
-            };
-            missionTitleStyle.normal.textColor = new Color(1f, 0.9f, 0.35f);
-
-            missionDescStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 12,
-                fontStyle = FontStyle.Normal,
-                wordWrap = true
-            };
-            missionDescStyle.normal.textColor = new Color(0.9f, 0.95f, 1f);
-
-            speedValueStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 32,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleRight
-            };
-            speedValueStyle.normal.textColor = Color.white;
-
-            speedUnitStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 12,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.LowerLeft
-            };
-            speedUnitStyle.normal.textColor = new Color(0.6f, 0.8f, 1f);
-
-            hintBoxStyle = new GUIStyle(GUI.skin.box)
-            {
-                fontSize = 14,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
-            };
-            hintBoxStyle.normal.background = whiteTex;
-            hintBoxStyle.normal.textColor = Color.white;
-
-            successBannerStyle = new GUIStyle(GUI.skin.box)
-            {
-                fontSize = 18,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
-            };
-            successBannerStyle.normal.background = whiteTex;
-            successBannerStyle.normal.textColor = new Color(0.2f, 1f, 0.3f);
-
-            stylesReady = true;
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
 
         private void OnGUI()
         {
             InitStyles();
 
-            DrawTopLeftStatusPanel();
-            DrawMissionObjectiveTracker();
-            DrawVehicleTelemetry();
-            DrawContextualInteractionHints();
-            DrawSuccessBanner();
-        }
-
-        private void DrawTopLeftStatusPanel()
-        {
-            if (activeSave == null && SaveManager.Instance != null)
+            // 1. Menu de Opções [Alt Esquerdo] (Sobrepõe tudo se aberto)
+            if (IsOptionsMenuOpen)
             {
-                activeSave = SaveManager.Instance.ActiveSave;
-            }
-
-            float w = 410f;
-            float h = 120f;
-            Rect rect = new Rect(20f, 20f, w, h);
-
-            // Fundo escuro com borda azul ciano
-            GUI.color = new Color(0.04f, 0.08f, 0.16f, 0.92f);
-            GUI.DrawTexture(rect, whiteTex);
-            GUI.color = new Color(0.25f, 0.65f, 1.0f, 0.8f);
-            GUI.DrawTexture(new Rect(20f, 20f, w, 2), whiteTex);
-            GUI.color = Color.white;
-
-            GUILayout.BeginArea(new Rect(30f, 25f, w - 20f, h - 10f));
-
-            // Linha 1: Região e País + Dimensões 1:1 + Botão Globo
-            GUILayout.BeginHorizontal();
-            string regName = activeSave != null ? activeSave.regionName : "Região Sandbox";
-            string country = activeSave != null ? activeSave.countryName : "Mundo";
-            GUILayout.Label($"🌍 {regName}, {country}", titleStyle);
-
-            GUI.color = new Color(0.85f, 0.92f, 1f);
-            if (GUILayout.Button("🌐 Globo [M]", GUILayout.Width(85), GUILayout.Height(22)))
-            {
-                ReturnToGlobe();
-            }
-            GUI.color = Color.white;
-            GUILayout.EndHorizontal();
-
-            // Linha 2: Dimensões Reais 1:1 do Território
-            float wKm = RegionalSandboxManager.Instance != null ? RegionalSandboxManager.Instance.worldWidthMeters / 1000f : 60f;
-            float lKm = RegionalSandboxManager.Instance != null ? RegionalSandboxManager.Instance.worldLengthMeters / 1000f : 80f;
-            int area = RegionalSandboxManager.Instance != null ? RegionalSandboxManager.Instance.realAreaKm2 : 4800;
-            GUI.color = new Color(0.35f, 0.9f, 1.0f);
-            GUILayout.Label($"📏 Escala Real 1:1: {wKm:F0} km × {lKm:F0} km  •  Área: {area:N0} km²", subtitleStyle);
-            GUI.color = Color.white;
-
-            // Linha 3: Carreira & Reputação
-            string careerLabel = GetCareerBadge();
-            int rep = activeSave != null ? activeSave.reputation : 100;
-            int deliveries = activeSave != null ? activeSave.completedDeliveries : 0;
-            GUILayout.Label($"{careerLabel}  •  ⭐ Reputação: {rep}  •  📦 Entregas: {deliveries}", subtitleStyle);
-
-            // Linha 4: Saldo Bancário e Controle de Time Warp
-            GUILayout.BeginHorizontal();
-            string money = activeSave != null ? activeSave.GetFormattedMoney() : "$500,000";
-            GUILayout.Label($"Conta: {money}", moneyStyle);
-            GUILayout.FlexibleSpace();
-
-            // Botões de Time Warp
-            int curMultiplier = timeWarpPresets[currentTimeWarpIdx];
-            GUI.color = curMultiplier > 1 ? new Color(1f, 0.85f, 0.2f) : Color.white;
-            if (GUILayout.Button("◀", GUILayout.Width(24), GUILayout.Height(20)))
-            {
-                SetTimeWarp(currentTimeWarpIdx - 1);
-            }
-            GUILayout.Label($"⏩ {curMultiplier}x", subtitleStyle, GUILayout.Width(45));
-            if (GUILayout.Button("▶", GUILayout.Width(24), GUILayout.Height(20)))
-            {
-                SetTimeWarp(currentTimeWarpIdx + 1);
-            }
-            GUI.color = Color.white;
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndArea();
-        }
-
-        private string GetCareerBadge()
-        {
-            if (activeSave == null) return "🌾 Agricultor";
-            switch (activeSave.starterCareer)
-            {
-                case StarterCareer.Farmer: return "🌾 Agricultor";
-                case StarterCareer.Trucker: return "🚛 Motorista";
-                case StarterCareer.Aviator: return "🛩️ Aviador";
-                case StarterCareer.Fisherman: return "🎣 Pescador";
-                default: return "🌾 Produtor";
-            }
-        }
-
-        private void DrawMissionObjectiveTracker()
-        {
-            if (MissionManager.Instance == null || !MissionManager.Instance.hasActiveContract || MissionManager.Instance.currentContract == null)
+                DrawLeftAltOptionsMenu();
+                DrawToastNotification();
                 return;
-
-            var contract = MissionManager.Instance.currentContract;
-            if (contract.isCompleted) return;
-
-            float w = 480f;
-            float h = 85f;
-            Rect rect = new Rect((Screen.width - w) * 0.5f, 20f, w, h);
-
-            // Fundo escuro com borda dourada
-            GUI.color = new Color(0.06f, 0.08f, 0.12f, 0.90f);
-            GUI.DrawTexture(rect, whiteTex);
-            GUI.color = new Color(1f, 0.8f, 0.2f, 0.85f);
-            GUI.DrawTexture(new Rect(rect.x, rect.y, w, 2), whiteTex);
-            GUI.color = Color.white;
-
-            GUILayout.BeginArea(new Rect(rect.x + 15f, rect.y + 8f, w - 30f, h - 16f));
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(contract.title, missionTitleStyle);
-            GUILayout.FlexibleSpace();
-            GUILayout.Label($"Recompensa: +${contract.rewardMoney:N0}", moneyStyle);
-            GUILayout.EndHorizontal();
-
-            float dist = MissionManager.Instance.GetDistanceToDestination();
-            string distText = dist > 1000f ? $"{(dist / 1000f):F1} km" : $"{dist:F0} m";
-
-            GUILayout.Label($"📍 Destino: {contract.destinationName} ({distText})  •  Carga: {contract.cargoType} ({contract.cargoWeightKg:N0} kg)", subtitleStyle);
-            GUILayout.Label(contract.description, missionDescStyle);
-
-            GUILayout.EndArea();
-        }
-
-        private void DrawVehicleTelemetry()
-        {
-            var player = PlayerCharacterController.Instance;
-            if (player == null || !player.isDriving || player.currentVehicle == null) return;
-
-            var vehicle = player.currentVehicle;
-
-            float w = 260f;
-            float h = 135f;
-            Rect rect = new Rect(Screen.width - w - 25f, Screen.height - h - 25f, w, h);
-
-            GUI.color = new Color(0.04f, 0.07f, 0.14f, 0.92f);
-            GUI.DrawTexture(rect, whiteTex);
-            GUI.color = new Color(0.2f, 0.7f, 1f, 0.85f);
-            GUI.DrawTexture(new Rect(rect.x, rect.y, w, 2), whiteTex);
-            GUI.color = Color.white;
-
-            GUILayout.BeginArea(new Rect(rect.x + 15f, rect.y + 10f, w - 30f, h - 20f));
-
-            // Nome do Veículo
-            GUILayout.Label(vehicle.vehicleName, subtitleStyle);
-
-            // Velocímetro
-            GUILayout.BeginHorizontal();
-            string unit = vehicle.category == VehicleCategory.Boat ? "NÓS" : "KM/H";
-            float speedDisplay = vehicle.category == VehicleCategory.Boat ? vehicle.currentSpeedKmh * 0.54f : vehicle.currentSpeedKmh;
-            GUILayout.Label($"{speedDisplay:F0}", speedValueStyle, GUILayout.Width(75));
-            GUILayout.Label(unit, speedUnitStyle, GUILayout.Height(30));
-            GUILayout.EndHorizontal();
-
-            // Barra de Combustível
-            DrawBar("⛽ Tanque:", vehicle.fuelPercent, 100f, new Color(0.95f, 0.65f, 0.15f));
-
-            // Barra de Carga
-            DrawBar($"📦 Carga ({vehicle.cargoItemName}):", vehicle.cargoFillPercent, 100f, new Color(0.35f, 0.85f, 0.45f));
-
-            GUILayout.EndArea();
-        }
-
-        private void DrawBar(string label, float current, float max, Color barColor)
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(label, subtitleStyle, GUILayout.Width(130));
-            GUILayout.Label($"{current:F0}%", subtitleStyle, GUILayout.Width(35));
-            GUILayout.EndHorizontal();
-
-            Rect barBg = GUILayoutUtility.GetRect(180, 5);
-            GUI.color = new Color(0.2f, 0.2f, 0.25f, 0.8f);
-            GUI.DrawTexture(barBg, whiteTex);
-
-            float fillWidth = (current / max) * barBg.width;
-            GUI.color = barColor;
-            GUI.DrawTexture(new Rect(barBg.x, barBg.y, fillWidth, barBg.height), whiteTex);
-            GUI.color = Color.white;
-            GUILayout.Space(2);
-        }
-
-        private void DrawContextualInteractionHints()
-        {
-            var player = PlayerCharacterController.Instance;
-            if (player == null) return;
-
-            string hintText = "";
-            Color borderColor = new Color(0.2f, 0.7f, 1f, 0.8f);
-
-            if (player.isDriving)
-            {
-                string camModeStr = player.vehicleCameraMode == VehicleCameraMode.FirstPerson ? "1ª Pessoa (Cockpit)" : "3ª Pessoa (Externa)";
-                // Se chegou ao ponto de entrega da missão
-                if (MissionManager.Instance != null && MissionManager.Instance.GetDistanceToDestination() <= MissionManager.Instance.deliveryRadius)
-                {
-                    hintText = $"✅ [F/ENTER] Descarregar  •  [V/C] Câmera: {camModeStr}  •  [E] Sair";
-                    borderColor = new Color(0.3f, 1f, 0.4f);
-                }
-                else
-                {
-                    hintText = $"[WASD] Conduzir  •  [V/C] Câmera: {camModeStr}  •  [E] Sair";
-                }
-            }
-            else if (player.nearbyVehicle != null)
-            {
-                hintText = $"🔑 [E] Embarcar no {player.nearbyVehicle.vehicleName}  •  Câmera: 1ª Pessoa";
-                borderColor = new Color(1f, 0.85f, 0.2f);
-            }
-            else
-            {
-                hintText = "[WASD] Mover  •  [SHIFT] Correr  •  [ESPAÇO] Pular  •  Câmera: 1ª Pessoa";
-                borderColor = new Color(0.2f, 0.65f, 0.95f, 0.75f);
             }
 
-            if (!string.IsNullOrEmpty(hintText))
+            // 2. Mapa Regional Tático GIS [M]
+            if (IsRegionalMapOpen)
             {
-                float w = 580f;
-                float h = 34f;
-                Rect rect = new Rect((Screen.width - w) * 0.5f, Screen.height - h - 35f, w, h);
-
-                GUI.color = new Color(0.04f, 0.08f, 0.16f, 0.94f);
-                GUI.DrawTexture(rect, whiteTex);
-                GUI.color = borderColor;
-                GUI.DrawTexture(new Rect(rect.x, rect.y, w, 2), whiteTex);
-                GUI.color = Color.white;
-
-                GUI.Label(rect, hintText, hintBoxStyle);
+                DrawInteractiveRegionalMap();
+                DrawToastNotification();
+                return;
             }
-        }
 
-        private void DrawSuccessBanner()
-        {
-            if (MissionManager.Instance == null || MissionManager.Instance.completionBannerTimer <= 0f) return;
+            // 3. HUD In-Game Moderno (se visível via [H])
+            if (IsHudVisible)
+            {
+                DrawTopLeftStatusPill();
+                if (ShowCompass) DrawTopCompassTape();
+                if (ShowMissionTracker) DrawTopRightMissionCard();
+                if (ShowTelemetry) DrawVehicleTelemetry();
+                DrawContextualHints();
+                DrawSubtleKeyShortcuts();
+            }
 
-            float w = 550f;
-            float h = 75f;
-            Rect rect = new Rect((Screen.width - w) * 0.5f, Screen.height * 0.35f, w, h);
-
-            GUI.color = new Color(0.05f, 0.25f, 0.12f, 0.95f);
-            GUI.DrawTexture(rect, whiteTex);
-            GUI.color = new Color(0.3f, 1f, 0.4f);
-            GUI.DrawTexture(new Rect(rect.x, rect.y, w, 3), whiteTex);
-            GUI.DrawTexture(new Rect(rect.x, rect.y + h - 3, w, 3), whiteTex);
-            GUI.color = Color.white;
-
-            GUI.Label(rect, MissionManager.Instance.completionBannerMessage, successBannerStyle);
+            DrawToastNotification();
         }
     }
 }

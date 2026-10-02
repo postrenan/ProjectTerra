@@ -35,6 +35,8 @@ namespace ProjectTerra.Sandbox
         public Transform deliveryPointTrigger;
         public float deliveryRadius = 8.0f;
 
+        public Vector3 deliveryTargetPosition => (currentContract != null) ? currentContract.deliveryLocation : (deliveryPointTrigger != null ? deliveryPointTrigger.position : Vector3.zero);
+
         // Feedback de Sucesso
         public string completionBannerMessage = "";
         public float completionBannerTimer = 0f;

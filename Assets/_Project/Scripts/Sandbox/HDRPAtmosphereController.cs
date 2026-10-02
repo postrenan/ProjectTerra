@@ -12,7 +12,7 @@ namespace ProjectTerra.Sandbox
     /// e Calibração Solar em Lux e Temperatura Kelvin.
     /// </summary>
     [RequireComponent(typeof(Volume))]
-    public class HDRPAtmosphereController : MonoBehaviour
+    public partial class HDRPAtmosphereController : MonoBehaviour
     {
         public static HDRPAtmosphereController Instance { get; private set; }
 
@@ -30,6 +30,11 @@ namespace ProjectTerra.Sandbox
         public bool enableVolumetricFog = true;
         public float fogDistance = 1800f;
 
+        [Header("Ciclo Horário Dia/Noite")]
+        [Range(0f, 24f)] public float timeOfDay = 12.0f; // Meio-dia por padrão
+        public bool autoCycleTime = false;
+        public float dayCycleDurationMinutes = 20.0f; // 20 minutos de tempo real para 24h in-game
+
         private Volume volume;
         private VolumeProfile profile;
 
@@ -42,6 +47,23 @@ namespace ProjectTerra.Sandbox
 
             ConfigureHDRPProfile();
             ConfigureSunLight();
+            UpdateTimeOfDay(timeOfDay);
+        }
+
+        private void Update()
+        {
+            if (autoCycleTime && Application.isPlaying)
+            {
+                float hoursPerSecond = 24.0f / (dayCycleDurationMinutes * 60.0f);
+                timeOfDay = Mathf.Repeat(timeOfDay + hoursPerSecond * Time.deltaTime, 24.0f);
+                UpdateTimeOfDay(timeOfDay);
+            }
+        }
+
+        private bool IsHDRPActive()
+        {
+            var rp = GraphicsSettings.currentRenderPipeline;
+            return rp != null && rp.GetType().Name.Contains("HD");
         }
 
         private void ConfigureSunLight()
@@ -58,29 +80,59 @@ namespace ProjectTerra.Sandbox
             if (sunLight != null)
             {
                 sunLight.type = LightType.Directional;
-                sunLight.intensity = sunIntensityLux;
                 sunLight.colorTemperature = sunColorKelvin;
                 sunLight.useColorTemperature = true;
                 sunLight.shadows = LightShadows.Soft;
 
-                var hdLight = sunLight.GetComponent<HDAdditionalLightData>();
-                if (hdLight == null)
+                if (IsHDRPActive())
                 {
-                    hdLight = sunLight.gameObject.AddComponent<HDAdditionalLightData>();
-                }
+                    sunLight.intensity = sunIntensityLux;
 
-                if (hdLight != null)
+                    var hdLight = sunLight.GetComponent<HDAdditionalLightData>();
+                    if (hdLight == null)
+                    {
+                        hdLight = sunLight.gameObject.AddComponent<HDAdditionalLightData>();
+                    }
+
+                    if (hdLight != null)
+                    {
+                        hdLight.EnableColorTemperature(true);
+                        hdLight.SetColor(Color.white, sunColorKelvin);
+                        hdLight.volumetricDimmer = 1.0f;
+                    }
+                }
+                else
                 {
-                    hdLight.intensity = sunIntensityLux;
-                    hdLight.EnableColorTemperature(true);
-                    hdLight.SetColor(Color.white, sunColorKelvin);
-                    hdLight.volumetricDimmer = 1.0f;
+                    // No Built-in Render Pipeline, intensidades de 100k lux causam tela 100% branca estourada.
+                    // Usamos intensidade padrão fotométrica balanceada para iluminação solar direta.
+                    sunLight.intensity = 1.35f;
+                    sunLight.color = new Color(1.0f, 0.96f, 0.90f);
+                    sunLight.shadowStrength = 0.85f;
                 }
             }
         }
 
         private void ConfigureHDRPProfile()
         {
+            if (!IsHDRPActive())
+            {
+                // Configuração balanceada AAA para Built-in Render Pipeline
+                RenderSettings.ambientMode = AmbientMode.Trilight;
+                RenderSettings.ambientSkyColor = new Color(0.68f, 0.78f, 0.90f);
+                RenderSettings.ambientEquatorColor = new Color(0.50f, 0.54f, 0.58f);
+                RenderSettings.ambientGroundColor = new Color(0.28f, 0.30f, 0.25f);
+                RenderSettings.ambientIntensity = 1.15f;
+
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.Linear;
+                RenderSettings.fogStartDistance = 5000f;
+                RenderSettings.fogEndDistance = 60000f;
+                RenderSettings.fogColor = new Color(0.68f, 0.80f, 0.92f);
+
+                Debug.Log("[HDRPAtmosphere] Pipeline Built-in detectado: Iluminação solar e atmosfera balanceadas configuradas.");
+                return;
+            }
+
             profile = ScriptableObject.CreateInstance<VolumeProfile>();
             volume.profile = profile;
 
