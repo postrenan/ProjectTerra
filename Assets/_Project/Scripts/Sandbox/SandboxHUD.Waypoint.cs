@@ -35,7 +35,11 @@ namespace ProjectTerra.Sandbox
                     var rend = waypointWorldMarker.GetComponent<Renderer>();
                     if (rend != null)
                     {
-                        rend.material.color = new Color(0.9f, 0.2f, 1.0f, 0.8f);
+                        // NUNCA usar rend.material.color em primitivos: no Built-in Pipeline com o
+                        // pacote HDRP instalado, o Default-Material herdado é um shader HDRP que não
+                        // renderiza sob o Built-in, deixando o objeto branco. Criamos um material
+                        // Standard explícito via o helper central (mesmo padrão dos demais spawners).
+                        rend.sharedMaterial = RegionalSandboxManager.CreateSolidMaterial(new Color(0.9f, 0.2f, 1.0f, 0.8f));
                     }
                 }
                 waypointWorldMarker.transform.position = CustomWaypoint.Value + Vector3.up * 75f;

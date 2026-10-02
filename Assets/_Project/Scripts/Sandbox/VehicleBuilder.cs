@@ -37,6 +37,7 @@ namespace ProjectTerra.Sandbox
                 visual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
                 visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
                 visual.transform.localScale = Vector3.one * 1.6f;
+                ApplyVehicleColormap(visual);
             }
             else
             {
@@ -98,6 +99,7 @@ namespace ProjectTerra.Sandbox
                 visual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
                 visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
                 visual.transform.localScale = Vector3.one * 1.8f;
+                ApplyVehicleColormap(visual);
             }
             else
             {
@@ -249,6 +251,7 @@ namespace ProjectTerra.Sandbox
                 visual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
                 visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
                 visual.transform.localScale = Vector3.one * 1.55f;
+                ApplyVehicleColormap(visual);
             }
             else
             {
@@ -275,6 +278,35 @@ namespace ProjectTerra.Sandbox
             return vehicle;
         }
 
+        /// <summary>
+        /// Aplica a textura de paleta colormap.png original da coleção Kenney em todos os MeshRenderers
+        /// do veículo instanciado, garantindo cores reais de fábrica com sombreamento Standard.
+        /// </summary>
+        private static void ApplyVehicleColormap(GameObject visual)
+        {
+            if (visual == null) return;
+            var colormap = Resources.Load<Texture2D>("Models/Vehicles/Textures/colormap");
+            if (colormap == null)
+            {
+                colormap = Resources.Load<Texture2D>("Textures/colormap") 
+                        ?? Resources.Load<Texture2D>("colormap");
+            }
+
+            if (colormap != null)
+            {
+                Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Texture");
+                var mat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
+                mat.name = "Vehicle_Colormap_Material";
+                mat.mainTexture = colormap;
+                mat.color = Color.white;
+
+                foreach (var mr in visual.GetComponentsInChildren<Renderer>(true))
+                {
+                    mr.sharedMaterial = mat;
+                }
+            }
+        }
+
         private static GameObject CreatePart(Transform parent, Vector3 localPos, Vector3 scale, Color color, string name)
         {
             var part = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -282,7 +314,13 @@ namespace ProjectTerra.Sandbox
             part.transform.SetParent(parent);
             part.transform.localPosition = localPos;
             part.transform.localScale = scale;
-            part.GetComponent<Renderer>().material.color = color;
+            var rend = part.GetComponent<Renderer>();
+            Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Color");
+            var mat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
+            mat.color = color;
+            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.2f);
+            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.1f);
+            rend.sharedMaterial = mat;
             Object.Destroy(part.GetComponent<Collider>());
             return part;
         }
@@ -295,8 +333,29 @@ namespace ProjectTerra.Sandbox
             wheel.transform.localPosition = localPos;
             wheel.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
             wheel.transform.localScale = scale;
-            wheel.GetComponent<Renderer>().material.color = new Color(0.12f, 0.12f, 0.12f);
+            var rend = wheel.GetComponent<Renderer>();
+            Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Color");
+            var mat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
+            mat.color = new Color(0.12f, 0.12f, 0.13f); // Pneu de borracha escura
+            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.08f);
+            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.0f);
+            rend.sharedMaterial = mat;
             Object.Destroy(wheel.GetComponent<Collider>());
+
+            // Aro metálico interno
+            var rim = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            rim.name = $"{name}_Aro";
+            rim.transform.SetParent(wheel.transform);
+            rim.transform.localPosition = Vector3.zero;
+            rim.transform.localRotation = Quaternion.identity;
+            rim.transform.localScale = new Vector3(0.55f, 1.02f, 0.55f);
+            var rimMat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
+            rimMat.color = new Color(0.78f, 0.80f, 0.83f);
+            if (rimMat.HasProperty("_Glossiness")) rimMat.SetFloat("_Glossiness", 0.45f);
+            if (rimMat.HasProperty("_Metallic")) rimMat.SetFloat("_Metallic", 0.8f);
+            rim.GetComponent<Renderer>().sharedMaterial = rimMat;
+            Object.Destroy(rim.GetComponent<Collider>());
+
             return wheel;
         }
 

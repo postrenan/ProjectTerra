@@ -169,11 +169,15 @@ Shader "ProjectTerra/EarthSurface"
                     dayColor.rgb = lerp(dayColor.rgb, detailedLand, (1.0 - isWater) * mesoFactor);
                 }
 
-                // Cálculo do vetor normal mundial com base em tangentes
-                half3 worldNorm = normalize(i.worldNormal + normalMap.x * float3(1,0,0) + normalMap.y * float3(0,1,0));
+                // Cálculo do vetor normal em espaço mundial com base nas tangentes reais da esfera
+                half3 worldTangent = i.tangent.xyz;
+                half3 worldBinormal = cross(i.worldNormal, worldTangent) * i.tangent.w;
+                half3 worldNorm = normalize(normalMap.x * worldTangent + normalMap.y * worldBinormal + normalMap.z * i.worldNormal);
 
-                // Iluminação solar direcional
-                half3 lightDir = normalize(_WorldSpaceLightPos0.xyz);
+                // Iluminação solar direcional protegida contra vetor nulo
+                half3 lightDir = length(_WorldSpaceLightPos0.xyz) > 0.001 
+                               ? normalize(_WorldSpaceLightPos0.xyz) 
+                               : normalize(float3(0.5, 0.8, 0.3));
                 half ndotl = max(0.0, dot(worldNorm, lightDir));
 
                 // Reflexo especular (Sun glint nos oceanos)

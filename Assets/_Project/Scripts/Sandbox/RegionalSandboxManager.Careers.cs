@@ -12,6 +12,10 @@ namespace ProjectTerra.Sandbox
         {
             StarterCareer career = activeSave.starterCareer;
 
+            // Validação geográfica da carreira: algumas carreiras exigem características regionais específicas.
+            // Se a região não suporta a carreira escolhida, faz fallback com aviso claro no console.
+            career = ValidateCareerForRegion(career);
+
             switch (career)
             {
                 case StarterCareer.Farmer:
@@ -27,6 +31,32 @@ namespace ProjectTerra.Sandbox
                     BuildFishermanBase();
                     break;
             }
+        }
+
+        /// <summary>
+        /// Valida se a carreira escolhida é compatível com a região atual.
+        /// Retorna a carreira original se for compatível, ou uma carreira alternativa com aviso.
+        /// </summary>
+        private StarterCareer ValidateCareerForRegion(StarterCareer career)
+        {
+            if (career != StarterCareer.Fisherman) return career;
+
+            var infra = RegionInfrastructureDatabase.GetInfrastructure(activeSave.regionId);
+            bool hasCoast  = (infra != null && infra.hasCoastline) || (activeHydroData != null && activeHydroData.isCoastal);
+            bool hasWater  = (infra != null && (infra.hasRivers || infra.hasLakes)) || activeSave.waterPercent > 5;
+
+            if (!hasCoast && !hasWater)
+            {
+                // Região sem qualquer corpo d'água — Pescador não tem sentido aqui.
+                // Exemplos de regiões problemáticas: Saara (Algeria, Líbia), Gobi, interior do Namibe,
+                // platôs do Tibet, desertos da Arábia central.
+                Debug.LogWarning($"[RegionalSandbox] AVISO DE CARREIRA: '{activeSave.regionName}' não possui litoral, rios ou lagos. " +
+                                 $"A carreira 'Pescador' foi substituída por 'Caminhoneiro' para esta região árida/continental. " +
+                                 $"Altere a carreira inicial do save para evitar este fallback.");
+                return StarterCareer.Trucker;
+            }
+
+            return career;
         }
 
         private void BuildFarmerBase()
@@ -46,14 +76,29 @@ namespace ProjectTerra.Sandbox
             CreateBuilding(farmRoot.transform, starterBasePosition + new Vector3(-35f, 0f, 35f), new Vector3(24f, 9f, 20f), new Color(0.85f, 0.75f, 0.65f), $"🏡 {farmTitle}");
             CreateBuilding(farmRoot.transform, starterBasePosition + new Vector3(35f, 0f, 40f), new Vector3(36f, 14f, 26f), new Color(0.72f, 0.22f, 0.18f), "🚜 Galpão de Tratores e Colheitadeiras");
 
-            // Lavoura agrícola de 800m x 600m
-            var cropField = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            cropField.name = "Lavoura_Safra_EscalaReal";
-            cropField.transform.SetParent(farmRoot.transform);
-            float hField = GetTerrainHeight(starterBasePosition + new Vector3(0f, 0f, -400f));
-            cropField.transform.position = new Vector3(starterBasePosition.x, hField + 0.12f, starterBasePosition.z - 400f);
-            cropField.transform.localScale = new Vector3(80f, 1f, 60f); // 800m x 600m
-            cropField.GetComponent<Renderer>().material.color = isHighland ? new Color(0.55f, 0.42f, 0.22f) : new Color(0.48f, 0.38f, 0.18f);
+            // A textura de solo arado, sulcos e talhões agrícolas já é gerada
+            // organicamente na malha do terreno via splatmap (camada Solo Arado).
+            // Colocar um PrimitiveType.Plane plano de 800m sobre montanhas onduladas causava
+            // Z-fighting estroboscópico preto/branco com o terreno.
+            // Em vez disso, marcamos os limites rurais da fazenda com mourões perimetrais:
+            Vector3[] fencePosts = new Vector3[] {
+                new Vector3(-400f, 0f, -100f),
+                new Vector3(400f, 0f, -100f),
+                new Vector3(-400f, 0f, -700f),
+                new Vector3(400f, 0f, -700f)
+            };
+            for (int p = 0; p < fencePosts.Length; p++)
+            {
+                Vector3 postPos = starterBasePosition + fencePosts[p];
+                postPos.y = GetTerrainHeight(postPos) + 1.5f;
+                var post = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                post.name = $"Marco_Perimetro_Lavoura_{p + 1}";
+                post.transform.SetParent(farmRoot.transform);
+                post.transform.position = postPos;
+                post.transform.localScale = new Vector3(0.5f, 1.5f, 0.5f);
+                post.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(new Color(0.85f, 0.45f, 0.15f));
+                Destroy(post.GetComponent<Collider>());
+            }
 
             Vector3 tratorPos = starterBasePosition + new Vector3(10f, 0f, 10f);
             tratorPos.y = GetTerrainHeight(tratorPos) + 0.8f;
@@ -119,7 +164,7 @@ namespace ProjectTerra.Sandbox
             float pierY = Mathf.Max(0.8f, starterBasePosition.y);
             pier.transform.position = new Vector3(waterX, pierY, waterZ - 75f);
             pier.transform.localScale = new Vector3(25f, 1.2f, 180f);
-            pier.GetComponent<Renderer>().material.color = new Color(0.48f, 0.35f, 0.25f);
+            pier.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(new Color(0.48f, 0.35f, 0.25f));
 
             CreateBuilding(pierRoot.transform, starterBasePosition + new Vector3(40f, 0f, 25f), new Vector3(36f, 11f, 28f), new Color(0.45f, 0.65f, 0.75f), $"🐟 {portTitle} & Mercado de Pescados");
 

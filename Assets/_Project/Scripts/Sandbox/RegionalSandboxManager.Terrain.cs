@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 using ProjectTerra.Gameplay;
 using ProjectTerra.Planet;
 using ProjectTerra.Planet.TerrainStreaming;
@@ -17,22 +18,35 @@ namespace ProjectTerra.Sandbox
 
             if (activeHydroData != null && activeHydroData.realWidthMeters > 5000)
             {
+                // Território padrão: usa dimensões reais 1:1 do heightmap
                 territoryWidthMeters = activeHydroData.realWidthMeters;
                 territoryLengthMeters = activeHydroData.realLengthMeters;
                 realAreaKm2 = activeHydroData.realAreaKm2 > 0 ? activeHydroData.realAreaKm2 : (int)((territoryWidthMeters * territoryLengthMeters) / 1000000f);
             }
+            else if (activeHydroData != null && activeHydroData.realWidthMeters > 0)
+            {
+                // Micro-ilha / território minúsculo (≤ 5 km): usa dimensões reais sem impor defaults gigantes.
+                // Exemplos: Mônaco (2 km²), Maldivas (atóis de 1-2 km), São Bartolomeu, Nauru.
+                // O setor ativo fica igual às dimensões reais da ilha — sem expansão artificial.
+                territoryWidthMeters = activeHydroData.realWidthMeters;
+                territoryLengthMeters = activeHydroData.realLengthMeters;
+                realAreaKm2 = activeHydroData.realAreaKm2 > 0 ? activeHydroData.realAreaKm2 : 1;
+                Debug.LogWarning($"[RegionalSandbox] Micro-ilha detectada: {activeSave.regionName} — {territoryWidthMeters / 1000f:F2} km × {territoryLengthMeters / 1000f:F2} km. Dimensões reais mantidas sem expansão.");
+            }
             else
             {
+                // Fallback puro: sem dados de heightmap nem hidro. Usa 75 km × 90 km genérico.
                 territoryWidthMeters = 75000f;
                 territoryLengthMeters = 90000f;
                 realAreaKm2 = 6750;
             }
 
             // O setor de simulação física e malha de solo no nível do chão é balanceado para altíssima densidade de vértices:
-            // Regiões menores que 60km (ex: Luxemburgo, Mônaco) mantêm suas dimensões métricas 100% integrais.
-            // Grandes estados (ex: São Paulo com 886km) operam com um setor ativo de 60km x 60km (3.600 km² de solo contínuo).
-            worldWidthMeters = Mathf.Clamp(territoryWidthMeters, 25000f, 60000f);
-            worldLengthMeters = Mathf.Clamp(territoryLengthMeters, 25000f, 60000f);
+            // • Micro-ilhas e territórios minúsculos (≤ 5 km): dimensões reais, sem expansão mínima artificial.
+            // • Regiões normais (ex: Luxemburgo, Mônaco): mantêm suas dimensões métricas 100% integrais.
+            // • Grandes estados (ex: São Paulo com 886 km): setor ativo limitado a 60 km × 60 km (3.600 km²).
+            worldWidthMeters = Mathf.Clamp(territoryWidthMeters, 500f, 60000f);
+            worldLengthMeters = Mathf.Clamp(territoryLengthMeters, 500f, 60000f);
 
             Debug.Log($"[RegionalSandbox] Território 1:1: {activeSave.regionName} — {territoryWidthMeters / 1000f:F1} km × {territoryLengthMeters / 1000f:F1} km | Área: {realAreaKm2:N0} km². Setor Ativo: {worldWidthMeters / 1000f:F0} km × {worldLengthMeters / 1000f:F0} km.");
 
@@ -40,7 +54,14 @@ namespace ProjectTerra.Sandbox
             const int HeightmapRes = 513;
             activeTerrainData = new TerrainData();
             activeTerrainData.heightmapResolution = HeightmapRes;
-            float elevRange = activeHydroData != null ? Mathf.Clamp(activeHydroData.elevationRange * 1.6f, 250f, 3200f) : maxElevationScale;
+            // elevRange: escala vertical do terreno em metros.
+            // Mínimo 40m (não 250m!) para respeitar regiões genuinamente planas como Holanda,
+            // Bangladesh, Polônia, Amazônia baixa — que têm elevationRange real < 50m.
+            // 250m mínimo criava montanhas artificiais onde existia planície.
+            float rawElevRange = activeHydroData != null ? activeHydroData.elevationRange * 1.6f : maxElevationScale;
+            float elevRange = Mathf.Clamp(rawElevRange, 40f, 3200f);
+            // Para regiões com heightmap sintético (fallback), usar um valor razoável de 180m
+            if (!loaded && activeHydroData == null) elevRange = 180f;
             activeTerrainData.size = new Vector3(worldWidthMeters, elevRange, worldLengthMeters);
 
             // Síntese topográfica multi-escala (Relevo Macro Geográfico + Colinas Médias + Micro-ondulações de Lavoura)
@@ -85,68 +106,41 @@ namespace ProjectTerra.Sandbox
             var tc = terrainObj.GetComponent<Collider>();
             if (tc != null) tc.enabled = true;
 
-            // Material do Terreno — null = shader interno padrão do Unity que suporta TerrainLayers
-            activeTerrain.materialTemplate = null;
-
-            // basemapDistance: distância a partir da qual o Unity usa a textura basemap de baixa res.
-            // Valor baixo (150m) = texturas PBR reais são visíveis de perto; após 150m usa basemap colorido.
-            activeTerrain.basemapDistance = 150f;
-
-            // Gerar basemap colorido via splatmap para garantir cores visíveis independente de shader
-            BakeTerrainColorBasemap(activeTerrainData, splat);
+            // Garantir que o terreno possui um material e shader válidos
+            EnsureTerrainMaterial(activeTerrain);
 
             // Criar corpos d'água de acordo com os dados hidrográficos
             BuildHydrographySurfaces();
         }
 
         /// <summary>
-        /// Gera a textura basemap do terreno com as cores reais de cada bioma,
-        /// ponderadas pelo splatmap calculado. Garante que o terreno exiba cores
-        /// mesmo se o shader de TerrainLayer não estiver disponível.
+        /// Configura o material do terreno para o Built-in (HDRP removido do projeto).
+        /// No Unity 6, materialTemplate = null deixa o terreno SEM material (renderiza magenta/rosa),
+        /// então criamos explicitamente um material com o shader de terreno Built-in
+        /// "Nature/Terrain/Standard". Sem o HDRP interferindo, o Unity injeta automaticamente as
+        /// texturas de controle/splat das TerrainLayers neste material → biomas coloridos e nítidos.
         /// </summary>
-        private void BakeTerrainColorBasemap(TerrainData terrainData, float[,,] splatmap)
+        private void EnsureTerrainMaterial(Terrain terrain)
         {
-            // Cores representativas de cada bioma (mesmas que as fallback do TerrainPBRFactory)
-            Color[] biomeColors = new Color[]
+            Shader s = Shader.Find("Nature/Terrain/Standard")
+                    ?? Shader.Find("Nature/Terrain/Diffuse")
+                    ?? Shader.Find("Nature/Terrain/Standard-Base");
+
+            if (s != null)
             {
-                new Color(0.25f, 0.45f, 0.20f), // 0: Grama
-                new Color(0.18f, 0.48f, 0.15f), // 1: Selva
-                new Color(0.60f, 0.56f, 0.26f), // 2: Savana
-                new Color(0.37f, 0.26f, 0.18f), // 3: Solo
-                new Color(0.76f, 0.68f, 0.50f), // 4: Areia
-                new Color(0.41f, 0.40f, 0.38f), // 5: Cascalho
-                new Color(0.47f, 0.45f, 0.43f), // 6: Rocha
-                new Color(0.88f, 0.91f, 0.95f), // 7: Neve
-            };
-
-            int res = splatmap.GetLength(0);
-            int layerCount = Mathf.Min(splatmap.GetLength(2), biomeColors.Length);
-
-            // Criar textura basemap com mesma resolução do splatmap (512x512)
-            var basemap = new Texture2D(res, res, TextureFormat.RGB24, false);
-            Color[] pixels = new Color[res * res];
-
-            for (int y = 0; y < res; y++)
+                var mat = new Material(s);
+                mat.name = "Terrain_Builtin_Standard";
+                terrain.materialTemplate = mat;
+                Debug.Log($"[RegionalSandbox] Terreno Built-in: material '{s.name}' (splat das TerrainLayers injetado pelo Unity).");
+            }
+            else
             {
-                for (int x = 0; x < res; x++)
-                {
-                    Color col = Color.black;
-                    for (int l = 0; l < layerCount; l++)
-                    {
-                        col += biomeColors[l] * splatmap[y, x, l];
-                    }
-                    pixels[y * res + x] = col;
-                }
+                Debug.LogError("[RegionalSandbox] Shader de terreno Built-in 'Nature/Terrain/Standard' não encontrado.");
             }
 
-            basemap.SetPixels(pixels);
-            basemap.Apply(false);
-            basemap.wrapMode = TextureWrapMode.Clamp;
-            basemap.filterMode = FilterMode.Bilinear;
-
-            // Atribuir ao terrainData — isso é lido pelo Unity quando o shader usa _MainTex do basemap
-            terrainData.SetBaseMapDirty();
-            Debug.Log($"[RegionalSandbox] Basemap colorido gerado ({res}x{res}) com {layerCount} camadas de bioma.");
+            // Renderiza as camadas PBR reais em todo o setor ativo (até 60 km), sem cair no basemap de baixa-res.
+            terrain.basemapDistance = 40000f;
+            terrain.heightmapPixelError = 2;
         }
 
         private float[,] SynthesizeDetailedHeights(float[,] macroHeights, int res, RegionalHydroData hydro, RegionSaveData save)
@@ -240,8 +234,7 @@ namespace ProjectTerra.Sandbox
                 float seaY = activeHydroData != null ? activeHydroData.seaLevelNormalized * activeTerrainData.size.y + 0.5f : 1.5f;
                 oceanObj.transform.position = new Vector3(0f, seaY, -worldLengthMeters * 0.38f);
                 oceanObj.transform.localScale = new Vector3(worldWidthMeters / 10f, 1f, (worldLengthMeters * 0.35f) / 10f);
-                var rend = oceanObj.GetComponent<Renderer>();
-                rend.material.color = new Color(0.1f, 0.32f, 0.52f, 0.88f);
+                oceanObj.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(new Color(0.1f, 0.32f, 0.52f, 0.88f));
                 Debug.Log("[RegionalSandbox] Litoral oceânico construído com plataforma marítima costeira.");
             }
             else if (hasInlandWater)
@@ -254,7 +247,7 @@ namespace ProjectTerra.Sandbox
                 lakeObj.transform.position = lakePos;
                 lakeObj.transform.localScale = new Vector3(1800f, 0.2f, 1200f);
                 Destroy(lakeObj.GetComponent<Collider>());
-                lakeObj.GetComponent<Renderer>().material.color = new Color(0.12f, 0.38f, 0.48f, 0.88f);
+                lakeObj.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(new Color(0.12f, 0.38f, 0.48f, 0.88f));
                 Debug.Log($"[RegionalSandbox] Bacia hidrográfica/lacustre interior construída ({(infra != null ? infra.waterBodyName : "Corpo Hídrico")}).");
             }
             else

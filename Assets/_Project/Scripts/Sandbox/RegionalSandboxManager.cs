@@ -175,7 +175,7 @@ namespace ProjectTerra.Sandbox
             body.transform.localPosition = new Vector3(0f, 0.9f, 0f);
             body.transform.localScale = new Vector3(0.7f, 0.9f, 0.7f);
             Destroy(body.GetComponent<Collider>());
-            body.GetComponent<Renderer>().material.color = new Color(0.15f, 0.45f, 0.85f);
+            body.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(new Color(0.15f, 0.45f, 0.85f));
 
             var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             head.name = "Visual_Capacete";
@@ -183,7 +183,7 @@ namespace ProjectTerra.Sandbox
             head.transform.localPosition = new Vector3(0f, 1.6f, 0.1f);
             head.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
             Destroy(head.GetComponent<Collider>());
-            head.GetComponent<Renderer>().material.color = new Color(0.95f, 0.85f, 0.2f);
+            head.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(new Color(0.95f, 0.85f, 0.2f));
 
             var camPoint = new GameObject("CameraFollowPoint");
             camPoint.transform.SetParent(playerObj.transform);
@@ -201,6 +201,16 @@ namespace ProjectTerra.Sandbox
             var missionObj = new GameObject("MissionManager");
             var mm = missionObj.AddComponent<MissionManager>();
             mm.SetupInitialContract(activeSave.starterCareer, starterBasePosition, deliveryMarketPosition);
+        }
+
+        public static Material CreateSolidMaterial(Color color)
+        {
+            Shader shader = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Color");
+            var mat = shader != null ? new Material(shader) : new Material(Shader.Find("Hidden/InternalErrorShader"));
+            mat.color = color;
+            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.15f);
+            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.0f);
+            return mat;
         }
 
         #endregion

@@ -62,15 +62,25 @@ namespace ProjectTerra.Planet.TerrainStreaming
             var layer = new TerrainLayer();
             layer.name = name;
             layer.tileSize = tileSize;
-            layer.smoothness = 0.15f;
+            layer.smoothness = 0.08f;
             layer.metallic = 0.0f;
-            layer.normalScale = 1.0f;
-            layer.specular = new Color(0.15f, 0.15f, 0.15f, 1.0f);
+            layer.normalScale = 0.8f;
+            layer.specular = new Color(0.08f, 0.08f, 0.08f, 1.0f);
 
             string baseDir = System.IO.Path.Combine(Application.dataPath, "_Project", "Textures", "PBR", subPath);
             layer.diffuseTexture = LoadPBRTexture(baseDir, subPath, "Albedo", TextureMapType.Albedo, fallbackColor);
             layer.normalMapTexture = LoadPBRTexture(baseDir, subPath, "Normal", TextureMapType.Normal, new Color(0.5f, 0.5f, 1.0f, 1.0f));
-            layer.maskMapTexture = LoadPBRTexture(baseDir, subPath, "MaskMap", TextureMapType.MaskMap, new Color(0.0f, 0.9f, 0.5f, 0.15f));
+
+            bool isHdrp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null && 
+                          UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.GetType().Name.Contains("HD");
+            if (isHdrp)
+            {
+                layer.maskMapTexture = LoadPBRTexture(baseDir, subPath, "MaskMap", TextureMapType.MaskMap, new Color(0.0f, 0.9f, 0.5f, 0.15f));
+            }
+            else
+            {
+                layer.maskMapTexture = null;
+            }
 
             bool usedFallback = (layer.diffuseTexture != null && layer.diffuseTexture.width == 16 && layer.diffuseTexture.height == 16);
             Debug.Log($"[TerrainPBRFactory] Layer '{name}' ({subPath}): diffuse={(layer.diffuseTexture != null ? $"{layer.diffuseTexture.width}x{layer.diffuseTexture.height}" : "NULL")} {(usedFallback ? "[FALLBACK COLORIDO]" : "[TEXTURA REAL]")}");
@@ -213,7 +223,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
                             Mathf.Clamp01(color.r + noise),
                             Mathf.Clamp01(color.g + noise),
                             Mathf.Clamp01(color.b + noise),
-                            1.0f
+                            0.12f
                         );
                     }
                 }

@@ -48,14 +48,16 @@ namespace ProjectTerra.Sandbox
             Vector3 terrainPos = terrain.transform.position;
             Vector3 terrainSize = terrain.terrainData.size;
 
-            // Carregar prefabs 3D de recursos
-            GameObject treeDefault = LoadModel("Models/Nature/Trees/tree_default");
-            GameObject treeDetailed = LoadModel("Models/Nature/Trees/tree_detailed");
-            GameObject treeCone = LoadModel("Models/Nature/Trees/tree_cone");
+            // Carregar prefabs 3D de recursos — caminhos relativos à pasta Resources/Models/
+            // Árvores: disponíveis em Resources/Models/Nature/Trees/
+            GameObject treeDefault  = LoadModel("Models/Nature/Trees/tree_default");   // Árvore folhosa genérica
+            GameObject treeDetailed = LoadModel("Models/Nature/Trees/tree_detailed");  // Árvore folhosa detalhada
+            GameObject treeCone     = LoadModel("Models/Nature/Trees/tree_cone");      // Pinheiro cônico
 
+            // Rochas: disponíveis em Resources/Models/Nature/Rocks/
             GameObject rockLarge = LoadModel("Models/Nature/Rocks/rock_largeA");
             GameObject rockSmall = LoadModel("Models/Nature/Rocks/rock_smallA");
-            GameObject rockTall = LoadModel("Models/Nature/Rocks/rock_tallA");
+            GameObject rockTall  = LoadModel("Models/Nature/Rocks/rock_tallA");
 
             GameObject cowModel = LoadModel("Models/Animals/Farm/Cow");
             GameObject horseModel = LoadModel("Models/Animals/Farm/Horse");
@@ -86,6 +88,7 @@ namespace ProjectTerra.Sandbox
                     var tree = Object.Instantiate(treePrefab, spawnPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), treeRoot);
                     float scale = Random.Range(3.5f, 6.0f);
                     tree.transform.localScale = Vector3.one * scale;
+                    ApplyModelColors(tree, new Color(0.18f, 0.50f, 0.16f), new Color(0.40f, 0.25f, 0.14f));
                 }
                 else
                 {
@@ -113,6 +116,7 @@ namespace ProjectTerra.Sandbox
                     var rock = Object.Instantiate(rockPrefab, spawnPos, Quaternion.Euler(Random.Range(-10f, 10f), Random.Range(0f, 360f), Random.Range(-10f, 10f)), rockRoot);
                     float scale = Random.Range(4.0f, 8.5f);
                     rock.transform.localScale = Vector3.one * scale;
+                    ApplyModelColors(rock, new Color(0.45f, 0.45f, 0.48f), new Color(0.38f, 0.38f, 0.40f));
                 }
                 else
                 {
@@ -144,7 +148,7 @@ namespace ProjectTerra.Sandbox
             float trunkH = height * 0.55f;
             trunk.transform.localPosition = new Vector3(0f, trunkH * 0.5f, 0f);
             trunk.transform.localScale = new Vector3(0.28f, trunkH * 0.5f, 0.28f);
-            trunk.GetComponent<Renderer>().material.color = new Color(0.35f, 0.22f, 0.12f);
+            SetPrimitiveColor(trunk.GetComponent<Renderer>(), new Color(0.35f, 0.22f, 0.12f));
             Object.Destroy(trunk.GetComponent<Collider>());
 
             // Copa: esfera verde (varia por tipo)
@@ -155,7 +159,7 @@ namespace ProjectTerra.Sandbox
             canopy.transform.localPosition = new Vector3(0f, trunkH + canopyR * 0.7f, 0f);
             canopy.transform.localScale = new Vector3(canopyR, canopyR * 0.85f, canopyR);
             float green = Random.Range(0.28f, 0.48f);
-            canopy.GetComponent<Renderer>().material.color = new Color(0.15f, green, 0.12f);
+            SetPrimitiveColor(canopy.GetComponent<Renderer>(), new Color(0.15f, green, 0.12f));
             Object.Destroy(canopy.GetComponent<Collider>());
         }
 
@@ -168,7 +172,7 @@ namespace ProjectTerra.Sandbox
             rock.transform.rotation = Quaternion.Euler(Random.Range(-15f, 15f), Random.Range(0f, 360f), Random.Range(-12f, 12f));
             rock.transform.localScale = new Vector3(size * Random.Range(0.8f, 1.3f), size * Random.Range(0.5f, 0.9f), size * Random.Range(0.8f, 1.2f));
             float gray = Random.Range(0.38f, 0.52f);
-            rock.GetComponent<Renderer>().material.color = new Color(gray, gray - 0.03f, gray - 0.05f);
+            SetPrimitiveColor(rock.GetComponent<Renderer>(), new Color(gray, gray - 0.03f, gray - 0.05f));
         }
 
         private static void SpawnPastureAnimals(Transform parent, Vector3 basePos, Terrain terrain, GameObject cow, GameObject horse, GameObject sheep)
@@ -184,7 +188,8 @@ namespace ProjectTerra.Sandbox
                 {
                     var obj = Object.Instantiate(cow, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Vaca_{i + 1}";
-                    obj.transform.localScale = Vector3.one * 1.5f;
+                    ApplyModelColors(obj, new Color(0.55f, 0.35f, 0.22f), new Color(0.92f, 0.90f, 0.88f));
+                    FitAnimalModel(obj, 2.4f, pos.y);
                 }
                 else
                 {
@@ -201,7 +206,8 @@ namespace ProjectTerra.Sandbox
                 {
                     var obj = Object.Instantiate(horse, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Cavalo_{i + 1}";
-                    obj.transform.localScale = Vector3.one * 1.6f;
+                    ApplyModelColors(obj, new Color(0.32f, 0.20f, 0.12f), new Color(0.15f, 0.10f, 0.08f));
+                    FitAnimalModel(obj, 2.5f, pos.y);
                 }
                 else
                 {
@@ -218,7 +224,8 @@ namespace ProjectTerra.Sandbox
                 {
                     var obj = Object.Instantiate(sheep, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Ovelha_{i + 1}";
-                    obj.transform.localScale = Vector3.one * 1.3f;
+                    ApplyModelColors(obj, new Color(0.92f, 0.90f, 0.85f), new Color(0.20f, 0.18f, 0.18f));
+                    FitAnimalModel(obj, 1.2f, pos.y);
                 }
                 else
                 {
@@ -238,7 +245,8 @@ namespace ProjectTerra.Sandbox
                 {
                     var obj = Object.Instantiate(fox, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Raposa_{i + 1}";
-                    obj.transform.localScale = Vector3.one * 1.2f;
+                    ApplyModelColors(obj, new Color(0.85f, 0.42f, 0.12f), new Color(0.95f, 0.95f, 0.95f));
+                    FitAnimalModel(obj, 0.9f, pos.y);
                 }
                 else
                 {
@@ -255,7 +263,8 @@ namespace ProjectTerra.Sandbox
                 {
                     var obj = Object.Instantiate(wolf, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Lobo_{i + 1}";
-                    obj.transform.localScale = Vector3.one * 1.4f;
+                    ApplyModelColors(obj, new Color(0.35f, 0.35f, 0.38f), new Color(0.20f, 0.20f, 0.22f));
+                    FitAnimalModel(obj, 1.5f, pos.y);
                 }
                 else
                 {
@@ -277,8 +286,78 @@ namespace ProjectTerra.Sandbox
             animal.transform.rotation = Quaternion.Euler(90f, Random.Range(0f, 360f), 0f); // Capsule deitada = corpo horizontal
             // Capsule padrão tem raio 0.5 e altura 2 (em unidades), então scale x=width, y=half_length, z=width
             animal.transform.localScale = new Vector3(bodySize.x, bodySize.z * 0.5f, bodySize.x);
-            animal.GetComponent<Renderer>().material.color = color;
-            Object.Destroy(animal.GetComponent<Collider>());
+            SetPrimitiveColor(animal.GetComponent<Renderer>(), color);
+            // Mantém o CapsuleCollider do primitivo para que o animal tenha colisão sólida.
+        }
+
+        /// <summary>
+        /// Normaliza o tamanho de um modelo FBX de animal para um comprimento real em metros (medindo
+        /// os bounds dos renderers), adiciona um BoxCollider ajustado para colisão sólida e assenta o
+        /// modelo sobre o chão (base dos bounds na altura do terreno informada).
+        /// </summary>
+        private static void FitAnimalModel(GameObject obj, float targetLengthMeters, float groundY)
+        {
+            if (obj == null) return;
+            var renderers = obj.GetComponentsInChildren<Renderer>(true);
+            if (renderers == null || renderers.Length == 0) return;
+
+            // Mede os bounds com rotação zerada (alinhado aos eixos do modelo) para escala/colisor corretos.
+            Quaternion origRot = obj.transform.rotation;
+            obj.transform.rotation = Quaternion.identity;
+
+            Bounds b = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+
+            float longest = Mathf.Max(b.size.x, b.size.z);
+            if (longest < 1e-4f) longest = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
+            if (longest > 1e-4f)
+            {
+                obj.transform.localScale *= targetLengthMeters / longest;
+                // Recomputa bounds após a escala
+                b = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+            }
+
+            // BoxCollider ajustado aos bounds (em espaço local do objeto).
+            var box = obj.GetComponent<BoxCollider>();
+            if (box == null) box = obj.AddComponent<BoxCollider>();
+            box.center = obj.transform.InverseTransformPoint(b.center);
+            Vector3 ls = obj.transform.lossyScale;
+            box.size = new Vector3(
+                Mathf.Abs(ls.x) > 1e-4f ? b.size.x / Mathf.Abs(ls.x) : b.size.x,
+                Mathf.Abs(ls.y) > 1e-4f ? b.size.y / Mathf.Abs(ls.y) : b.size.y,
+                Mathf.Abs(ls.z) > 1e-4f ? b.size.z / Mathf.Abs(ls.z) : b.size.z);
+
+            // Restaura a rotação e assenta a base do modelo no chão.
+            obj.transform.rotation = origRot;
+            b = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+            obj.transform.position += Vector3.up * (groundY - b.min.y);
+        }
+
+        /// <summary>
+        /// Atribui uma cor a um renderer criando um novo Material com o shader Standard do Unity.
+        /// NUNCA modifique .material.color diretamente em primitivos — isso corrompe o Default-Material
+        /// compartilhado entre todos os objetos, causando que todos fiquem brancos.
+        /// </summary>
+        private static void SetPrimitiveColor(Renderer renderer, Color color)
+        {
+            // Busca o shader Standard (Built-in) ou Unlit/Color como fallback
+            Shader shader = Shader.Find("Standard") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Diffuse");
+            if (shader != null)
+            {
+                var mat = new Material(shader);
+                mat.color = color;
+                if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.15f);
+                if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.0f);
+                renderer.sharedMaterial = mat;
+            }
+            else
+            {
+                // Último recurso: instanciar o material atual para não poluir o compartilhado
+                renderer.material = Object.Instantiate(renderer.sharedMaterial);
+                renderer.material.color = color;
+            }
         }
 
         /// <summary>
@@ -295,6 +374,109 @@ namespace ProjectTerra.Sandbox
                 return obj;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Aplica materiais com shader Standard e cores naturais aos submeshes de modelos FBX importados,
+        /// garantindo que árvores (tronco e folhas), rochas e animais tenham cores vivas e sombreamento solar no Built-in Pipeline.
+        /// </summary>
+        private static void ApplyModelColors(GameObject instance, Color primaryColor, Color secondaryColor)
+        {
+            if (instance == null) return;
+            var renderers = instance.GetComponentsInChildren<Renderer>(true);
+            if (renderers == null || renderers.Length == 0) return;
+
+            Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse");
+            var matPrimary = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
+            matPrimary.name = $"{instance.name}_MatPrimary";
+            matPrimary.color = primaryColor;
+            if (matPrimary.HasProperty("_Glossiness")) matPrimary.SetFloat("_Glossiness", 0.15f);
+            if (matPrimary.HasProperty("_Metallic")) matPrimary.SetFloat("_Metallic", 0.0f);
+
+            var matSecondary = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
+            matSecondary.name = $"{instance.name}_MatSecondary";
+            matSecondary.color = secondaryColor;
+            if (matSecondary.HasProperty("_Glossiness")) matSecondary.SetFloat("_Glossiness", 0.15f);
+            if (matSecondary.HasProperty("_Metallic")) matSecondary.SetFloat("_Metallic", 0.0f);
+
+            var matAccent = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
+            matAccent.name = $"{instance.name}_MatAccent";
+            matAccent.color = new Color(0.88f, 0.55f, 0.58f); // Rosa para focinho/orelhas
+            if (matAccent.HasProperty("_Glossiness")) matAccent.SetFloat("_Glossiness", 0.18f);
+            if (matAccent.HasProperty("_Metallic")) matAccent.SetFloat("_Metallic", 0.0f);
+
+            string instNameLower = instance.name.ToLower();
+            bool isTree = instNameLower.Contains("tree") || instNameLower.Contains("arvore");
+            bool isCow = instNameLower.Contains("vaca") || instNameLower.Contains("cow");
+
+            for (int r = 0; r < renderers.Length; r++)
+            {
+                var rend = renderers[r];
+                var sharedMats = rend.sharedMaterials;
+                if (sharedMats == null || sharedMats.Length == 0)
+                {
+                    rend.sharedMaterial = matPrimary;
+                    continue;
+                }
+
+                var newMats = new Material[sharedMats.Length];
+                for (int m = 0; m < sharedMats.Length; m++)
+                {
+                    string matName = sharedMats[m] != null ? sharedMats[m].name.ToLower() : "";
+
+                    if (isTree)
+                    {
+                        // Para árvores: tronco marrom (secondary) vs copa folhosa verde (primary)
+                        bool isTrunk = false;
+                        if (matName.Contains("wood") || matName.Contains("bark") || matName.Contains("trunk"))
+                        {
+                            isTrunk = true;
+                        }
+                        else if (matName.Contains("leaf") || matName.Contains("foliage") || matName.Contains("green"))
+                        {
+                            isTrunk = false;
+                        }
+                        else
+                        {
+                            // Detecção posicional nos FBX da Kenney:
+                            // tree_detailed: slot 1 é tronco; tree_cone e tree_default: slot 0 é tronco
+                            isTrunk = instNameLower.Contains("detailed") ? (m == 1) : (m == 0);
+                        }
+                        newMats[m] = isTrunk ? matSecondary : matPrimary;
+                    }
+                    else if (isCow)
+                    {
+                        // Para vacas com 3 submeshes (Preto/Marrom manchas, Rosa focinho, Branco corpo)
+                        if (matName.Contains("pink") || matName.Contains("snout") || (sharedMats.Length >= 3 && m == 1))
+                        {
+                            newMats[m] = matAccent;
+                        }
+                        else if (matName.Contains("black") || matName.Contains("dark") || matName.Contains("spot") || (sharedMats.Length >= 3 && m == 0))
+                        {
+                            newMats[m] = matPrimary; // Manchas escuras / marrons
+                        }
+                        else
+                        {
+                            newMats[m] = matSecondary; // Corpo claro
+                        }
+                    }
+                    else
+                    {
+                        // Animais genéricos, rochas e estruturas
+                        if (matName.Contains("wood") || matName.Contains("bark") || matName.Contains("dark") ||
+                            matName.Contains("hoof") || matName.Contains("horn") || matName.Contains("black") ||
+                            matName.Contains("mane") || (sharedMats.Length > 1 && m % 2 != 0))
+                        {
+                            newMats[m] = matSecondary;
+                        }
+                        else
+                        {
+                            newMats[m] = matPrimary;
+                        }
+                    }
+                }
+                rend.sharedMaterials = newMats;
+            }
         }
     }
 }

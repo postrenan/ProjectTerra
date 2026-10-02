@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Rendering.HighDefinition;
 
 namespace ProjectTerra.Sandbox
 {
@@ -28,60 +27,27 @@ namespace ProjectTerra.Sandbox
 
             if (sunLight == null) return;
 
-            // Rotação do Sol:
-            // 06:00 = Nascer do sol (0° de elevação)
-            // 12:00 = Zênite / Meio-dia (75° de elevação)
-            // 18:00 = Pôr do sol (180° de elevação)
-            // 00:00 = Meia-noite (270° / abaixo do horizonte)
+            // Rotação do Sol: 06:00 nascer, 12:00 zênite, 18:00 pôr, 00:00 meia-noite.
             float sunPitch = ((timeOfDay - 6f) / 24f) * 360f;
             sunLight.transform.rotation = Quaternion.Euler(sunPitch, 50f, 0f);
 
-            // Altura angular do sol acima do horizonte
             float elevationFactor = Mathf.Sin((timeOfDay / 24f) * Mathf.PI * 2f - Mathf.PI * 0.5f);
             bool isDay = elevationFactor > 0.04f;
             bool isGoldenHour = Mathf.Abs(elevationFactor) <= 0.28f;
 
-            if (IsHDRPActive())
+            if (isDay)
             {
-                var hdLight = sunLight.GetComponent<HDAdditionalLightData>();
-                if (isDay)
-                {
-                    float factor = Mathf.Clamp01(elevationFactor * 1.6f);
-                    sunLight.intensity = Mathf.Lerp(12000f, sunIntensityLux, factor);
-                    float kelvin = isGoldenHour ? 3200f : sunColorKelvin;
-                    if (hdLight != null)
-                    {
-                        hdLight.SetColor(Color.white, kelvin);
-                        hdLight.volumetricDimmer = 1.0f;
-                    }
-                }
-                else
-                {
-                    // Noite: Luar sereno
-                    sunLight.intensity = 200f;
-                    if (hdLight != null)
-                    {
-                        hdLight.SetColor(new Color(0.35f, 0.5f, 0.85f), 7500f);
-                        hdLight.volumetricDimmer = 0.3f;
-                    }
-                }
+                float factor = Mathf.Clamp01(elevationFactor * 1.5f);
+                sunLight.intensity = Mathf.Lerp(0.35f, 1.0f, factor);
+                sunLight.color = isGoldenHour ? new Color(1.0f, 0.72f, 0.42f) : new Color(1.0f, 0.96f, 0.90f);
+                RenderSettings.ambientIntensity = Mathf.Lerp(0.55f, 1.0f, factor);
             }
             else
             {
-                if (isDay)
-                {
-                    float factor = Mathf.Clamp01(elevationFactor * 1.5f);
-                    sunLight.intensity = Mathf.Lerp(0.35f, 1.35f, factor);
-                    sunLight.color = isGoldenHour ? new Color(1.0f, 0.72f, 0.42f) : new Color(1.0f, 0.96f, 0.90f);
-                    RenderSettings.ambientIntensity = Mathf.Lerp(0.4f, 1.15f, factor);
-                }
-                else
-                {
-                    // Noite Built-in
-                    sunLight.intensity = 0.12f;
-                    sunLight.color = new Color(0.32f, 0.45f, 0.78f);
-                    RenderSettings.ambientIntensity = 0.22f;
-                }
+                // Noite
+                sunLight.intensity = 0.08f;
+                sunLight.color = new Color(0.32f, 0.45f, 0.78f);
+                RenderSettings.ambientIntensity = 0.22f;
             }
         }
 
@@ -97,29 +63,29 @@ namespace ProjectTerra.Sandbox
                 case "clear":
                 case "limpo":
                 case "ensolarado":
-                    SetFogDistance(35000f, 0.25f);
+                    SetFogDistance(45000f);
                     SandboxHUD.Instance?.ShowToast("☀️ Clima alterado para: Céu Limpo", 2.0f);
                     break;
                 case "fog":
                 case "neblina":
                 case "nevoeiro":
-                    SetFogDistance(900f, 0.65f);
+                    SetFogDistance(1200f);
                     SandboxHUD.Instance?.ShowToast("🌫️ Clima alterado para: Neblina Moderada", 2.0f);
                     break;
                 case "densefog":
                 case "denso":
-                    SetFogDistance(320f, 0.95f);
+                    SetFogDistance(450f);
                     SandboxHUD.Instance?.ShowToast("🌫️ Clima alterado para: Neblina Densa", 2.0f);
                     break;
                 case "overcast":
                 case "nublado":
-                    SetFogDistance(4500f, 0.50f);
+                    SetFogDistance(8000f);
                     SandboxHUD.Instance?.ShowToast("☁️ Clima alterado para: Nublado", 2.0f);
                     break;
                 case "storm":
                 case "tempestade":
                 case "chuva":
-                    SetFogDistance(650f, 0.85f);
+                    SetFogDistance(900f);
                     SandboxHUD.Instance?.ShowToast("⛈️ Clima alterado para: Tempestade", 2.0f);
                     break;
                 default:
@@ -128,26 +94,13 @@ namespace ProjectTerra.Sandbox
             }
         }
 
-        private void SetFogDistance(float distance, float cloudDensity)
+        private void SetFogDistance(float distance)
         {
             fogDistance = distance;
-
-            if (IsHDRPActive() && profile != null)
-            {
-                if (profile.TryGet<Fog>(out var fog))
-                {
-                    fog.meanFreePath.Override(distance);
-                }
-                if (profile.TryGet<VolumetricClouds>(out var clouds))
-                {
-                    clouds.densityMultiplier.Override(cloudDensity);
-                }
-            }
-            else
-            {
-                RenderSettings.fog = true;
-                RenderSettings.fogEndDistance = distance;
-            }
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogStartDistance = Mathf.Min(distance * 0.1f, 3000f);
+            RenderSettings.fogEndDistance = distance;
         }
 
         #endregion

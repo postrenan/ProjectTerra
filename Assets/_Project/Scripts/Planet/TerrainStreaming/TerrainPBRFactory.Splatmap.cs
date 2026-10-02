@@ -128,7 +128,36 @@ namespace ProjectTerra.Planet.TerrainStreaming
                     // E) Neve Alpina / Tundra (Branco/gelo de alta luminosidade e baixa saturação)
                     float snowRaw = Mathf.Clamp01((lum - 0.70f) * 4.5f) * Mathf.Clamp01((0.22f - sat) * 5.0f);
                     float snowAffinity = Mathf.Pow(snowRaw, 1.5f);
-                    if (Mathf.Abs(curLat) > 58f) snowAffinity = Mathf.Max(snowAffinity, 0.5f);
+
+                    // Gradiente polar em 3 zonas:
+                    // • Boreal/Taiga (58°–72°): neve parcial — floresta boreal ainda predomina no satélite,
+                    //   então apenas realçamos levemente a afinidade de neve para não engolir a vegetação.
+                    // • Subártico (72°–80°): tundra majoritária, neve predominante.
+                    // • Ártico / Polar (>80°): neve quase total (calota de gelo).
+                    float absLat = Mathf.Abs(curLat);
+                    if (absLat > 80f)
+                        snowAffinity = Mathf.Max(snowAffinity, 0.85f);
+                    else if (absLat > 72f)
+                        snowAffinity = Mathf.Max(snowAffinity, Mathf.Lerp(0.45f, 0.85f, (absLat - 72f) / 8f));
+                    else if (absLat > 58f)
+                        snowAffinity = Mathf.Max(snowAffinity, Mathf.Lerp(0.10f, 0.45f, (absLat - 58f) / 14f));
+
+                    // Amplificador equatorial de selva (−10° a +10°): garante cobertura densa independente
+                    // da qualidade da imagem de satélite para florestas tropicais úmidas.
+                    if (absLat <= 10f)
+                    {
+                        float equatorialBoost = Mathf.Lerp(0.55f, 0.75f, forestFactor) * Mathf.Clamp01(1.0f - absLat / 10f);
+                        jungleAffinity = Mathf.Max(jungleAffinity, equatorialBoost);
+                    }
+
+                    // Amplificador de deserto para os cinturões áridos subtropicais (15°–35° N/S):
+                    // Saara, Arábia, Austrália Central, Namíbia, Atacama, etc.
+                    if (absLat >= 15f && absLat <= 35f)
+                    {
+                        // Só reforça se o satélite já indica alta luminosidade quente (não sobre o Mediterrâneo verde)
+                        float desertLatBoost = Mathf.Lerp(0.0f, 0.30f, Mathf.Clamp01((sandRaw - 0.15f) / 0.35f));
+                        sandAffinity = Mathf.Max(sandAffinity, sandAffinity + desertLatBoost);
+                    }
 
                     // 3. Mosaico de Lavouras e Solo Agrícola (Talhões Rurais Realistas)
                     // Cria campos retangulares e quadrantes cultivados típicos de fazendas e propriedades rurais
@@ -152,7 +181,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
                     if (heightNorm > 0.82f)
                     {
                         rockWeight = Mathf.Max(rockWeight, (heightNorm - 0.82f) * 5f);
-                        if (Mathf.Abs(curLat) > 35f || mineralFactor > 0.5f)
+                        if (absLat > 35f || mineralFactor > 0.5f)
                         {
                             snowAffinity = Mathf.Max(snowAffinity, (heightNorm - 0.80f) * 4f);
                         }
