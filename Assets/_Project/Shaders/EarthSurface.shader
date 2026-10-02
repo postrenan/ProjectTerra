@@ -32,6 +32,11 @@ Shader "ProjectTerra/EarthSurface"
         _BordersColor ("Borders Color Tint", Color) = (1, 0.95, 0.6, 1)
         _BordersFadeStart ("Borders Fade Start (km)", Float) = 22000.0
         _BordersFadeEnd ("Borders Fade Full (km)", Float) = 14000.0
+
+        [Header(Selected Region Highlight)]
+        _RegionIdTex ("Region ID Map (RGB)", 2D) = "black" {}
+        _SelectedRegionId ("Selected Region ID", Float) = 0.0
+        _SelectedHighlightColor ("Selected Highlight Color", Color) = (0.2, 0.8, 1.0, 0.5)
     }
 
     SubShader
@@ -73,12 +78,15 @@ Shader "ProjectTerra/EarthSurface"
             sampler2D _WaterMask;
             sampler2D _BumpMap;
             sampler2D _BordersTex;
+            sampler2D _RegionIdTex;
 
             float4 _Color;
             float4 _DayColor;
             float4 _OceanColor;
             float4 _AtmosphereColor;
             float4 _BordersColor;
+            float4 _SelectedHighlightColor;
+            float _SelectedRegionId;
             float _BordersFadeStart;
             float _BordersFadeEnd;
             float _OceanSmoothness;
@@ -208,6 +216,21 @@ Shader "ProjectTerra/EarthSurface"
                     float borderAlpha = saturate((borderSample.a - 0.08) * 2.5);
                     half3 borderGlow = borderSample.rgb * _BordersColor.rgb;
                     finalColor = lerp(finalColor, borderGlow, borderAlpha * borderFade);
+                }
+
+                // Destaque visual do território selecionado (País, Província ou Estado)
+                if (_SelectedRegionId > 0.5)
+                {
+                    fixed4 idPixel = tex2D(_RegionIdTex, uv);
+                    float sampledId = round(idPixel.r * 255.0) + round(idPixel.g * 255.0) * 256.0;
+                    if (abs(sampledId - _SelectedRegionId) < 0.5)
+                    {
+                        float pulse = 0.82 + 0.18 * sin(_Time.y * 3.5);
+                        half3 hlColor = _SelectedHighlightColor.rgb * pulse;
+                        float hlAlpha = _SelectedHighlightColor.a;
+                        // Iluminação holográfica elegante destacando o relevo do país
+                        finalColor = lerp(finalColor, finalColor * hlColor * 2.2 + hlColor * 0.35, hlAlpha);
+                    }
                 }
 
                 return fixed4(finalColor, 1.0);

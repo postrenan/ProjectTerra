@@ -1,18 +1,22 @@
+using System;
 using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectTerra.Gameplay;
 
 namespace ProjectTerra.Planet
 {
     /// <summary>
     /// Controla a seleção interativa de Estados/Províncias e Países ao clicar no globo.
-    /// Interrompe a rotação do planeta e exibe um balão com estatísticas regionais.
+    /// Interrompe a rotação do planeta, destaca o terreno selecionado via shader e
+    /// exibe o painel de estatísticas com opções completas de Novo Jogo e Carregar Jogo.
     /// </summary>
     public class PlanetInteractionController : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private CubeSpherePlanet planet;
         [SerializeField] private Camera mainCamera;
+        [SerializeField] private Material earthMaterial;
 
         [Header("Selected State")]
         [SerializeField] private bool hasSelection = false;
@@ -30,6 +34,21 @@ namespace ProjectTerra.Planet
         private Vector2 mouseDownPos;
         private bool isMouseDownOnCard;
 
+        // Modos da UI de Interação
+        public enum CardMode { RegionDetails, NewGamePrompt, LoadGameList }
+        private CardMode currentCardMode = CardMode.RegionDetails;
+
+        // Estado do Formulário de Novo Jogo
+        private string newGameSaveName = "";
+        private long newGameBudget = 500000;
+        private readonly long[] BudgetPresets = { 100000, 250000, 500000, 1000000, 2500000, 5000000 };
+        private readonly string[] BudgetLabels = { "$100k", "$250k", "$500k", "$1M", "$2.5M", "$5M" };
+
+        // Estado da Lista de Saves
+        private Vector2 loadScrollPos = Vector2.zero;
+        private string notificationMessage = "";
+        private float notificationTimer = 0f;
+
         // UI Styling
         private GUIStyle cardStyle;
         private GUIStyle headerTitleStyle;
@@ -37,6 +56,10 @@ namespace ProjectTerra.Planet
         private GUIStyle labelStyle;
         private GUIStyle valueStyle;
         private GUIStyle buttonStyle;
+        private GUIStyle primaryButtonStyle;
+        private GUIStyle dangerButtonStyle;
+        private GUIStyle saveCardBoxStyle;
+        private GUIStyle textFieldStyle;
         private Texture2D whiteTex;
 
         public static PlanetInteractionController Instance { get; private set; }
@@ -64,8 +87,27 @@ namespace ProjectTerra.Planet
                 mainCamera = Camera.main;
             }
 
+            EnsureSaveManagerExists();
+            ResolveEarthMaterial();
             LoadDatabase();
             CreateTextures();
+        }
+
+        private void EnsureSaveManagerExists()
+        {
+            if (SaveManager.Instance == null && FindAnyObjectByType<SaveManager>() == null)
+            {
+                var go = new GameObject("SaveManager");
+                go.AddComponent<SaveManager>();
+            }
+        }
+
+        private void ResolveEarthMaterial()
+        {
+            if (earthMaterial == null && planet != null)
+            {
+                earthMaterial = planet.PlanetMaterial;
+            }
         }
 
         private void CreateTextures()
@@ -89,7 +131,7 @@ namespace ProjectTerra.Planet
                     isDatabaseLoaded = database != null && database.regions.Count > 0;
                     Debug.Log($"[PlanetInteraction] Base de dados carregada com {database.regions.Count} regiões.");
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     Debug.LogWarning($"[PlanetInteraction] Erro ao carregar regions_database.json: {ex.Message}");
                 }
@@ -106,7 +148,7 @@ namespace ProjectTerra.Planet
                     regionIdMap = File.ReadAllBytes(binPath);
                     Debug.Log($"[PlanetInteraction] Mapa binário de IDs geográficos carregado ({regionIdMap.Length} bytes).");
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     Debug.LogWarning($"[PlanetInteraction] Erro ao carregar region_id_map.bin: {ex.Message}");
                 }
@@ -119,6 +161,12 @@ namespace ProjectTerra.Planet
 
         private void Update()
         {
+            if (notificationTimer > 0f)
+            {
+                notificationTimer -= Time.deltaTime;
+                if (notificationTimer <= 0f) notificationMessage = "";
+            }
+
             if (Input.GetMouseButtonDown(0))
             {
                 Vector2 guiMouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
@@ -131,7 +179,6 @@ namespace ProjectTerra.Planet
                 if (!isMouseDownOnCard)
                 {
                     float dragDist = Vector2.Distance(mouseDownPos, (Vector2)Input.mousePosition);
-                    // Tolerância confortável para clique (não arrasto)
                     if (dragDist < 12.0f)
                     {
                         TryRaycastPlanet(Input.mousePosition);
@@ -140,7 +187,7 @@ namespace ProjectTerra.Planet
                 isMouseDownOnCard = false;
             }
 
-            // Atualiza posição mundial do ponto selecionado acompanhando a rotação do planeta
+            // Acompanha a rotação do planeta se houver ponto selecionado
             if (hasSelection && planet != null)
             {
                 selectedWorldPoint = planet.transform.TransformPoint(selectedLocalNormal * (float)planet.PlanetRadius);
@@ -178,7 +225,7 @@ namespace ProjectTerra.Planet
 
             if (discriminant >= 0.0)
             {
-                double t = -b - System.Math.Sqrt(discriminant);
+                double t = -b - Math.Sqrt(discriminant);
                 if (t > 0.0)
                 {
                     Vector3 worldHit = ray.origin + ray.direction * (float)t;
@@ -186,7 +233,7 @@ namespace ProjectTerra.Planet
                     selectedLocalNormal = localHit.normalized;
                     selectedWorldPoint = worldHit;
 
-                    // Converter coordenadas locais para Latitude e Longitude (sincronizado com a projeção da Terra)
+                    // Converter coordenadas locais para Latitude e Longitude
                     float lat = Mathf.Asin(Mathf.Clamp(selectedLocalNormal.y, -1f, 1f)) * Mathf.Rad2Deg;
                     float lon = Mathf.Atan2(selectedLocalNormal.x, -selectedLocalNormal.z) * Mathf.Rad2Deg;
 
@@ -204,7 +251,7 @@ namespace ProjectTerra.Planet
 
             RegionData match = null;
 
-            // 1. Amostragem direta de altíssima precisão no mapa binário de IDs geográficos (2048 x 1024)
+            // 1. Amostragem direta no mapa binário de IDs geográficos
             if (regionIdMap != null && regionIdMap.Length == MapWidth * MapHeight * 2)
             {
                 int px = Mathf.Clamp((int)((lon + 180.0f) / 360.0f * (MapWidth - 1)), 0, MapWidth - 1);
@@ -212,32 +259,42 @@ namespace ProjectTerra.Planet
 
                 ushort id = GetIdAt(px, py);
 
-                // Se cair em água rasa / costa costeira com id 0, faz uma pequena tolerância litorânea de 2 pixels
+                // Se cair em água rasa, baía ou costa (id 0), verifica tolerância litorânea de até 6 pixels (~50km)
                 if (id == 0)
                 {
-                    int[] offsets = { -1, 1, -2, 2 };
-                    foreach (int ox in offsets)
+                    float bestDistSqr = float.MaxValue;
+                    ushort nearestLandId = 0;
+
+                    for (int r = 1; r <= 6; r++)
                     {
-                        foreach (int oy in offsets)
+                        for (int dy = -r; dy <= r; dy++)
                         {
-                            int nx = Mathf.Clamp(px + ox, 0, MapWidth - 1);
-                            int ny = Mathf.Clamp(py + oy, 0, MapHeight - 1);
-                            ushort neighborId = GetIdAt(nx, ny);
-                            if (neighborId > 0 && database != null && neighborId <= database.regions.Count)
+                            for (int dx = -r; dx <= r; dx++)
                             {
-                                float nLon = (nx / (float)(MapWidth - 1)) * 360.0f - 180.0f;
-                                float nLat = 90.0f - (ny / (float)(MapHeight - 1)) * 180.0f;
-                                float dLat = lat - nLat;
-                                float dLon = lon - nLon;
-                                // Só aceita se estiver a menos de ~0.2 graus da borda litorânea
-                                if (dLat * dLat + dLon * dLon < 0.05f)
+                                if (Mathf.Abs(dx) != r && Mathf.Abs(dy) != r) continue;
+                                int nx = Mathf.Clamp(px + dx, 0, MapWidth - 1);
+                                int ny = Mathf.Clamp(py + dy, 0, MapHeight - 1);
+                                ushort candId = GetIdAt(nx, ny);
+                                if (candId > 0 && database != null && candId <= database.regions.Count)
                                 {
-                                    id = neighborId;
-                                    break;
+                                    float dSqr = dx * dx + dy * dy;
+                                    if (dSqr < bestDistSqr)
+                                    {
+                                        bestDistSqr = dSqr;
+                                        nearestLandId = candId;
+                                    }
                                 }
                             }
                         }
-                        if (id > 0) break;
+                        if (nearestLandId > 0 && r <= 4)
+                        {
+                            break;
+                        }
+                    }
+
+                    if (nearestLandId > 0)
+                    {
+                        id = nearestLandId;
                     }
                 }
 
@@ -247,23 +304,39 @@ namespace ProjectTerra.Planet
                 }
             }
 
-            // 2. Se o ID for 0 (ou nenhuma terra encontrada), é 100% GARANTIDO OCEANO!
             if (match == null)
             {
                 selectedRegion = GenerateOceanRegion(lat, lon);
+                SetTerrainHighlight(0);
             }
             else
             {
                 selectedRegion = match;
+                SetTerrainHighlight(match.id);
             }
 
+            // Reseta estado para a tela principal de detalhes da região selecionada
+            currentCardMode = CardMode.RegionDetails;
+            newGameSaveName = $"Governo de {selectedRegion.name}";
+            newGameBudget = 500000;
+            notificationMessage = "";
+
             hasSelection = true;
-            Debug.Log($"[PlanetInteraction] Região Selecionada: {selectedRegion.name} ({selectedRegion.country}) - Lat: {lat:F2}°, Lon: {lon:F2}°");
+            Debug.Log($"[PlanetInteraction] Região Selecionada: {selectedRegion.name} ({selectedRegion.country}) [ID: {selectedRegion.id}] - Lat: {lat:F2}°, Lon: {lon:F2}°");
 
             // Pausa a rotação do planeta conforme solicitado pelo usuário
             if (planet != null)
             {
                 planet.SetRotationPaused(true);
+            }
+        }
+
+        private void SetTerrainHighlight(int regionId)
+        {
+            ResolveEarthMaterial();
+            if (earthMaterial != null)
+            {
+                earthMaterial.SetFloat("_SelectedRegionId", (float)regionId);
             }
         }
 
@@ -288,6 +361,10 @@ namespace ProjectTerra.Planet
             {
                 oceanName = "Mar Mediterrâneo";
             }
+            else if (lat >= 53.0f && lat <= 66.0f && lon >= 10.0f && lon <= 30.0f)
+            {
+                oceanName = "Mar Báltico";
+            }
             else if (lon >= -75.0f && lon <= 20.0f)
             {
                 oceanName = lat >= 0 ? "Oceano Atlântico Norte" : "Oceano Atlântico Sul";
@@ -303,6 +380,7 @@ namespace ProjectTerra.Planet
 
             return new RegionData
             {
+                id = 0,
                 name = oceanName,
                 country = "Águas Internacionais",
                 type = "Zona Marítima",
@@ -315,26 +393,13 @@ namespace ProjectTerra.Planet
             };
         }
 
-        private RegionData GenerateFallbackRegion(float lat, float lon)
-        {
-            return new RegionData
-            {
-                name = $"Região ({lat:F1}°, {lon:F1}°)",
-                country = "Planeta Terra",
-                type = "Área Geográfica",
-                centerLat = lat,
-                centerLon = lon,
-                forestPercent = 45,
-                mineralsPercent = 50,
-                arablePercent = 35,
-                waterPercent = 60
-            };
-        }
-
         public void ResumeRotation()
         {
             hasSelection = false;
             lastCardRect = Rect.zero;
+            currentCardMode = CardMode.RegionDetails;
+            SetTerrainHighlight(0);
+
             if (planet != null)
             {
                 planet.SetRotationPaused(false);
@@ -384,6 +449,29 @@ namespace ProjectTerra.Planet
                 fontSize = 12,
                 fontStyle = FontStyle.Bold
             };
+
+            primaryButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold
+            };
+            primaryButtonStyle.normal.textColor = new Color(1f, 0.95f, 0.5f);
+
+            dangerButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold
+            };
+            dangerButtonStyle.normal.textColor = new Color(1f, 0.4f, 0.4f);
+
+            saveCardBoxStyle = new GUIStyle(GUI.skin.box);
+            saveCardBoxStyle.normal.background = whiteTex;
+
+            textFieldStyle = new GUIStyle(GUI.skin.textField)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold
+            };
         }
 
         private void OnGUI()
@@ -394,12 +482,11 @@ namespace ProjectTerra.Planet
                 return;
             }
 
-            // Verificar se o ponto selecionado está virado para a câmera (não está do outro lado do globo)
+            // Oculta balão se o ponto estiver do lado oposto do globo
             Vector3 camToPoint = selectedWorldPoint - mainCamera.transform.position;
             Vector3 pointNormal = selectedWorldPoint.normalized;
             if (Vector3.Dot(camToPoint.normalized, pointNormal) > 0.1f)
             {
-                // Ponto está oculto atrás da curvatura da Terra
                 lastCardRect = Rect.zero;
                 return;
             }
@@ -413,43 +500,62 @@ namespace ProjectTerra.Planet
 
             InitStyles();
 
-            // Dimensões do balão de informações
-            float width = 310f;
-            float height = 240f;
+            // Dimensões dinâmicas do card conforme a aba
+            float width = currentCardMode == CardMode.RegionDetails ? 330f : 390f;
+            float height = currentCardMode == CardMode.RegionDetails ? 315f : 380f;
             float x = Mathf.Clamp(screenPos.x + 25f, 20f, Screen.width - width - 20f);
             float y = Mathf.Clamp(Screen.height - screenPos.y - height * 0.5f, 20f, Screen.height - height - 20f);
 
             Rect cardRect = new Rect(x, y, width, height);
             lastCardRect = cardRect;
 
-            // 1. Sombra e Fundo translúcido (Glassmorphism azul escuro espacial)
-            GUI.color = new Color(0.02f, 0.05f, 0.12f, 0.92f);
+            // 1. Fundo translúcido espacial
+            GUI.color = new Color(0.02f, 0.05f, 0.12f, 0.94f);
             GUI.DrawTexture(cardRect, whiteTex);
 
             // 2. Borda externa suave
-            GUI.color = new Color(0.3f, 0.65f, 1.0f, 0.8f);
+            GUI.color = new Color(0.3f, 0.7f, 1.0f, 0.85f);
             GUI.DrawTexture(new Rect(x, y, width, 2), whiteTex);
             GUI.DrawTexture(new Rect(x, y + height - 2, width, 2), whiteTex);
             GUI.DrawTexture(new Rect(x, y, 2, height), whiteTex);
             GUI.DrawTexture(new Rect(x + width - 2, y, 2, height), whiteTex);
 
-            // 3. Indicador de Pino na posição do clique
-            GUI.color = new Color(1f, 0.85f, 0.3f, 0.9f);
+            // 3. Pino indicador na posição do clique
+            GUI.color = new Color(1f, 0.85f, 0.3f, 0.95f);
             GUI.DrawTexture(new Rect(screenPos.x - 4, Screen.height - screenPos.y - 4, 8, 8), whiteTex);
 
             GUI.color = Color.white;
             GUILayout.BeginArea(new Rect(x + 14, y + 10, width - 28, height - 20));
 
-            // Título: Estado / Província e País
+            // Renderiza o conteúdo do modo ativo
+            switch (currentCardMode)
+            {
+                case CardMode.RegionDetails:
+                    DrawRegionDetailsUI();
+                    break;
+                case CardMode.NewGamePrompt:
+                    DrawNewGameUI();
+                    break;
+                case CardMode.LoadGameList:
+                    DrawLoadGameUI();
+                    break;
+            }
+
+            GUILayout.EndArea();
+        }
+
+        private void DrawRegionDetailsUI()
+        {
+            // Cabeçalho
             GUILayout.Label(selectedRegion.name, headerTitleStyle);
             GUILayout.Label($"{selectedRegion.country} • {selectedRegion.type}", headerSubtitleStyle);
             GUILayout.Space(6);
 
-            // Linha divisória
+            // Divisória
             GUI.color = new Color(1f, 1f, 1f, 0.15f);
             GUILayout.Box("", GUILayout.Height(1), GUILayout.ExpandWidth(true));
             GUI.color = Color.white;
-            GUILayout.Space(6);
+            GUILayout.Space(4);
 
             // Barras de Recursos com percentuais
             DrawResourceBar("🌲 Cobertura Florestal", selectedRegion.forestPercent, new Color(0.2f, 0.85f, 0.3f));
@@ -459,20 +565,186 @@ namespace ProjectTerra.Planet
 
             GUILayout.Space(8);
 
-            // Botão para retomar rotação do planeta
+            // Botões de Ação de Jogo (Apenas para regiões terrestres)
+            if (selectedRegion.id > 0)
+            {
+                List<RegionSaveData> saves = SaveManager.Instance != null ?
+                    SaveManager.Instance.GetSavesForRegion(selectedRegion.id) : new List<RegionSaveData>();
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("🎮 Novo Jogo", primaryButtonStyle, GUILayout.Height(28)))
+                {
+                    currentCardMode = CardMode.NewGamePrompt;
+                    newGameSaveName = $"Governo de {selectedRegion.name}";
+                }
+
+                string loadBtnLabel = saves.Count > 0 ? $"💾 Carregar ({saves.Count})" : "💾 Carregar (0)";
+                if (GUILayout.Button(loadBtnLabel, buttonStyle, GUILayout.Height(28)))
+                {
+                    currentCardMode = CardMode.LoadGameList;
+                }
+                GUILayout.EndHorizontal();
+                GUILayout.Space(4);
+            }
+
+            // Notificação temporária se houver
+            if (!string.IsNullOrEmpty(notificationMessage))
+            {
+                GUI.color = new Color(0.4f, 1f, 0.5f);
+                GUILayout.Label(notificationMessage, labelStyle);
+                GUI.color = Color.white;
+                GUILayout.Space(2);
+            }
+
+            // Rodapé: Retomar rotação e Fechar
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("▶ Retomar Rotação", buttonStyle, GUILayout.Height(26)))
+            if (GUILayout.Button("▶ Retomar Rotação", buttonStyle, GUILayout.Height(24)))
             {
                 ResumeRotation();
             }
-            if (GUILayout.Button("✖ Fechar", buttonStyle, GUILayout.Width(70), GUILayout.Height(26)))
+            if (GUILayout.Button("✖ Fechar", buttonStyle, GUILayout.Width(70), GUILayout.Height(24)))
             {
                 hasSelection = false;
                 lastCardRect = Rect.zero;
+                SetTerrainHighlight(0);
             }
             GUILayout.EndHorizontal();
+        }
 
-            GUILayout.EndArea();
+        private void DrawNewGameUI()
+        {
+            GUILayout.Label("🎮 Configurar Nova Partida", headerTitleStyle);
+            GUILayout.Label($"Região: {selectedRegion.name} ({selectedRegion.country})", headerSubtitleStyle);
+            GUILayout.Space(6);
+
+            GUI.color = new Color(1f, 1f, 1f, 0.15f);
+            GUILayout.Box("", GUILayout.Height(1), GUILayout.ExpandWidth(true));
+            GUI.color = Color.white;
+            GUILayout.Space(6);
+
+            GUILayout.Label("Nome da Partida / Governo:", labelStyle);
+            newGameSaveName = GUILayout.TextField(newGameSaveName, 40, textFieldStyle, GUILayout.Height(26));
+            GUILayout.Space(8);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Orçamento Inicial:", labelStyle);
+            GUILayout.Label($"${newGameBudget:N0}", valueStyle);
+            GUILayout.EndHorizontal();
+
+            // Botões de Presets rápidos de orçamento
+            GUILayout.BeginHorizontal();
+            for (int i = 0; i < BudgetPresets.Length; i++)
+            {
+                bool isSelected = newGameBudget == BudgetPresets[i];
+                GUI.color = isSelected ? new Color(1f, 0.9f, 0.3f) : Color.white;
+                if (GUILayout.Button(BudgetLabels[i], buttonStyle, GUILayout.Height(22)))
+                {
+                    newGameBudget = BudgetPresets[i];
+                }
+            }
+            GUI.color = Color.white;
+            GUILayout.EndHorizontal();
+            GUILayout.Space(4);
+
+            // Slider livre para ajuste fino
+            newGameBudget = (long)(GUILayout.HorizontalSlider(newGameBudget, 50000, 10000000) / 10000) * 10000;
+            GUILayout.Space(12);
+
+            // Botão Iniciar Partida
+            if (GUILayout.Button("▶ Iniciar & Salvar Partida", primaryButtonStyle, GUILayout.Height(32)))
+            {
+                if (SaveManager.Instance != null)
+                {
+                    var save = SaveManager.Instance.CreateNewSave(selectedRegion, newGameSaveName, newGameBudget);
+                    notificationMessage = $"Partida '{save.saveName}' iniciada com ${save.startingMoney:N0}!";
+                    notificationTimer = 4.0f;
+                }
+                currentCardMode = CardMode.RegionDetails;
+            }
+
+            GUILayout.Space(4);
+            if (GUILayout.Button("↩ Voltar aos Detalhes", buttonStyle, GUILayout.Height(24)))
+            {
+                currentCardMode = CardMode.RegionDetails;
+            }
+        }
+
+        private void DrawLoadGameUI()
+        {
+            GUILayout.Label("💾 Carregar Partida Salva", headerTitleStyle);
+            GUILayout.Label($"Região: {selectedRegion.name} ({selectedRegion.country})", headerSubtitleStyle);
+            GUILayout.Space(6);
+
+            GUI.color = new Color(1f, 1f, 1f, 0.15f);
+            GUILayout.Box("", GUILayout.Height(1), GUILayout.ExpandWidth(true));
+            GUI.color = Color.white;
+            GUILayout.Space(4);
+
+            List<RegionSaveData> saves = SaveManager.Instance != null ?
+                SaveManager.Instance.GetSavesForRegion(selectedRegion.id) : new List<RegionSaveData>();
+
+            if (saves.Count == 0)
+            {
+                GUILayout.Space(20);
+                GUILayout.Label("Nenhuma partida salva encontrada para esta região.", headerSubtitleStyle);
+                GUILayout.Space(20);
+            }
+            else
+            {
+                loadScrollPos = GUILayout.BeginScrollView(loadScrollPos, GUILayout.Height(200));
+
+                foreach (var save in saves)
+                {
+                    // Mini card para cada save
+                    GUI.color = new Color(0.08f, 0.15f, 0.28f, 0.85f);
+                    GUILayout.BeginVertical(saveCardBoxStyle);
+                    GUI.color = Color.white;
+
+                    // Título do save e Verba
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(save.saveName, labelStyle);
+                    GUILayout.Label(save.GetFormattedMoney(), valueStyle);
+                    GUILayout.EndHorizontal();
+
+                    // Data e Hora
+                    GUI.color = new Color(0.7f, 0.85f, 1f, 0.8f);
+                    GUILayout.Label($"📅 Salvo em: {save.lastSavedDate}", headerSubtitleStyle);
+
+                    // Status / Alterações regionais
+                    string statusSummary = save.GetStatChangesSummary();
+                    GUI.color = save.IsStatsModified ? new Color(1f, 0.85f, 0.4f) : new Color(0.6f, 0.7f, 0.8f);
+                    GUILayout.Label(statusSummary, headerSubtitleStyle);
+                    GUI.color = Color.white;
+
+                    // Botões Carregar e Excluir
+                    GUILayout.BeginHorizontal();
+                    if (GUILayout.Button("▶ Carregar", primaryButtonStyle, GUILayout.Height(22)))
+                    {
+                        notificationMessage = $"Partida '{save.saveName}' carregada! Verba: {save.GetFormattedMoney()}";
+                        notificationTimer = 4.0f;
+                        currentCardMode = CardMode.RegionDetails;
+                    }
+                    if (GUILayout.Button("🗑 Excluir", dangerButtonStyle, GUILayout.Width(70), GUILayout.Height(22)))
+                    {
+                        if (SaveManager.Instance != null)
+                        {
+                            SaveManager.Instance.DeleteSave(save.saveId);
+                        }
+                    }
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.EndVertical();
+                    GUILayout.Space(4);
+                }
+
+                GUILayout.EndScrollView();
+            }
+
+            GUILayout.Space(6);
+            if (GUILayout.Button("↩ Voltar aos Detalhes", buttonStyle, GUILayout.Height(26)))
+            {
+                currentCardMode = CardMode.RegionDetails;
+            }
         }
 
         private void DrawResourceBar(string title, int percent, Color barColor)
@@ -483,11 +755,9 @@ namespace ProjectTerra.Planet
             GUILayout.EndHorizontal();
 
             Rect barBg = GUILayoutUtility.GetRect(240, 6);
-            // Fundo escuro da barra
             GUI.color = new Color(0.15f, 0.2f, 0.3f, 0.6f);
             GUI.DrawTexture(barBg, whiteTex);
 
-            // Preenchimento colorido da barra
             float fillWidth = (barBg.width * Mathf.Clamp01(percent / 100f));
             GUI.color = barColor;
             GUI.DrawTexture(new Rect(barBg.x, barBg.y, fillWidth, barBg.height), whiteTex);
