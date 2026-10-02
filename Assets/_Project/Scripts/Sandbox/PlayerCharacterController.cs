@@ -81,8 +81,14 @@ namespace ProjectTerra.Sandbox
             if (activeCamera == null)
             {
                 var camObj = new GameObject("SandboxMainCamera");
+                camObj.tag = "MainCamera";
                 activeCamera = camObj.AddComponent<Camera>();
                 camObj.AddComponent<AudioListener>();
+                Debug.Log($"[PlayerCharacterController] Nova SandboxMainCamera criada. Jogador em: {transform.position}");
+            }
+            else
+            {
+                Debug.Log($"[PlayerCharacterController] Usando Camera.main existente: '{activeCamera.name}' em {activeCamera.transform.position}. Jogador em: {transform.position}");
             }
 
             activeCamera.nearClipPlane = 0.3f;
@@ -90,6 +96,22 @@ namespace ProjectTerra.Sandbox
 
             yaw = transform.eulerAngles.y;
             pitch = 0f;
+
+            // Informar o FloatingOrigin para rastrear o jogador ao invés da câmera
+            var fo = ProjectTerra.Core.FloatingOrigin.Instance;
+            if (fo != null)
+            {
+                fo.SetFocusTarget(transform);
+                Debug.Log("[PlayerCharacterController] FloatingOrigin atualizado para rastrear o jogador.");
+            }
+
+            // Posicionar câmera imediatamente nos olhos do jogador (evitar frame azul na abertura)
+            if (cameraFollowPoint != null)
+            {
+                activeCamera.transform.position = cameraFollowPoint.position;
+                activeCamera.transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+                Debug.Log($"[PlayerCharacterController] Câmera posicionada imediatamente em: {activeCamera.transform.position}");
+            }
 
             // Configurar malhas do jogador para modo 1ª pessoa (somente sombras para não obstruir visão)
             SetupFirstPersonMeshes();

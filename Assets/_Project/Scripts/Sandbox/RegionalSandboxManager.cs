@@ -126,15 +126,19 @@ namespace ProjectTerra.Sandbox
 
         private void BuildAtmosphereAndLighting()
         {
+            // Destruir a câmera estática da cena IMEDIATAMENTE (DestroyImmediate) ANTES de criar o jogador.
+            // Isso garante que Camera.main == null quando PlayerCharacterController.Start() rodar,
+            // forçando-o a criar e controlar sua própria SandboxMainCamera corretamente.
+            // Nota: DestroyImmediate é seguro aqui pois estamos em Start(), fora do ciclo de renderização.
+            var sceneStaticCamera = Camera.main;
+            if (sceneStaticCamera != null)
+            {
+                Debug.Log($"[RegionalSandbox] Destruindo câmera estática '{sceneStaticCamera.gameObject.name}' (pos: {sceneStaticCamera.transform.position}) para liberar controle de câmera ao PlayerCharacterController.");
+                DestroyImmediate(sceneStaticCamera.gameObject);
+            }
+
             var atmosObj = new GameObject("HDRP_AtmosphereSystem");
             atmosObj.AddComponent<HDRPAtmosphereController>();
-
-            // Ajusta o alcance da câmera para visualizar o horizonte do território real sem Z-fighting
-            if (Camera.main != null)
-            {
-                Camera.main.farClipPlane = 60000f; // 60 km de campo de visão
-                Camera.main.nearClipPlane = 0.2f;
-            }
         }
 
         #endregion

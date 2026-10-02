@@ -67,10 +67,13 @@ namespace ProjectTerra.Planet.TerrainStreaming
             layer.normalScale = 1.0f;
             layer.specular = new Color(0.15f, 0.15f, 0.15f, 1.0f);
 
-            string baseDir = Path.Combine(Application.dataPath, "_Project", "Textures", "PBR", subPath);
+            string baseDir = System.IO.Path.Combine(Application.dataPath, "_Project", "Textures", "PBR", subPath);
             layer.diffuseTexture = LoadPBRTexture(baseDir, subPath, "Albedo", TextureMapType.Albedo, fallbackColor);
             layer.normalMapTexture = LoadPBRTexture(baseDir, subPath, "Normal", TextureMapType.Normal, new Color(0.5f, 0.5f, 1.0f, 1.0f));
             layer.maskMapTexture = LoadPBRTexture(baseDir, subPath, "MaskMap", TextureMapType.MaskMap, new Color(0.0f, 0.9f, 0.5f, 0.15f));
+
+            bool usedFallback = (layer.diffuseTexture != null && layer.diffuseTexture.width == 16 && layer.diffuseTexture.height == 16);
+            Debug.Log($"[TerrainPBRFactory] Layer '{name}' ({subPath}): diffuse={(layer.diffuseTexture != null ? $"{layer.diffuseTexture.width}x{layer.diffuseTexture.height}" : "NULL")} {(usedFallback ? "[FALLBACK COLORIDO]" : "[TEXTURA REAL]")}");
 
             return layer;
         }

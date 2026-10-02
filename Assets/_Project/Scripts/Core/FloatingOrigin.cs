@@ -81,7 +81,7 @@ namespace ProjectTerra.Core
             globalOriginOffset += new Vector3d(offset);
 
             // Desativa temporariamente CharacterControllers para evitar que o PhysX os desloque ou corrompa colisões
-            var charControllers = Object.FindObjectsByType<CharacterController>(FindObjectsSortMode.None);
+            var charControllers = Object.FindObjectsByType<CharacterController>();
             for (int i = 0; i < charControllers.Length; i++)
             {
                 if (charControllers[i] != null) charControllers[i].enabled = false;

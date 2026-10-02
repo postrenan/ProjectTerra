@@ -69,17 +69,15 @@ namespace ProjectTerra.Sandbox
 
             // 1. Árvores em torno das estradas e campos (amostragem em raio de 3km do centro de operações)
             int treeCount = Mathf.Clamp((save != null ? save.forestPercent : 35) * 8, 80, 500);
+            int treesSpawned = 0;
             for (int i = 0; i < treeCount; i++)
             {
-                // Espalha árvores ao redor da base e cidade, evitando colisão direta com o centro urbano
                 float angle = Random.Range(0f, Mathf.PI * 2f);
                 float dist = Random.Range(180f, 3500f);
                 Vector3 baseCenter = (starterBasePos + townPos) * 0.5f;
                 Vector3 spawnPos = baseCenter + new Vector3(Mathf.Cos(angle) * dist, 0f, Mathf.Sin(angle) * dist);
-
                 spawnPos.y = terrain.SampleHeight(spawnPos) + terrainPos.y;
 
-                // Não spawnar dentro de corpos d'água muito baixos
                 if (spawnPos.y < 1.0f) continue;
 
                 GameObject treePrefab = (i % 3 == 0) ? treeDetailed : (i % 2 == 0 ? treeCone : treeDefault);
@@ -89,10 +87,17 @@ namespace ProjectTerra.Sandbox
                     float scale = Random.Range(3.5f, 6.0f);
                     tree.transform.localScale = Vector3.one * scale;
                 }
+                else
+                {
+                    // Fallback procedural: tronco (cilindro) + copa (esfera) em escala realista (5-12m)
+                    SpawnProceduralTree(treeRoot, spawnPos, Random.Range(5f, 12f));
+                }
+                treesSpawned++;
             }
 
             // 2. Rochas em encostas e relevos
             int rockCount = 60;
+            int rocksSpawned = 0;
             for (int i = 0; i < rockCount; i++)
             {
                 float angle = Random.Range(0f, Mathf.PI * 2f);
@@ -109,92 +114,171 @@ namespace ProjectTerra.Sandbox
                     float scale = Random.Range(4.0f, 8.5f);
                     rock.transform.localScale = Vector3.one * scale;
                 }
+                else
+                {
+                    // Fallback: cubo distorcido como rocha (1.5-5m)
+                    SpawnProceduralRock(rockRoot, spawnPos, Random.Range(1.5f, 5.0f));
+                }
+                rocksSpawned++;
             }
 
-            // 3. Animais de Fazenda (Cavalos, Vacas, Ovelhas) em pasto perto da base do agricultor
-            if (cowModel != null || sheepModel != null || horseModel != null)
-            {
-                SpawnPastureAnimals(animalRoot, starterBasePos, terrain, cowModel, horseModel, sheepModel);
-            }
+            // 3. Animais de Fazenda — sempre spawnados (com prefab ou fallback procedural)
+            SpawnPastureAnimals(animalRoot, starterBasePos, terrain, cowModel, horseModel, sheepModel);
 
-            // 4. Animais Selvagens (Raposas, Lobos) nas áreas florestais
-            if (foxModel != null || wolfModel != null)
-            {
-                SpawnWildAnimals(animalRoot, starterBasePos + new Vector3(800f, 0f, 900f), terrain, foxModel, wolfModel);
-            }
+            // 4. Animais Selvagens — sempre spawnados
+            SpawnWildAnimals(animalRoot, starterBasePos + new Vector3(800f, 0f, 900f), terrain, foxModel, wolfModel);
 
-            Debug.Log($"[SceneObjectSpawner] Povoamento concluído: {treeCount} árvores, {rockCount} rochas e grupos de animais posicionados.");
+            Debug.Log($"[SceneObjectSpawner] Povoamento concluído: {treesSpawned} árvores, {rocksSpawned} rochas e grupos de animais posicionados.");
+        }
+
+        private static void SpawnProceduralTree(Transform parent, Vector3 pos, float height)
+        {
+            var treeRoot = new GameObject("Tree_Procedural");
+            treeRoot.transform.SetParent(parent);
+            treeRoot.transform.position = pos;
+
+            // Tronco: cilindro marrom (0.3m raio, altura variável)
+            var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            trunk.name = "Tronco";
+            trunk.transform.SetParent(treeRoot.transform);
+            float trunkH = height * 0.55f;
+            trunk.transform.localPosition = new Vector3(0f, trunkH * 0.5f, 0f);
+            trunk.transform.localScale = new Vector3(0.28f, trunkH * 0.5f, 0.28f);
+            trunk.GetComponent<Renderer>().material.color = new Color(0.35f, 0.22f, 0.12f);
+            Object.Destroy(trunk.GetComponent<Collider>());
+
+            // Copa: esfera verde (varia por tipo)
+            var canopy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            canopy.name = "Copa";
+            canopy.transform.SetParent(treeRoot.transform);
+            float canopyR = height * 0.45f;
+            canopy.transform.localPosition = new Vector3(0f, trunkH + canopyR * 0.7f, 0f);
+            canopy.transform.localScale = new Vector3(canopyR, canopyR * 0.85f, canopyR);
+            float green = Random.Range(0.28f, 0.48f);
+            canopy.GetComponent<Renderer>().material.color = new Color(0.15f, green, 0.12f);
+            Object.Destroy(canopy.GetComponent<Collider>());
+        }
+
+        private static void SpawnProceduralRock(Transform parent, Vector3 pos, float size)
+        {
+            var rock = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rock.name = "Rock_Procedural";
+            rock.transform.SetParent(parent);
+            rock.transform.position = pos + Vector3.up * (size * 0.5f);
+            rock.transform.rotation = Quaternion.Euler(Random.Range(-15f, 15f), Random.Range(0f, 360f), Random.Range(-12f, 12f));
+            rock.transform.localScale = new Vector3(size * Random.Range(0.8f, 1.3f), size * Random.Range(0.5f, 0.9f), size * Random.Range(0.8f, 1.2f));
+            float gray = Random.Range(0.38f, 0.52f);
+            rock.GetComponent<Renderer>().material.color = new Color(gray, gray - 0.03f, gray - 0.05f);
         }
 
         private static void SpawnPastureAnimals(Transform parent, Vector3 basePos, Terrain terrain, GameObject cow, GameObject horse, GameObject sheep)
         {
             Vector3 pastureCenter = basePos + new Vector3(120f, 0f, 80f);
 
-            // Grupo de vacas
-            if (cow != null)
+            // Grupo de vacas (6 animais, ~1.5m de altura, marrom/branco)
+            for (int i = 0; i < 6; i++)
             {
-                for (int i = 0; i < 6; i++)
+                Vector3 pos = pastureCenter + new Vector3(Random.Range(-35f, 35f), 0f, Random.Range(-35f, 35f));
+                pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
+                if (cow != null)
                 {
-                    Vector3 pos = pastureCenter + new Vector3(Random.Range(-35f, 35f), 0f, Random.Range(-35f, 35f));
-                    pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
                     var obj = Object.Instantiate(cow, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Vaca_{i + 1}";
                     obj.transform.localScale = Vector3.one * 1.5f;
                 }
+                else
+                {
+                    SpawnAnimalPrimitive(parent, pos, $"Animal_Vaca_{i + 1}", new Vector3(0.85f, 1.5f, 1.6f), new Color(0.55f, 0.35f, 0.22f));
+                }
             }
 
-            // Grupo de cavalos
-            if (horse != null)
+            // Grupo de cavalos (4 animais, ~1.6m de altura)
+            for (int i = 0; i < 4; i++)
             {
-                for (int i = 0; i < 4; i++)
+                Vector3 pos = pastureCenter + new Vector3(Random.Range(50f, 110f), 0f, Random.Range(-25f, 25f));
+                pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
+                if (horse != null)
                 {
-                    Vector3 pos = pastureCenter + new Vector3(Random.Range(50f, 110f), 0f, Random.Range(-25f, 25f));
-                    pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
                     var obj = Object.Instantiate(horse, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Cavalo_{i + 1}";
                     obj.transform.localScale = Vector3.one * 1.6f;
                 }
+                else
+                {
+                    SpawnAnimalPrimitive(parent, pos, $"Animal_Cavalo_{i + 1}", new Vector3(0.7f, 1.6f, 1.9f), new Color(0.25f, 0.18f, 0.12f));
+                }
             }
 
-            // Grupo de ovelhas
-            if (sheep != null)
+            // Grupo de ovelhas (8 animais, ~0.7m de altura, branco-creme)
+            for (int i = 0; i < 8; i++)
             {
-                for (int i = 0; i < 8; i++)
+                Vector3 pos = pastureCenter + new Vector3(Random.Range(-70f, -20f), 0f, Random.Range(30f, 75f));
+                pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
+                if (sheep != null)
                 {
-                    Vector3 pos = pastureCenter + new Vector3(Random.Range(-70f, -20f), 0f, Random.Range(30f, 75f));
-                    pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
                     var obj = Object.Instantiate(sheep, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Ovelha_{i + 1}";
                     obj.transform.localScale = Vector3.one * 1.3f;
+                }
+                else
+                {
+                    SpawnAnimalPrimitive(parent, pos, $"Animal_Ovelha_{i + 1}", new Vector3(0.6f, 0.7f, 0.9f), new Color(0.92f, 0.90f, 0.88f));
                 }
             }
         }
 
         private static void SpawnWildAnimals(Transform parent, Vector3 forestPos, Terrain terrain, GameObject fox, GameObject wolf)
         {
-            if (fox != null)
+            // Raposas (4 animais, ~0.4m, laranja)
+            for (int i = 0; i < 4; i++)
             {
-                for (int i = 0; i < 4; i++)
+                Vector3 pos = forestPos + new Vector3(Random.Range(-50f, 50f), 0f, Random.Range(-50f, 50f));
+                pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
+                if (fox != null)
                 {
-                    Vector3 pos = forestPos + new Vector3(Random.Range(-50f, 50f), 0f, Random.Range(-50f, 50f));
-                    pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
                     var obj = Object.Instantiate(fox, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Raposa_{i + 1}";
                     obj.transform.localScale = Vector3.one * 1.2f;
                 }
+                else
+                {
+                    SpawnAnimalPrimitive(parent, pos, $"Animal_Raposa_{i + 1}", new Vector3(0.3f, 0.4f, 0.7f), new Color(0.80f, 0.42f, 0.10f));
+                }
             }
 
-            if (wolf != null)
+            // Lobos (3 animais, ~0.8m, cinza escuro)
+            for (int i = 0; i < 3; i++)
             {
-                for (int i = 0; i < 3; i++)
+                Vector3 pos = forestPos + new Vector3(Random.Range(100f, 200f), 0f, Random.Range(-40f, 40f));
+                pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
+                if (wolf != null)
                 {
-                    Vector3 pos = forestPos + new Vector3(Random.Range(100f, 200f), 0f, Random.Range(-40f, 40f));
-                    pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
                     var obj = Object.Instantiate(wolf, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
                     obj.name = $"Animal_Lobo_{i + 1}";
                     obj.transform.localScale = Vector3.one * 1.4f;
                 }
+                else
+                {
+                    SpawnAnimalPrimitive(parent, pos, $"Animal_Lobo_{i + 1}", new Vector3(0.45f, 0.8f, 1.1f), new Color(0.30f, 0.30f, 0.32f));
+                }
             }
+        }
+
+        /// <summary>
+        /// Cria um primitivo Capsule representando um animal, com escala e cor realistas.
+        /// bodySize = (width, height, length) em metros.
+        /// </summary>
+        private static void SpawnAnimalPrimitive(Transform parent, Vector3 pos, string name, Vector3 bodySize, Color color)
+        {
+            var animal = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            animal.name = name;
+            animal.transform.SetParent(parent);
+            animal.transform.position = pos + Vector3.up * (bodySize.y * 0.5f);
+            animal.transform.rotation = Quaternion.Euler(90f, Random.Range(0f, 360f), 0f); // Capsule deitada = corpo horizontal
+            // Capsule padrão tem raio 0.5 e altura 2 (em unidades), então scale x=width, y=half_length, z=width
+            animal.transform.localScale = new Vector3(bodySize.x, bodySize.z * 0.5f, bodySize.x);
+            animal.GetComponent<Renderer>().material.color = color;
+            Object.Destroy(animal.GetComponent<Collider>());
         }
 
         /// <summary>

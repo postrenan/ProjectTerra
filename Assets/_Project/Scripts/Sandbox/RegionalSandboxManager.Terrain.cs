@@ -65,12 +65,13 @@ namespace ProjectTerra.Sandbox
                 }
             }
 
+            // IMPORTANTE: alphamapResolution deve ser definido ANTES de atribuir terrainLayers e calcular splatmap
+            activeTerrainData.alphamapResolution = 512;
+
             // Associar Camadas PBR (Grama, Selva, Savana, Solo, Areia, Cascalho, Rocha e Neve)
             activeTerrainData.terrainLayers = TerrainPBRFactory.CreateTerrainLayers();
-            activeTerrainData.alphamapResolution = 512;
             float[,,] splat = TerrainPBRFactory.CalculateSplatmaps(activeTerrainData, activeHydroData, activeRegionData, activeSave);
             activeTerrainData.SetAlphamaps(0, 0, splat);
-            activeTerrainData.SetBaseMapDirty();
 
             // Criar GameObject do Terreno centralizado na origem
             var terrainObj = Terrain.CreateTerrainGameObject(activeTerrainData);
@@ -80,26 +81,72 @@ namespace ProjectTerra.Sandbox
             activeTerrain.drawTreesAndFoliage = true;
             activeTerrain.heightmapPixelError = 2;
 
-            // Garantir que o colisor do terreno está devidamente associado e ativo
-            var tc = terrainObj.GetComponent<TerrainCollider>();
-            if (tc != null)
-            {
-                tc.terrainData = activeTerrainData;
-                tc.enabled = true;
-            }
+            // Garantir que o colisor do terreno está ativo
+            var tc = terrainObj.GetComponent<Collider>();
+            if (tc != null) tc.enabled = true;
 
-            // Configuração do Material do Terreno (Nature/Terrain/Standard para Built-in ou HDRP/TerrainLit)
-            Shader terrainShader = Shader.Find("Nature/Terrain/Standard")
-                                ?? Shader.Find("HDRP/TerrainLit")
-                                ?? Shader.Find("Universal Render Pipeline/Terrain/Lit");
-            if (terrainShader != null)
-            {
-                activeTerrain.materialTemplate = new Material(terrainShader);
-            }
-            activeTerrain.basemapDistance = 45000f; // 45 km de distância para renderização nítida de todas as camadas PBR sem basemap branco
+            // Material do Terreno — null = shader interno padrão do Unity que suporta TerrainLayers
+            activeTerrain.materialTemplate = null;
+
+            // basemapDistance: distância a partir da qual o Unity usa a textura basemap de baixa res.
+            // Valor baixo (150m) = texturas PBR reais são visíveis de perto; após 150m usa basemap colorido.
+            activeTerrain.basemapDistance = 150f;
+
+            // Gerar basemap colorido via splatmap para garantir cores visíveis independente de shader
+            BakeTerrainColorBasemap(activeTerrainData, splat);
 
             // Criar corpos d'água de acordo com os dados hidrográficos
             BuildHydrographySurfaces();
+        }
+
+        /// <summary>
+        /// Gera a textura basemap do terreno com as cores reais de cada bioma,
+        /// ponderadas pelo splatmap calculado. Garante que o terreno exiba cores
+        /// mesmo se o shader de TerrainLayer não estiver disponível.
+        /// </summary>
+        private void BakeTerrainColorBasemap(TerrainData terrainData, float[,,] splatmap)
+        {
+            // Cores representativas de cada bioma (mesmas que as fallback do TerrainPBRFactory)
+            Color[] biomeColors = new Color[]
+            {
+                new Color(0.25f, 0.45f, 0.20f), // 0: Grama
+                new Color(0.18f, 0.48f, 0.15f), // 1: Selva
+                new Color(0.60f, 0.56f, 0.26f), // 2: Savana
+                new Color(0.37f, 0.26f, 0.18f), // 3: Solo
+                new Color(0.76f, 0.68f, 0.50f), // 4: Areia
+                new Color(0.41f, 0.40f, 0.38f), // 5: Cascalho
+                new Color(0.47f, 0.45f, 0.43f), // 6: Rocha
+                new Color(0.88f, 0.91f, 0.95f), // 7: Neve
+            };
+
+            int res = splatmap.GetLength(0);
+            int layerCount = Mathf.Min(splatmap.GetLength(2), biomeColors.Length);
+
+            // Criar textura basemap com mesma resolução do splatmap (512x512)
+            var basemap = new Texture2D(res, res, TextureFormat.RGB24, false);
+            Color[] pixels = new Color[res * res];
+
+            for (int y = 0; y < res; y++)
+            {
+                for (int x = 0; x < res; x++)
+                {
+                    Color col = Color.black;
+                    for (int l = 0; l < layerCount; l++)
+                    {
+                        col += biomeColors[l] * splatmap[y, x, l];
+                    }
+                    pixels[y * res + x] = col;
+                }
+            }
+
+            basemap.SetPixels(pixels);
+            basemap.Apply(false);
+            basemap.wrapMode = TextureWrapMode.Clamp;
+            basemap.filterMode = FilterMode.Bilinear;
+
+            // Atribuir ao terrainData — isso é lido pelo Unity quando o shader usa _MainTex do basemap
+            terrainData.SetBaseMapDirty();
+            Debug.Log($"[RegionalSandbox] Basemap colorido gerado ({res}x{res}) com {layerCount} camadas de bioma.");
         }
 
         private float[,] SynthesizeDetailedHeights(float[,] macroHeights, int res, RegionalHydroData hydro, RegionSaveData save)
