@@ -157,7 +157,7 @@ namespace ProjectTerra.Sandbox
         private void SpawnPlayerAndVehicle()
         {
             var playerObj = new GameObject("PlayerCharacter");
-            float playerY = GetTerrainHeight(starterBasePosition + new Vector3(5f, 0f, 5f)) + 1.0f;
+            float playerY = GetTerrainHeight(starterBasePosition + new Vector3(5f, 0f, 5f)) + 1.2f;
             playerObj.transform.position = new Vector3(starterBasePosition.x + 5f, playerY, starterBasePosition.z + 5f);
 
             var charController = playerObj.AddComponent<CharacterController>();

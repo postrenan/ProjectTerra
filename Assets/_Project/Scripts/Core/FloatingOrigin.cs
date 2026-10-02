@@ -18,7 +18,7 @@ namespace ProjectTerra.Core
 
         [Header("Threshold Settings")]
         [Tooltip("Distância máxima da origem antes de rebater o mundo (em metros)")]
-        [SerializeField] private float threshold = 2000.0f;
+        [SerializeField] private float threshold = 25000.0f; // 25 km
 
         [Header("Orbit Mode Bypass")]
         [Tooltip("Quando a câmera está em órbita astronômica (> minOrbitAltitude), o rebaseamento é suspenso para manter o centro do planeta na origem.")]
@@ -80,13 +80,31 @@ namespace ProjectTerra.Core
         {
             globalOriginOffset += new Vector3d(offset);
 
+            // Desativa temporariamente CharacterControllers para evitar que o PhysX os desloque ou corrompa colisões
+            var charControllers = Object.FindObjectsByType<CharacterController>(FindObjectsSortMode.None);
+            for (int i = 0; i < charControllers.Length; i++)
+            {
+                if (charControllers[i] != null) charControllers[i].enabled = false;
+            }
+
             // Transladar todos os GameObjects na raiz da cena ativa
             Scene scene = SceneManager.GetActiveScene();
             GameObject[] rootObjects = scene.GetRootGameObjects();
 
             for (int i = 0; i < rootObjects.Length; i++)
             {
-                rootObjects[i].transform.position -= offset;
+                if (rootObjects[i] != null)
+                {
+                    rootObjects[i].transform.position -= offset;
+                }
+            }
+
+            // Força a árvore de física do Unity a sincronizar as novas posições imediatamente
+            Physics.SyncTransforms();
+
+            for (int i = 0; i < charControllers.Length; i++)
+            {
+                if (charControllers[i] != null) charControllers[i].enabled = true;
             }
 
             // Notificar sistemas que precisam de ajuste (partículas, trilhas, física)

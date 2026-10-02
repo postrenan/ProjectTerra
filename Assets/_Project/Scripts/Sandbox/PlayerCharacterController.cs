@@ -85,7 +85,8 @@ namespace ProjectTerra.Sandbox
                 camObj.AddComponent<AudioListener>();
             }
 
-            activeCamera.nearClipPlane = 0.2f;
+            activeCamera.nearClipPlane = 0.3f;
+            activeCamera.farClipPlane = 45000f;
 
             yaw = transform.eulerAngles.y;
             pitch = 0f;
@@ -193,6 +194,16 @@ namespace ProjectTerra.Sandbox
             // Gravidade
             velocity.y += gravity * Time.deltaTime;
             controller.Move(velocity * Time.deltaTime);
+
+            // Proteção contra queda no vazio / perda de colisão do terreno
+            float groundH = RegionalSandboxManager.Instance != null ? RegionalSandboxManager.Instance.GetTerrainHeight(transform.position) : 0f;
+            if (transform.position.y < groundH - 1.5f)
+            {
+                controller.enabled = false;
+                transform.position = new Vector3(transform.position.x, groundH + 1.2f, transform.position.z);
+                velocity.y = 0f;
+                controller.enabled = true;
+            }
 
             // Verificar veículos próximos
             CheckNearbyVehicles();

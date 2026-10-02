@@ -79,10 +79,23 @@ namespace ProjectTerra.Sandbox
             activeTerrain = terrainObj.GetComponent<Terrain>();
             activeTerrain.drawTreesAndFoliage = true;
             activeTerrain.heightmapPixelError = 2;
-            // Configuração do Renderizador de Terreno Nativo
-            // Deixar materialTemplate como null permite que a Unity use seu shader nativo interno de Terreno
-            // que conecta automaticamente os splatmaps (_Control0, _Control1) para as 8 camadas PBR sem sobrescrever com material vazio
-            activeTerrain.materialTemplate = null;
+
+            // Garantir que o colisor do terreno está devidamente associado e ativo
+            var tc = terrainObj.GetComponent<TerrainCollider>();
+            if (tc != null)
+            {
+                tc.terrainData = activeTerrainData;
+                tc.enabled = true;
+            }
+
+            // Configuração do Material do Terreno (Nature/Terrain/Standard para Built-in ou HDRP/TerrainLit)
+            Shader terrainShader = Shader.Find("Nature/Terrain/Standard")
+                                ?? Shader.Find("HDRP/TerrainLit")
+                                ?? Shader.Find("Universal Render Pipeline/Terrain/Lit");
+            if (terrainShader != null)
+            {
+                activeTerrain.materialTemplate = new Material(terrainShader);
+            }
             activeTerrain.basemapDistance = 45000f; // 45 km de distância para renderização nítida de todas as camadas PBR sem basemap branco
 
             // Criar corpos d'água de acordo com os dados hidrográficos
