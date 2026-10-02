@@ -221,14 +221,21 @@ Shader "ProjectTerra/EarthSurface"
                 // Destaque visual do território selecionado (País, Província ou Estado)
                 if (_SelectedRegionId > 0.5)
                 {
-                    fixed4 idPixel = tex2D(_RegionIdTex, uv);
-                    float sampledId = round(idPixel.r * 255.0) + round(idPixel.g * 255.0) * 256.0;
-                    if (abs(sampledId - _SelectedRegionId) < 0.5)
+                    // Amostragem rigorosamente pontual e exata no centro do texel (4096 x 2048)
+                    // Elimina completamente qualquer interpolação bilinear ou vazamento entre regiões vizinhas
+                    float2 idUV = frac(uv);
+                    float2 snapUV = (floor(idUV * float2(4096.0, 2048.0)) + 0.5) / float2(4096.0, 2048.0);
+                    fixed4 idPixel = tex2Dlod(_RegionIdTex, float4(snapUV, 0.0, 0.0));
+                    
+                    int sampledId = (int)round(idPixel.r * 255.0) + ((int)round(idPixel.g * 255.0) * 256);
+                    int targetId = (int)round(_SelectedRegionId);
+                    
+                    if (sampledId == targetId && targetId > 0)
                     {
-                        float pulse = 0.82 + 0.18 * sin(_Time.y * 3.5);
+                        float pulse = 0.85 + 0.15 * sin(_Time.y * 3.5);
                         half3 hlColor = _SelectedHighlightColor.rgb * pulse;
                         float hlAlpha = _SelectedHighlightColor.a;
-                        // Iluminação holográfica elegante destacando o relevo do país
+                        // Iluminação holográfica nítida no contorno exato do território
                         finalColor = lerp(finalColor, finalColor * hlColor * 2.2 + hlColor * 0.35, hlAlpha);
                     }
                 }

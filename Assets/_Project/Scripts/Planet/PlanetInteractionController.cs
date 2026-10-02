@@ -26,8 +26,8 @@ namespace ProjectTerra.Planet
 
         private RegionDatabase database;
         private byte[] regionIdMap;
-        private const int MapWidth = 2048;
-        private const int MapHeight = 1024;
+        private const int MapWidth = 4096;
+        private const int MapHeight = 2048;
         private bool isDatabaseLoaded = false;
 
         private Rect lastCardRect;

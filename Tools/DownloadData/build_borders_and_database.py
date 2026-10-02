@@ -2,6 +2,7 @@ import os
 import json
 import urllib.request
 import math
+import numpy as np
 from PIL import Image, ImageDraw
 
 CACHE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "Temp", "GeoCache"))
@@ -13,10 +14,10 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(STREAMING_DIR, exist_ok=True)
 
 URLS = {
-    'countries_lines': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_boundary_lines_land.geojson',
-    'states_lines': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces_lines.geojson',
+    'ne_10m_admin_0_boundary_lines_land': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_boundary_lines_land.geojson',
+    'ne_10m_admin_1_states_provinces_lines': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces_lines.geojson',
     'countries_poly': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson',
-    'states_poly': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson'
+    'ne_10m_admin_1_states_provinces': 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson'
 }
 
 def download_file(name, url):
@@ -38,12 +39,14 @@ def latlon_to_xy(lon, lat, width, height):
     y = (90.0 - lat) / 180.0 * (height - 1)
     return x, y
 
-def render_lines(geojson_path, draw, width, height, color, line_width):
-    with open(geojson_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-
-    for feature in data.get('features', []):
-        geom = feature.get('geometry', {})
+def render_lines(features, draw, width, height, color, line_width):
+    line_count = 0
+    for feature in features:
+        if not feature:
+            continue
+        geom = feature.get('geometry')
+        if not geom:
+            continue
         gtype = geom.get('type')
         coords = geom.get('coordinates', [])
 
@@ -63,6 +66,7 @@ def render_lines(geojson_path, draw, width, height, color, line_width):
                 if abs(p1[0] - p2[0]) > 180.0:
                     if len(pts) > 1:
                         draw.line(pts, fill=color, width=line_width)
+                        line_count += 1
                     pts = []
                     continue
 
@@ -74,6 +78,8 @@ def render_lines(geojson_path, draw, width, height, color, line_width):
 
             if len(pts) > 1:
                 draw.line(pts, fill=color, width=line_width)
+                line_count += 1
+    return line_count
 
 def get_stats(name, country, lat, lon):
     seed = (int(abs(lat * 100)) * 73 + int(abs(lon * 100)) * 37 + len(name) * 19) % 100
@@ -99,8 +105,25 @@ def get_stats(name, country, lat, lon):
         'waterPercent': max(10, min(95, water))
     }
 
+def get_poly_bbox_area(coords, gtype, map_w, map_h):
+    polys = [coords] if gtype == 'Polygon' else (coords if gtype == 'MultiPolygon' else [])
+    min_x, max_x = map_w, 0
+    min_y, max_y = map_h, 0
+    for poly in polys:
+        if not poly or len(poly[0]) < 3:
+            continue
+        for pt in poly[0]:
+            x, y = latlon_to_xy(pt[0], pt[1], map_w, map_h)
+            if x < min_x: min_x = x
+            if x > max_x: max_x = x
+            if y < min_y: min_y = y
+            if y > max_y: max_y = y
+    if max_x < min_x:
+        return 0
+    return (max_x - min_x) * (max_y - min_y)
+
 def generate_regions_db_and_id_map(states_path, countries_path):
-    print("[DB] Generating regions database and raster ID map...")
+    print("[DB] Generating 4K regions database and raster ID map...")
 
     with open(countries_path, 'r', encoding='utf-8') as f:
         c_feats = json.load(f)['features']
@@ -109,7 +132,7 @@ def generate_regions_db_and_id_map(states_path, countries_path):
 
     regions = []
 
-    # 1. Countries
+    # 1. Countries (Base Layer)
     for feat in c_feats:
         p = feat.get('properties', {})
         name = p.get('NAME') or p.get('ADMIN') or 'País'
@@ -130,19 +153,26 @@ def generate_regions_db_and_id_map(states_path, countries_path):
             'waterPercent': stats['waterPercent']
         })
 
-    # 2. States / Provinces
-    for feat in s_feats:
+    # 2. States / Provinces (Detailed Layer - 4,596 features)
+    state_offset = len(c_feats)
+    state_items = []
+    MAP_W = 4096
+    MAP_H = 2048
+
+    for i, feat in enumerate(s_feats):
         p = feat.get('properties', {})
-        name = p.get('name') or p.get('name_en') or 'Estado'
-        country = p.get('admin') or p.get('sov_a3') or 'País'
+        admin = p.get('admin') or p.get('geonunit') or p.get('sov_a3') or 'País'
+        name = p.get('name') or p.get('name_en') or (f"{admin} (Território)") or 'Território'
         stype = p.get('type_en') or p.get('type') or 'Estado'
         clat = p.get('latitude') or 0.0
         clon = p.get('longitude') or 0.0
-        stats = get_stats(name, country, clat, clon)
+        stats = get_stats(name, admin, clat, clon)
+
+        cid = state_offset + i + 1
         regions.append({
-            'id': len(regions) + 1,
+            'id': cid,
             'name': name,
-            'country': country,
+            'country': admin,
             'type': stype,
             'centerLat': round(float(clat), 4),
             'centerLon': round(float(clon), 4),
@@ -152,15 +182,23 @@ def generate_regions_db_and_id_map(states_path, countries_path):
             'waterPercent': stats['waterPercent']
         })
 
-    # Raster ID Map (2048 x 1024, 16-bit ushort)
-    MAP_W = 2048
-    MAP_H = 1024
+        # Calculate bounding box area for Z-ordering (large polygons drawn first, small enclaves drawn on top)
+        geom = feat.get('geometry') or {}
+        gtype = geom.get('type')
+        coords = geom.get('coordinates', [])
+        area = get_poly_bbox_area(coords, gtype, MAP_W, MAP_H)
+        state_items.append((area, cid, geom))
+
+    print(f"[DB] Total regions cataloged: {len(regions)}")
+
+    # Raster ID Map (4096 x 2048, 16-bit ushort)
     img = Image.new('I', (MAP_W, MAP_H), 0)
     draw = ImageDraw.Draw(img)
 
+    print("  -> Rasterizing base country layer...")
     for i, feat in enumerate(c_feats):
         cid = i + 1
-        geom = feat.get('geometry', {})
+        geom = feat.get('geometry') or {}
         coords = geom.get('coordinates', [])
         polys = [coords] if geom.get('type') == 'Polygon' else (coords if geom.get('type') == 'MultiPolygon' else [])
         for poly in polys:
@@ -168,10 +206,10 @@ def generate_regions_db_and_id_map(states_path, countries_path):
             pts = [latlon_to_xy(pt[0], pt[1], MAP_W, MAP_H) for pt in poly[0]]
             draw.polygon(pts, fill=cid)
 
-    state_offset = len(c_feats)
-    for i, feat in enumerate(s_feats):
-        cid = state_offset + i + 1
-        geom = feat.get('geometry', {})
+    print("  -> Rasterizing 4,596 state/province polygons (sorted by area descending)...")
+    # Sort descending by bounding box area: largest states drawn first, smallest enclaves/islands drawn last on top
+    state_items.sort(key=lambda x: x[0], reverse=True)
+    for area, cid, geom in state_items:
         coords = geom.get('coordinates', [])
         polys = [coords] if geom.get('type') == 'Polygon' else (coords if geom.get('type') == 'MultiPolygon' else [])
         for poly in polys:
@@ -179,36 +217,44 @@ def generate_regions_db_and_id_map(states_path, countries_path):
             pts = [latlon_to_xy(pt[0], pt[1], MAP_W, MAP_H) for pt in poly[0]]
             draw.polygon(pts, fill=cid)
 
-    # Ensure small islands / micro-nations are clickable
+    print("  -> Stamping center points for micro-islands and small territories...")
     for r in regions:
         cx, cy = latlon_to_xy(r['centerLon'], r['centerLat'], MAP_W, MAP_H)
-        draw.rectangle([cx-1, cy-1, cx+1, cy+1], fill=r['id'])
+        if 0 <= cx < MAP_W and 0 <= cy < MAP_H:
+            # 3x3 footprint ensures micro-islands are selectable and render with crisp highlight
+            draw.rectangle([cx-1, cy-1, cx+1, cy+1], fill=r['id'])
 
-    # Export 16-bit raw binary
-    raw_data = bytearray(MAP_W * MAP_H * 2)
-    for y in range(MAP_H):
-        for x in range(MAP_W):
-            val = img.getpixel((x, y))
-            idx = (y * MAP_W + x) * 2
-            raw_data[idx] = val & 0xFF
-            raw_data[idx + 1] = (val >> 8) & 0xFF
+    # Convert Image to NumPy array for ultra-fast I/O and lossless encoding
+    print("  -> Converting to raw binary and lossless texture...")
+    id_array = np.array(img, dtype=np.uint16)
 
+    # 1. Export 4096x2048x2 bytes raw binary (16 MB)
     bin_path = os.path.join(STREAMING_DIR, "region_id_map.bin")
-    with open(bin_path, "wb") as f:
-        f.write(raw_data)
+    id_array.tofile(bin_path)
     print(f"[MAP] Saved region_id_map.bin ({os.path.getsize(bin_path)} bytes)")
 
+    # 2. Export 4096x2048 lossless PNG texture for Unity Shader
+    # Encoding: R = ID & 0xFF, G = (ID >> 8) & 0xFF, B = 0
+    rgb_array = np.zeros((MAP_H, MAP_W, 3), dtype=np.uint8)
+    rgb_array[:, :, 0] = (id_array & 0xFF).astype(np.uint8)
+    rgb_array[:, :, 1] = ((id_array >> 8) & 0xFF).astype(np.uint8)
+    png_img = Image.fromarray(rgb_array, mode='RGB')
+    png_path = os.path.join(OUTPUT_DIR, "region_id_map.png")
+    png_img.save(png_path, "PNG", optimize=False)
+    print(f"[MAP] Saved region_id_map.png ({os.path.getsize(png_path)} bytes)")
+
+    # 3. Export JSON database
     db_path = os.path.join(STREAMING_DIR, "regions_database.json")
     with open(db_path, "w", encoding='utf-8') as f:
         json.dump({'regions': regions}, f, ensure_ascii=False, indent=2)
     print(f"[DB] Saved {len(regions)} regions into {db_path} ({os.path.getsize(db_path)} bytes)")
 
 def main():
-    print("=== NATURAL EARTH BORDERS & REGION DATABASE BUILDER ===")
-    c_lines = download_file('countries_lines', URLS['countries_lines'])
-    s_lines = download_file('states_lines', URLS['states_lines'])
-    c_poly = download_file('countries_poly', URLS['countries_poly'])
-    s_poly = download_file('states_poly', URLS['states_poly'])
+    print("=== NATURAL EARTH 10M 4K BORDERS & REGION DATABASE BUILDER ===")
+    c_lines_path = download_file('ne_10m_admin_0_boundary_lines_land', URLS['ne_10m_admin_0_boundary_lines_land'])
+    s_lines_path = download_file('ne_10m_admin_1_states_provinces_lines', URLS['ne_10m_admin_1_states_provinces_lines'])
+    c_poly_path = download_file('countries_poly', URLS['countries_poly'])
+    s_poly_path = download_file('ne_10m_admin_1_states_provinces', URLS['ne_10m_admin_1_states_provinces'])
 
     WIDTH = 4096
     HEIGHT = 2048
@@ -217,17 +263,25 @@ def main():
     img = Image.new('RGBA', (WIDTH, HEIGHT), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    print("  -> Drawing state & province borders...")
-    render_lines(s_lines, draw, WIDTH, HEIGHT, color=(160, 225, 255, 175), line_width=1)
+    print("  -> Loading 10m lines datasets...")
+    with open(s_lines_path, 'r', encoding='utf-8') as f:
+        s_lines_features = json.load(f)['features']
+    with open(c_lines_path, 'r', encoding='utf-8') as f:
+        c_lines_features = json.load(f)['features']
 
-    print("  -> Drawing national country borders...")
-    render_lines(c_lines, draw, WIDTH, HEIGHT, color=(255, 235, 140, 240), line_width=2)
+    print("  -> Drawing high-precision state & province borders (45,000+ segments)...")
+    sc = render_lines(s_lines_features, draw, WIDTH, HEIGHT, color=(160, 225, 255, 175), line_width=1)
+    print(f"     Rendered {sc} state border segments.")
+
+    print("  -> Drawing high-precision national borders...")
+    cc = render_lines(c_lines_features, draw, WIDTH, HEIGHT, color=(255, 235, 140, 240), line_width=2)
+    print(f"     Rendered {cc} national border segments.")
 
     borders_png_path = os.path.join(OUTPUT_DIR, "4k_earth_borders.png")
     img.save(borders_png_path, "PNG", optimize=True)
     print(f"[TEXTURE] Saved borders overlay to {borders_png_path} ({os.path.getsize(borders_png_path)} bytes)")
 
-    generate_regions_db_and_id_map(s_poly, c_poly)
+    generate_regions_db_and_id_map(s_poly_path, c_poly_path)
     print("=== ALL ASSETS GENERATED SUCCESSFULLY ===")
 
 if __name__ == "__main__":
