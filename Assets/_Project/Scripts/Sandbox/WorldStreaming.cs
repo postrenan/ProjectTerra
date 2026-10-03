@@ -25,14 +25,16 @@ namespace ProjectTerra.Sandbox
     public static class WorldStreaming
     {
         // Layers por índice (8..31 são livres; não precisam de nome no TagManager para uso por índice).
-        public const int LayerFar = 8;   // estruturas e árvores
-        public const int LayerMid = 9;   // rochas
-        public const int LayerNear = 10; // animais e folhagem
+        public const int LayerFar = 8;      // estruturas e árvores
+        public const int LayerMid = 9;      // rochas
+        public const int LayerNear = 10;    // animais e folhagem
+        public const int LayerLandmark = 11; // marcos geográficos (vulcões, montanhas, chapadas, quedas, rios)
 
         // Distâncias de render por tipo (metros).
-        public const float DistFar = 1400f;  // árvores e estruturas
-        public const float DistMid = 600f;   // rochas
-        public const float DistNear = 280f;  // animais e folhagem
+        public const float DistFar = 1400f;      // árvores e estruturas
+        public const float DistMid = 600f;       // rochas
+        public const float DistNear = 280f;      // animais e folhagem
+        public const float DistLandmark = 22000f; // marcos visíveis bem de longe (vista da região)
 
         public static int LayerFor(WorldObjectCategory category)
         {
@@ -78,9 +80,13 @@ namespace ProjectTerra.Sandbox
             dist[LayerFar] = DistFar;
             dist[LayerMid] = DistMid;
             dist[LayerNear] = DistNear;
+            dist[LayerLandmark] = DistLandmark;
 
             cam.layerCullDistances = dist;
             cam.layerCullSpherical = true;
+
+            // Precisa de far clip grande para enxergar montanhas/vulcões ao longe (vista da região).
+            cam.farClipPlane = Mathf.Max(cam.farClipPlane, DistLandmark + 3000f);
         }
     }
 

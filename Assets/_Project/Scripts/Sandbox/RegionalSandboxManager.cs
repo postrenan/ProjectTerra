@@ -57,6 +57,7 @@ namespace ProjectTerra.Sandbox
             BuildStarterCareerInfrastructure();
             SceneObjectSpawner.PopulateNatureAndFauna(activeTerrain, activeSave, starterBasePosition, townCenterPosition);
             GrassFoliageSpawner.PopulateGrassAndFoliage(activeTerrain, activeSave, starterBasePosition, townCenterPosition);
+            LandmarkManager.Create(activeTerrain, activeRegionData);
             ApplyWorldCulling();
             SpawnPlayerAndVehicle();
             EnsureVehicleManager();

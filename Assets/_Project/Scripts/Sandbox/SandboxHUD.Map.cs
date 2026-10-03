@@ -202,6 +202,15 @@ namespace ProjectTerra.Sandbox
                 GUI.Label(new Rect(pScreen.x + 8f, pScreen.y - 8f, 80f, 20f), "Você", subtitleStyle);
             }
 
+            // Marcos geográficos especiais (vulcões, montanhas, chapadas, quedas, rios)
+            if (LandmarkManager.Placed != null)
+            {
+                foreach (var lm in LandmarkManager.Placed)
+                {
+                    DrawMapMarker(lm.Key, worldW, worldL, mapImageRect, lm.Value, new Color(1f, 0.5f, 0.2f));
+                }
+            }
+
             GUI.EndGroup();
 
             // Contorno (bounding) da região + vizinhos de fronteira
