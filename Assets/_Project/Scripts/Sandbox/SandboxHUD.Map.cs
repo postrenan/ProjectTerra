@@ -204,6 +204,9 @@ namespace ProjectTerra.Sandbox
 
             GUI.EndGroup();
 
+            // Contorno (bounding) da região + vizinhos de fronteira
+            DrawRegionBorders(mapCanvasRect);
+
             // Rodapé do Mapa com Controles e Legenda
             GUILayout.BeginArea(new Rect(mapX + 15f, mapY + mapSize - 35f, mapSize - 30f, 30f));
             GUILayout.BeginHorizontal();
@@ -226,6 +229,39 @@ namespace ProjectTerra.Sandbox
             GUILayout.Label("💡 Clique no mapa para definir destino  •  Scroll para Zoom  •  Arraste para Mover", subtitleStyle);
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
+        }
+
+        private System.Collections.Generic.List<string> borderLabels;
+        private bool bordersComputed;
+
+        private void DrawRegionBorders(Rect canvasRect)
+        {
+            if (!bordersComputed)
+            {
+                bordersComputed = true;
+                var rsm = RegionalSandboxManager.Instance;
+                var me = rsm != null ? rsm.activeRegionData : null;
+                borderLabels = RegionNeighbors.GetBorderLabels(me);
+            }
+
+            // Moldura (bounding) da regiao no mapa
+            GUI.color = new Color(0.25f, 0.8f, 1f, 0.9f);
+            float t = 2f;
+            GUI.DrawTexture(new Rect(canvasRect.x, canvasRect.y, canvasRect.width, t), whiteTex);
+            GUI.DrawTexture(new Rect(canvasRect.x, canvasRect.yMax - t, canvasRect.width, t), whiteTex);
+            GUI.DrawTexture(new Rect(canvasRect.x, canvasRect.y, t, canvasRect.height), whiteTex);
+            GUI.DrawTexture(new Rect(canvasRect.xMax - t, canvasRect.y, t, canvasRect.height), whiteTex);
+            GUI.color = Color.white;
+
+            string divisas = (borderLabels != null && borderLabels.Count > 0)
+                ? string.Join("  \u2022  ", borderLabels)
+                : "Sem divisas terrestres (litoral/oceano)";
+            var panel = new Rect(canvasRect.x + 6f, canvasRect.y + 6f, canvasRect.width - 12f, 22f);
+            GUI.color = new Color(0f, 0f, 0f, 0.6f);
+            GUI.DrawTexture(panel, whiteTex);
+            GUI.color = new Color(0.85f, 0.95f, 1f);
+            GUI.Label(new Rect(panel.x + 6f, panel.y, panel.width - 10f, panel.height), "\U0001F9ED Divisas: " + divisas, subtitleStyle);
+            GUI.color = Color.white;
         }
 
         private void HandleMapInteraction(Rect canvasRect)

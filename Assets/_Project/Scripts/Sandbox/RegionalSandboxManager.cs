@@ -56,6 +56,8 @@ namespace ProjectTerra.Sandbox
             BuildStarterTown();
             BuildStarterCareerInfrastructure();
             SceneObjectSpawner.PopulateNatureAndFauna(activeTerrain, activeSave, starterBasePosition, townCenterPosition);
+            GrassFoliageSpawner.PopulateGrassAndFoliage(activeTerrain, activeSave, starterBasePosition, townCenterPosition);
+            ApplyWorldCulling();
             SpawnPlayerAndVehicle();
             EnsureVehicleManager();
             EnsureCommandConsole();
@@ -82,6 +84,33 @@ namespace ProjectTerra.Sandbox
                 var consoleObj = new GameObject("InGameCommandConsole");
                 consoleObj.AddComponent<InGameCommandConsole>();
             }
+        }
+
+        private void ApplyWorldCulling()
+        {
+            if (FindAnyObjectByType<WorldCullingManager>() == null)
+            {
+                new GameObject("WorldCullingManager").AddComponent<WorldCullingManager>();
+            }
+
+            ApplyLayerByPath("Environment_SceneObjects/Trees_Clusters", WorldObjectCategory.Tree);
+            ApplyLayerByPath("Environment_SceneObjects/Rocks_Formations", WorldObjectCategory.Rock);
+            ApplyLayerByPath("Environment_SceneObjects/Fauna_Animals", WorldObjectCategory.Animal);
+            ApplyLayerByPath("Town_CidadeInicial", WorldObjectCategory.Structure);
+
+            foreach (var root in gameObject.scene.GetRootGameObjects())
+            {
+                if (root.name.StartsWith("Base_"))
+                {
+                    WorldStreaming.Apply(root, WorldObjectCategory.Structure);
+                }
+            }
+        }
+
+        private void ApplyLayerByPath(string path, WorldObjectCategory category)
+        {
+            var go = GameObject.Find(path);
+            if (go != null) WorldStreaming.Apply(go, category);
         }
 
         private void EnsureActiveSave()

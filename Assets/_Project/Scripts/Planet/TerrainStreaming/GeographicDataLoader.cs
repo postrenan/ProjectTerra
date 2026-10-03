@@ -78,12 +78,14 @@ namespace ProjectTerra.Planet.TerrainStreaming
                             ushort countryLen = reader.ReadUInt16();
                             hydro.country = System.Text.Encoding.UTF8.GetString(reader.ReadBytes(countryLen));
 
-                            if (rawBytes.Length >= headerSize + Resolution * Resolution * 2)
+                            // Resolução vem do cabeçalho (varia por região, escala do ETOPO).
+                            if (res >= 2 && rawBytes.Length >= headerSize + res * res * 2)
                             {
+                                heights = new float[res, res];
                                 int byteIdx = headerSize;
-                                for (int y = 0; y < Resolution; y++)
+                                for (int y = 0; y < res; y++)
                                 {
-                                    for (int x = 0; x < Resolution; x++)
+                                    for (int x = 0; x < res; x++)
                                     {
                                         ushort rawVal = (ushort)(rawBytes[byteIdx] | (rawBytes[byteIdx + 1] << 8));
                                         heights[y, x] = rawVal / 65535.0f;

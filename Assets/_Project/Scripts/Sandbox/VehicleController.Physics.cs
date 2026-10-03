@@ -32,7 +32,10 @@ namespace ProjectTerra.Sandbox
             {
                 if (currentSpeedKmh < maxSpeedKmh || Mathf.Sign(activeThrottle) != Mathf.Sign(Vector3.Dot(rb.linearVelocity, transform.forward)))
                 {
-                    Vector3 force = transform.forward * (activeThrottle * enginePower * rb.mass * 0.001f);
+                    // ForceMode.Acceleration já ignora a massa (aplica m/s² direto),
+                    // então NÃO multiplicar por rb.mass. enginePower * 0.001 define a aceleração em m/s²
+                    // (ex.: trator 3200 -> 3.2 m/s²; caminhão 4800 -> 4.8 m/s²).
+                    Vector3 force = transform.forward * (activeThrottle * enginePower * 0.001f);
                     rb.AddForce(force, ForceMode.Acceleration);
                 }
             }

@@ -76,11 +76,6 @@ namespace ProjectTerra.Sandbox
             CreateBuilding(farmRoot.transform, starterBasePosition + new Vector3(-35f, 0f, 35f), new Vector3(24f, 9f, 20f), new Color(0.85f, 0.75f, 0.65f), $"🏡 {farmTitle}");
             CreateBuilding(farmRoot.transform, starterBasePosition + new Vector3(35f, 0f, 40f), new Vector3(36f, 14f, 26f), new Color(0.72f, 0.22f, 0.18f), "🚜 Galpão de Tratores e Colheitadeiras");
 
-            // A textura de solo arado, sulcos e talhões agrícolas já é gerada
-            // organicamente na malha do terreno via splatmap (camada Solo Arado).
-            // Colocar um PrimitiveType.Plane plano de 800m sobre montanhas onduladas causava
-            // Z-fighting estroboscópico preto/branco com o terreno.
-            // Em vez disso, marcamos os limites rurais da fazenda com mourões perimetrais:
             Vector3[] fencePosts = new Vector3[] {
                 new Vector3(-400f, 0f, -100f),
                 new Vector3(400f, 0f, -100f),

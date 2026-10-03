@@ -45,13 +45,16 @@ namespace ProjectTerra.Sandbox
             // • Micro-ilhas e territórios minúsculos (≤ 5 km): dimensões reais, sem expansão mínima artificial.
             // • Regiões normais (ex: Luxemburgo, Mônaco): mantêm suas dimensões métricas 100% integrais.
             // • Grandes estados (ex: São Paulo com 886 km): setor ativo limitado a 60 km × 60 km (3.600 km²).
-            worldWidthMeters = Mathf.Clamp(territoryWidthMeters, 500f, 60000f);
-            worldLengthMeters = Mathf.Clamp(territoryLengthMeters, 500f, 60000f);
+            // 1:1 REAL: sem teto de tamanho — a região tem seu tamanho verdadeiro (RS, Amazonas, Kansas...).
+            // Mínimo de 500 m para micro-ilhas; o FloatingOrigin cuida da precisão em escala continental.
+            worldWidthMeters = Mathf.Max(territoryWidthMeters, 500f);
+            worldLengthMeters = Mathf.Max(territoryLengthMeters, 500f);
 
             Debug.Log($"[RegionalSandbox] Território 1:1: {activeSave.regionName} — {territoryWidthMeters / 1000f:F1} km × {territoryLengthMeters / 1000f:F1} km | Área: {realAreaKm2:N0} km². Setor Ativo: {worldWidthMeters / 1000f:F0} km × {worldLengthMeters / 1000f:F0} km.");
 
-            // Criar TerrainData com 513x513 vértices para relevo nítido de colinas, vales e lavouras
-            const int HeightmapRes = 513;
+            // Resolução do heightmap escala com o tamanho real da região (mais vértices em estados gigantes),
+            // mantendo ~300 m por vértice, limitada a 2049 para não estourar memória/tempo.
+            int HeightmapRes = ChooseHeightmapResolution(worldWidthMeters);
             activeTerrainData = new TerrainData();
             activeTerrainData.heightmapResolution = HeightmapRes;
             // elevRange: escala vertical do terreno em metros.
@@ -65,7 +68,7 @@ namespace ProjectTerra.Sandbox
             activeTerrainData.size = new Vector3(worldWidthMeters, elevRange, worldLengthMeters);
 
             // Síntese topográfica multi-escala (Relevo Macro Geográfico + Colinas Médias + Micro-ondulações de Lavoura)
-            float[,] detailedHeights = SynthesizeDetailedHeights(macroHeights, HeightmapRes, activeHydroData, activeSave);
+            float[,] detailedHeights = SynthesizeDetailedHeights(macroHeights, HeightmapRes, activeHydroData, activeSave, elevRange);
             activeTerrainData.SetHeights(0, 0, detailedHeights);
 
             // Carregar metadados geográficos da região (bounding box e coordenadas reais)
@@ -143,17 +146,33 @@ namespace ProjectTerra.Sandbox
             terrain.heightmapPixelError = 2;
         }
 
-        private float[,] SynthesizeDetailedHeights(float[,] macroHeights, int res, RegionalHydroData hydro, RegionSaveData save)
+        private int ChooseHeightmapResolution(float widthMeters)
+        {
+            // ~300 m por vértice, limitado às resoluções válidas do Unity (2^n + 1).
+            float target = widthMeters / 300f;
+            if (target <= 512f) return 513;
+            if (target <= 1024f) return 1025;
+            return 2049; // teto: estados gigantes (ex.: Amazonas) ~900 m/vértice
+        }
+
+        private float[,] SynthesizeDetailedHeights(float[,] macroHeights, int res, RegionalHydroData hydro, RegionSaveData save, float elevRange)
         {
             float[,] result = new float[res, res];
             int macroRes = macroHeights != null ? macroHeights.GetLength(0) : 0;
 
-            float arableFactor = save.arablePercent / 100.0f;
             float mineralFactor = save.mineralsPercent / 100.0f;
-            bool isCoastal = hydro != null && hydro.isCoastal;
-
             float seedX = (save.regionId % 100) * 17.31f;
             float seedY = (save.regionId / 100) * 23.47f;
+
+            // Amplitudes em METROS convertidas para o espaço normalizado (0..1) do heightmap.
+            float invElev = elevRange > 1f ? 1f / elevRange : 0f;
+
+            // Frequências em CICLOS ao longo da região, mantendo o comprimento de onda REAL constante
+            // independentemente do tamanho do estado (colinas ~3 km, ondulações ~700 m, serras ~14 km).
+            float mesoCycles = Mathf.Max(2f, worldWidthMeters / 3000f);
+            float microCycles = Mathf.Max(4f, worldWidthMeters / 700f);
+            float ridgeCycles = Mathf.Max(1f, worldWidthMeters / 14000f);
+            float flatRadiusM = 2500f; // raio aplainado no centro (base/cidade)
 
             for (int y = 0; y < res; y++)
             {
@@ -162,7 +181,7 @@ namespace ProjectTerra.Sandbox
                 {
                     float nx = x / (float)(res - 1);
 
-                    // 1. Amostragem bi-linear do Relevo Geográfico Macro Real
+                    // 1. Relevo macro REAL (DEM), bilinear — peso total (1:1 vertical).
                     float macroH = 0.5f;
                     if (macroHeights != null && macroRes > 1)
                     {
@@ -174,46 +193,34 @@ namespace ProjectTerra.Sandbox
                         int y1 = Mathf.Min(y0 + 1, macroRes - 1);
                         float tx = mx - x0;
                         float ty = my - y0;
-
                         float h00 = macroHeights[y0, x0];
                         float h10 = macroHeights[y0, x1];
                         float h01 = macroHeights[y1, x0];
                         float h11 = macroHeights[y1, x1];
-
                         macroH = Mathf.Lerp(Mathf.Lerp(h00, h10, tx), Mathf.Lerp(h01, h11, tx), ty);
                     }
 
-                    // 2. Colinas médias (Meso-escala: ondas de 1.5km a 4km)
-                    float meso1 = Mathf.PerlinNoise(nx * 12f + seedX, ny * 12f + seedY) * 0.14f;
-                    float meso2 = Mathf.PerlinNoise(nx * 24f + seedX + 50f, ny * 24f + seedY + 50f) * 0.06f;
+                    // 2. Rugosidade sintética PEQUENA (em metros), só para quebrar a interpolação do DEM.
+                    float meso = (Mathf.PerlinNoise(nx * mesoCycles + seedX, ny * mesoCycles + seedY) - 0.5f) * 2f * 25f * invElev;
+                    float micro = (Mathf.PerlinNoise(nx * microCycles + seedX + 50f, ny * microCycles + seedY + 50f) - 0.5f) * 2f * 7f * invElev;
 
-                    // 3. Micro-topografia de lavoura/pastagem (Micro-escala: ondulações suaves de 200m a 600m)
-                    float micro = (Mathf.PerlinNoise(nx * 65f + seedX, ny * 65f + seedY) - 0.5f) * 0.02f;
-
-                    // Relevo montanhoso / escarpado caso a região tenha alto teor mineral (ex: serras)
-                    float mountainRidges = 0f;
+                    // 3. Serras extras só onde há alto teor mineral (modesto, em metros).
+                    float ridges = 0f;
                     if (mineralFactor > 0.2f)
                     {
-                        float ridgeNoise = Mathf.PerlinNoise(nx * 8f + seedX + 120f, ny * 8f + seedY + 120f);
-                        ridgeNoise = 1.0f - Mathf.Abs(ridgeNoise * 2.0f - 1.0f);
-                        mountainRidges = ridgeNoise * ridgeNoise * (mineralFactor * 0.20f);
+                        float rn = Mathf.PerlinNoise(nx * ridgeCycles + seedX + 120f, ny * ridgeCycles + seedY + 120f);
+                        rn = 1.0f - Mathf.Abs(rn * 2.0f - 1.0f);
+                        ridges = rn * rn * (mineralFactor * 120f) * invElev;
                     }
 
-                    // Suavização do relevo no centro (cidade e base inicial) para facilitar manobras e tráfego
-                    float distFromCenter = Mathf.Sqrt((nx - 0.5f) * (nx - 0.5f) + (ny - 0.5f) * (ny - 0.5f));
-                    float townFlatness = Mathf.Clamp01((0.15f - distFromCenter) / 0.15f);
-                    float combinedDetail = (meso1 + meso2 + micro + mountainRidges) * (1.0f - townFlatness * 0.6f);
+                    // 4. Aplaina o centro (base/cidade) num raio absoluto em metros.
+                    float dxm = (nx - 0.5f) * worldWidthMeters;
+                    float dym = (ny - 0.5f) * worldLengthMeters;
+                    float distM = Mathf.Sqrt(dxm * dxm + dym * dym);
+                    float townFlatness = Mathf.Clamp01((flatRadiusM - distM) / flatRadiusM);
 
-                    float h = macroH * 0.65f + combinedDetail;
-
-                    // 4. Se for litoral, esculpir suave gradiente até a água na extremidade sul
-                    if (isCoastal && ny < 0.25f)
-                    {
-                        float coastT = ny / 0.25f;
-                        h *= Mathf.SmoothStep(0.02f, 1.0f, coastT);
-                    }
-
-                    result[y, x] = Mathf.Clamp01(h);
+                    float detail = (meso + micro + ridges) * (1.0f - townFlatness * 0.8f);
+                    result[y, x] = Mathf.Clamp01(macroH + detail);
                 }
             }
 

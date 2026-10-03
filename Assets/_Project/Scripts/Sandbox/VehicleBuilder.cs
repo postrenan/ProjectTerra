@@ -38,6 +38,7 @@ namespace ProjectTerra.Sandbox
                 visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
                 visual.transform.localScale = Vector3.one * 1.6f;
                 ApplyVehicleColormap(visual);
+                // O modelo FBX já possui rodas próprias — NÃO criar cilindros procedurais por cima.
             }
             else
             {
@@ -49,20 +50,18 @@ namespace ProjectTerra.Sandbox
 
                 // Escapamento
                 var exhaust = CreatePart(root.transform, new Vector3(0.7f, 2.2f, 0.8f), new Vector3(0.15f, 1.6f, 0.15f), new Color(0.1f, 0.1f, 0.12f), "Escapamento");
+
+                // Rodas procedurais (somente no fallback sem modelo 3D)
+                var rWheelL = CreateWheel(root.transform, new Vector3(-1.1f, 0.9f, -0.8f), new Vector3(0.5f, 1.8f, 1.8f), "RodaTraseiraEsq");
+                var rWheelR = CreateWheel(root.transform, new Vector3(1.1f, 0.9f, -0.8f), new Vector3(0.5f, 1.8f, 1.8f), "RodaTraseiraDir");
+                var fWheelL = CreateWheel(root.transform, new Vector3(-0.95f, 0.5f, 1.1f), new Vector3(0.4f, 1.0f, 1.0f), "RodaDianteiraEsq");
+                var fWheelR = CreateWheel(root.transform, new Vector3(0.95f, 0.5f, 1.1f), new Vector3(0.4f, 1.0f, 1.0f), "RodaDianteiraDir");
+
+                vehicle.frontLeftWheel = fWheelL.transform;
+                vehicle.frontRightWheel = fWheelR.transform;
+                vehicle.rearLeftWheel = rWheelL.transform;
+                vehicle.rearRightWheel = rWheelR.transform;
             }
-
-            // Rodas Traseiras Grandes
-            var rWheelL = CreateWheel(root.transform, new Vector3(-1.1f, 0.9f, -0.8f), new Vector3(0.5f, 1.8f, 1.8f), "RodaTraseiraEsq");
-            var rWheelR = CreateWheel(root.transform, new Vector3(1.1f, 0.9f, -0.8f), new Vector3(0.5f, 1.8f, 1.8f), "RodaTraseiraDir");
-
-            // Rodas Dianteiras Menores (Esterçáveis)
-            var fWheelL = CreateWheel(root.transform, new Vector3(-0.95f, 0.5f, 1.1f), new Vector3(0.4f, 1.0f, 1.0f), "RodaDianteiraEsq");
-            var fWheelR = CreateWheel(root.transform, new Vector3(0.95f, 0.5f, 1.1f), new Vector3(0.4f, 1.0f, 1.0f), "RodaDianteiraDir");
-
-            vehicle.frontLeftWheel = fWheelL.transform;
-            vehicle.frontRightWheel = fWheelR.transform;
-            vehicle.rearLeftWheel = rWheelL.transform;
-            vehicle.rearRightWheel = rWheelR.transform;
 
             // Assento, Câmera de Cabine (1ª Pessoa) e Saída
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(0f, 1.8f, -0.6f), "DriverSeat");
@@ -100,6 +99,7 @@ namespace ProjectTerra.Sandbox
                 visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
                 visual.transform.localScale = Vector3.one * 1.8f;
                 ApplyVehicleColormap(visual);
+                // O modelo FBX já possui rodas próprias — NÃO criar cilindros procedurais por cima.
             }
             else
             {
@@ -114,20 +114,18 @@ namespace ProjectTerra.Sandbox
 
                 // Carroceria / Caçamba de Carga Traseira
                 var cargoBed = CreatePart(root.transform, new Vector3(0f, 1.6f, -1.2f), new Vector3(2.4f, 1.4f, 4.4f), new Color(0.6f, 0.6f, 0.65f), "Carroceria_Carga");
+
+                // Rodas procedurais (somente no fallback sem modelo 3D)
+                var fWheelL = CreateWheel(root.transform, new Vector3(-1.25f, 0.55f, 2.2f), new Vector3(0.45f, 1.1f, 1.1f), "RodaDiantEsq");
+                var fWheelR = CreateWheel(root.transform, new Vector3(1.25f, 0.55f, 2.2f), new Vector3(0.45f, 1.1f, 1.1f), "RodaDiantDir");
+                var rWheelL = CreateWheel(root.transform, new Vector3(-1.25f, 0.55f, -2.2f), new Vector3(0.55f, 1.1f, 1.1f), "RodaTrasEsq");
+                var rWheelR = CreateWheel(root.transform, new Vector3(1.25f, 0.55f, -2.2f), new Vector3(0.55f, 1.1f, 1.1f), "RodaTrasDir");
+
+                vehicle.frontLeftWheel = fWheelL.transform;
+                vehicle.frontRightWheel = fWheelR.transform;
+                vehicle.rearLeftWheel = rWheelL.transform;
+                vehicle.rearRightWheel = rWheelR.transform;
             }
-
-            // Rodas Dianteiras
-            var fWheelL = CreateWheel(root.transform, new Vector3(-1.25f, 0.55f, 2.2f), new Vector3(0.45f, 1.1f, 1.1f), "RodaDiantEsq");
-            var fWheelR = CreateWheel(root.transform, new Vector3(1.25f, 0.55f, 2.2f), new Vector3(0.45f, 1.1f, 1.1f), "RodaDiantDir");
-
-            // Rodas Traseiras Duplas
-            var rWheelL = CreateWheel(root.transform, new Vector3(-1.25f, 0.55f, -2.2f), new Vector3(0.55f, 1.1f, 1.1f), "RodaTrasEsq");
-            var rWheelR = CreateWheel(root.transform, new Vector3(1.25f, 0.55f, -2.2f), new Vector3(0.55f, 1.1f, 1.1f), "RodaTrasDir");
-
-            vehicle.frontLeftWheel = fWheelL.transform;
-            vehicle.frontRightWheel = fWheelR.transform;
-            vehicle.rearLeftWheel = rWheelL.transform;
-            vehicle.rearRightWheel = rWheelR.transform;
 
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(-0.6f, 1.9f, 2.1f), "DriverSeat");
             vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(-0.6f, 2.2f, 2.3f), "CockpitCam");
@@ -252,23 +250,25 @@ namespace ProjectTerra.Sandbox
                 visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
                 visual.transform.localScale = Vector3.one * 1.55f;
                 ApplyVehicleColormap(visual);
+                // O modelo FBX já possui rodas próprias — NÃO criar cilindros procedurais por cima.
             }
             else
             {
                 // Corpo procedural de carro
                 var body = CreatePart(root.transform, new Vector3(0f, 0.65f, 0f), new Vector3(1.9f, 0.7f, 4.2f), new Color(0.2f, 0.45f, 0.85f), "Chassi_Carro");
                 var cabin = CreatePart(root.transform, new Vector3(0f, 1.2f, -0.2f), new Vector3(1.6f, 0.65f, 2.2f), new Color(0.15f, 0.18f, 0.22f), "Cabine_Carro");
+
+                // Rodas procedurais (somente no fallback sem modelo 3D)
+                var fWheelL = CreateWheel(root.transform, new Vector3(-0.95f, 0.45f, 1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaDiantEsq");
+                var fWheelR = CreateWheel(root.transform, new Vector3(0.95f, 0.45f, 1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaDiantDir");
+                var rWheelL = CreateWheel(root.transform, new Vector3(-0.95f, 0.45f, -1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaTrasEsq");
+                var rWheelR = CreateWheel(root.transform, new Vector3(0.95f, 0.45f, -1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaTrasDir");
+
+                vehicle.frontLeftWheel = fWheelL.transform;
+                vehicle.frontRightWheel = fWheelR.transform;
+                vehicle.rearLeftWheel = rWheelL.transform;
+                vehicle.rearRightWheel = rWheelR.transform;
             }
-
-            var fWheelL = CreateWheel(root.transform, new Vector3(-0.95f, 0.45f, 1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaDiantEsq");
-            var fWheelR = CreateWheel(root.transform, new Vector3(0.95f, 0.45f, 1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaDiantDir");
-            var rWheelL = CreateWheel(root.transform, new Vector3(-0.95f, 0.45f, -1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaTrasEsq");
-            var rWheelR = CreateWheel(root.transform, new Vector3(0.95f, 0.45f, -1.3f), new Vector3(0.35f, 0.85f, 0.85f), "RodaTrasDir");
-
-            vehicle.frontLeftWheel = fWheelL.transform;
-            vehicle.frontRightWheel = fWheelR.transform;
-            vehicle.rearLeftWheel = rWheelL.transform;
-            vehicle.rearRightWheel = rWheelR.transform;
 
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(-0.45f, 0.85f, 0f), "DriverSeat");
             vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(-0.45f, 1.2f, 0.1f), "CockpitCam");
