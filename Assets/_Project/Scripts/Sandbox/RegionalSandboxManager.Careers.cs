@@ -73,8 +73,7 @@ namespace ProjectTerra.Sandbox
             farmRoot.transform.position = starterBasePosition;
 
             CreateRoad(farmRoot.transform, new Vector3(900f, 0f, -800f), new Vector3(2000f, 0.15f, 20f), "Estrada Rural Intermunicipal");
-            CreateBuilding(farmRoot.transform, starterBasePosition + new Vector3(-35f, 0f, 35f), new Vector3(24f, 9f, 20f), new Color(0.85f, 0.75f, 0.65f), $"🏡 {farmTitle}");
-            CreateBuilding(farmRoot.transform, starterBasePosition + new Vector3(35f, 0f, 40f), new Vector3(36f, 14f, 26f), new Color(0.72f, 0.22f, 0.18f), "🚜 Galpão de Tratores e Colheitadeiras");
+            // [removido] sede e galpao (casas/predios) nao relevantes para a cena atual
 
             Vector3[] fencePosts = new Vector3[] {
                 new Vector3(-400f, 0f, -100f),

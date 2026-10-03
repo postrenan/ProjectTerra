@@ -38,6 +38,9 @@ namespace ProjectTerra.Sandbox
         private readonly List<Matrix4x4[]> batches = new List<Matrix4x4[]>();
         private const int BatchMax = 1023;
 
+        // Máscara de vias: tufos que caem sobre uma estrada/ferrovia são descartados.
+        private readonly List<RoadMaskSegment> nearRoadSegs = new List<RoadMaskSegment>();
+
         public static PlayerFollowGrass Create(Terrain terrain)
         {
             var go = new GameObject("PlayerGrassField");
@@ -89,6 +92,19 @@ namespace ProjectTerra.Sandbox
             Vector3 tSize = terrain.terrainData.size;
             float r2 = radius * radius;
 
+            // Pré-filtra os segmentos de via próximos ao centro atual (uma vez por rebuild).
+            nearRoadSegs.Clear();
+            var rsm = RegionalSandboxManager.Instance;
+            if (rsm != null && rsm.RoadMaskSegments.Count > 0)
+            {
+                var segs = rsm.RoadMaskSegments;
+                for (int i = 0; i < segs.Count; i++)
+                {
+                    float d = DistPointSegment(center.x, center.z, segs[i].a, segs[i].b);
+                    if (d < radius + segs[i].clearance + 1f) nearRoadSegs.Add(segs[i]);
+                }
+            }
+
             int cellRadius = Mathf.CeilToInt(radius / spacing);
             long centerCellX = Mathf.RoundToInt(center.x / spacing);
             long centerCellZ = Mathf.RoundToInt(center.z / spacing);
@@ -119,6 +135,9 @@ namespace ProjectTerra.Sandbox
                     float y = terrain.SampleHeight(new Vector3(wx, 0f, wz)) + tPos.y;
                     if (y < minGroundY) continue;
 
+                    // Não nasce grama sobre a via.
+                    if (IsOnRoad(wx, wz)) continue;
+
                     uint h2 = Hash(cx * 2654435761 + 1, cz * 40503 + 7);
                     float yaw = (h2 & 0xFF) / 255f * 360f;
                     float w = Mathf.Lerp(widthRange.x, widthRange.y, ((h2 >> 8) & 0xFF) / 255f);
@@ -135,6 +154,28 @@ namespace ProjectTerra.Sandbox
             }
 
             if (current.Count > 0) batches.Add(current.ToArray());
+        }
+
+        private bool IsOnRoad(float wx, float wz)
+        {
+            for (int i = 0; i < nearRoadSegs.Count; i++)
+            {
+                var s = nearRoadSegs[i];
+                if (DistPointSegment(wx, wz, s.a, s.b) < s.clearance) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Distância (XZ) de um ponto ao segmento a→b.</summary>
+        private static float DistPointSegment(float px, float pz, Vector2 a, Vector2 b)
+        {
+            float abx = b.x - a.x, abz = b.y - a.y;
+            float apx = px - a.x, apz = pz - a.y;
+            float len2 = abx * abx + abz * abz;
+            float t = len2 > 1e-6f ? Mathf.Clamp01((apx * abx + apz * abz) / len2) : 0f;
+            float cx = a.x + abx * t, cz = a.y + abz * t;
+            float dx = px - cx, dz = pz - cz;
+            return Mathf.Sqrt(dx * dx + dz * dz);
         }
 
         /// <summary>Hash inteiro determinístico (estável e sem erro de precisão de float).</summary>

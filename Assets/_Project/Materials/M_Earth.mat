@@ -55,7 +55,7 @@ Material:
     - _DetailTiling: 4500
     - _LandSmoothness: 0.15
     - _OceanSmoothness: 0.92
-    - _SelectedRegionId: 0
+    - _SelectedRegionId: 346
     m_Colors:
     - <noninit>: {r: 0.05, g: 0.25, b: 0.6, a: 1}
     - _AtmosphereColor: {r: 0.35, g: 0.65, b: 1, a: 1}

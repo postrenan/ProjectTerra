@@ -169,6 +169,9 @@ namespace ProjectTerra.Sandbox
             float worldW = rsm != null ? rsm.worldWidthMeters : 60000f;
             float worldL = rsm != null ? rsm.worldLengthMeters : 60000f;
 
+            // 0. Malha viária real (rodovias/ferrovias) e cidades da região (base econômica)
+            DrawInfrastructureOnMap(mapImageRect, worldW, worldL);
+
             // 1. Centro da Cidade / Base
             Vector3 townPos = rsm != null ? rsm.townCenterPosition : Vector3.zero;
             DrawMapMarker(townPos, worldW, worldL, mapImageRect, "🏛️ Cidade", new Color(0.4f, 0.8f, 1f));
@@ -200,15 +203,6 @@ namespace ProjectTerra.Sandbox
                 GUI.Label(new Rect(pScreen.x - 12f, pScreen.y - 12f, 24f, 24f), "▲", titleStyle);
                 GUI.color = Color.white;
                 GUI.Label(new Rect(pScreen.x + 8f, pScreen.y - 8f, 80f, 20f), "Você", subtitleStyle);
-            }
-
-            // Marcos geográficos especiais (vulcões, montanhas, chapadas, quedas, rios)
-            if (LandmarkManager.Placed != null)
-            {
-                foreach (var lm in LandmarkManager.Placed)
-                {
-                    DrawMapMarker(lm.Key, worldW, worldL, mapImageRect, lm.Value, new Color(1f, 0.5f, 0.2f));
-                }
             }
 
             GUI.EndGroup();
@@ -336,6 +330,114 @@ namespace ProjectTerra.Sandbox
                 }
             }
         }
+
+        #region Malha Viária & Cidades no Mapa Tático
+
+        private struct MapPolyline { public Planet.RoadClass cls; public Vector3[] pts; }
+        private System.Collections.Generic.List<MapPolyline> mapRoads;
+        private System.Collections.Generic.List<Planet.RegionCity> mapCities;
+        private System.Collections.Generic.List<Vector3> mapCityPos;
+        private int infraCacheRegionId = -1;
+        private const int MaxMapSegments = 1800;
+
+        private void EnsureInfraMapCache(float worldW, float worldL)
+        {
+            var rsm = RegionalSandboxManager.Instance;
+            var region = rsm != null ? rsm.activeRegionData : null;
+            if (region == null) return;
+            if (infraCacheRegionId == region.id && mapRoads != null) return;
+
+            infraCacheRegionId = region.id;
+            mapRoads = new System.Collections.Generic.List<MapPolyline>();
+            foreach (var poly in Planet.RegionRoadsDatabase.GetRoads(region.id))
+            {
+                if (poly.points == null || poly.points.Length < 2) continue;
+                var pts = new Vector3[poly.points.Length];
+                for (int i = 0; i < pts.Length; i++)
+                    pts[i] = Planet.RegionGeoProjection.ToLocal(poly.points[i].x, poly.points[i].y, region, worldW, worldL);
+                mapRoads.Add(new MapPolyline { cls = poly.roadClass, pts = pts });
+            }
+
+            mapCities = Planet.RegionCitiesDatabase.GetCities(region.id);
+            mapCityPos = new System.Collections.Generic.List<Vector3>();
+            foreach (var c in mapCities)
+                mapCityPos.Add(Planet.RegionGeoProjection.ToLocal(c.lat, c.lon, region, worldW, worldL));
+        }
+
+        private void DrawInfrastructureOnMap(Rect mapRect, float worldW, float worldL)
+        {
+            EnsureInfraMapCache(worldW, worldL);
+            if (mapRoads == null) return;
+
+            int budget = MaxMapSegments;
+            foreach (var poly in mapRoads)
+            {
+                if (budget <= 0) break;
+                Color col = RoadMapColor(poly.cls);
+                float w = RoadMapWidth(poly.cls);
+                for (int i = 0; i < poly.pts.Length - 1 && budget > 0; i++, budget--)
+                {
+                    Vector2 a = WorldToMapScreen(poly.pts[i], worldW, worldL, mapRect);
+                    Vector2 b = WorldToMapScreen(poly.pts[i + 1], worldW, worldL, mapRect);
+                    GuiLine(a, b, w, col);
+                }
+            }
+
+            if (mapCities != null)
+            {
+                for (int i = 0; i < mapCities.Count; i++)
+                {
+                    var c = mapCities[i];
+                    Vector2 p = WorldToMapScreen(mapCityPos[i], worldW, worldL, mapRect);
+                    Color col = c.isCapital ? new Color(1f, 0.82f, 0.2f) : new Color(0.6f, 0.85f, 1f);
+                    float r = c.isCapital ? 8f : 5f;
+                    GUI.color = col;
+                    GUI.DrawTexture(new Rect(p.x - r * 0.5f, p.y - r * 0.5f, r, r), whiteTex);
+                    GUI.color = Color.white;
+                    if (c.isCapital || c.rank < 3)
+                        GUI.Label(new Rect(p.x + 6f, p.y - 8f, 140f, 16f), (c.isCapital ? "★ " : "") + c.name, subtitleStyle);
+                }
+            }
+        }
+
+        private void GuiLine(Vector2 a, Vector2 b, float width, Color col)
+        {
+            float len = Vector2.Distance(a, b);
+            if (len < 0.5f) return;
+            Matrix4x4 saved = GUI.matrix;
+            float angle = Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg;
+            GUI.color = col;
+            GUIUtility.RotateAroundPivot(angle, a);
+            GUI.DrawTexture(new Rect(a.x, a.y - width * 0.5f, len, width), whiteTex);
+            GUI.matrix = saved;
+            GUI.color = Color.white;
+        }
+
+        private static Color RoadMapColor(Planet.RoadClass c)
+        {
+            switch (c)
+            {
+                case Planet.RoadClass.Expressway: return new Color(1f, 0.55f, 0.15f, 0.95f);
+                case Planet.RoadClass.MajorHighway: return new Color(1f, 0.82f, 0.25f, 0.95f);
+                case Planet.RoadClass.SecondaryHighway: return new Color(0.9f, 0.9f, 0.92f, 0.8f);
+                case Planet.RoadClass.Railroad: return new Color(0.55f, 0.75f, 1f, 0.85f);
+                default: return new Color(0.4f, 0.9f, 0.5f, 0.7f); // conector
+            }
+        }
+
+        private static float RoadMapWidth(Planet.RoadClass c)
+        {
+            switch (c)
+            {
+                case Planet.RoadClass.Expressway: return 3f;
+                case Planet.RoadClass.MajorHighway: return 2.5f;
+                case Planet.RoadClass.SecondaryHighway: return 1.5f;
+                case Planet.RoadClass.Railroad: return 2f;
+                default: return 1.5f;
+            }
+        }
+
+        #endregion
 
         private Vector2 WorldToMapScreen(Vector3 worldPos, float worldW, float worldL, Rect mapRect)
         {

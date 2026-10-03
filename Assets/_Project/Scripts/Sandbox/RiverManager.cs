@@ -26,6 +26,39 @@ namespace ProjectTerra.Sandbox
             return m;
         }
 
+        /// <summary>Polilinha de rio em lat/lon (para o mapa tático).</summary>
+        public class RiverLine { public string name; public float[] lat; public float[] lon; }
+        private static List<RiverLine> _cache;
+
+        /// <summary>Carrega (com cache) todas as polilinhas de rios do rivers.bin.</summary>
+        public static List<RiverLine> LoadAll()
+        {
+            if (_cache != null) return _cache;
+            _cache = new List<RiverLine>();
+            string p = Path.Combine(Application.streamingAssetsPath, "rivers.bin");
+            if (!File.Exists(p)) return _cache;
+            try
+            {
+                using (var fs = File.OpenRead(p))
+                using (var br = new BinaryReader(fs, Encoding.UTF8))
+                {
+                    if (new string(br.ReadChars(4)) != "RIV1") return _cache;
+                    int lineCount = br.ReadInt32();
+                    for (int l = 0; l < lineCount; l++)
+                    {
+                        ushort nl = br.ReadUInt16();
+                        string name = Encoding.UTF8.GetString(br.ReadBytes(nl));
+                        int pc = br.ReadInt32();
+                        var la = new float[pc]; var lo = new float[pc];
+                        for (int i = 0; i < pc; i++) { la[i] = br.ReadSingle(); lo[i] = br.ReadSingle(); }
+                        _cache.Add(new RiverLine { name = name, lat = la, lon = lo });
+                    }
+                }
+            }
+            catch (System.Exception ex) { Debug.LogWarning($"[Rivers] Falha ao carregar rivers.bin: {ex.Message}"); }
+            return _cache;
+        }
+
         private void Start()
         {
             if (terrain == null || region == null) return;

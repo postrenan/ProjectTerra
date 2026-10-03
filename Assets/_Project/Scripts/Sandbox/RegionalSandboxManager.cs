@@ -53,12 +53,11 @@ namespace ProjectTerra.Sandbox
             EnsureFloatingOrigin();
             BuildAtmosphereAndLighting();
             BuildRealisticTerrainAndHydrography();
-            BuildStarterTown();
+            // BuildStarterTown(); // [removido] casas/predios da cidade nao sao relevantes para a cena atual
+            BuildRegionalInfrastructure();
             BuildStarterCareerInfrastructure();
             SceneObjectSpawner.PopulateNatureAndFauna(activeTerrain, activeSave, starterBasePosition, townCenterPosition);
             GrassFoliageSpawner.PopulateGrassAndFoliage(activeTerrain, activeSave, starterBasePosition, townCenterPosition);
-            LandmarkManager.Create(activeTerrain, activeRegionData);
-            RiverManager.Create(activeTerrain, activeRegionData);
             ApplyWorldCulling();
             SpawnPlayerAndVehicle();
             EnsureVehicleManager();

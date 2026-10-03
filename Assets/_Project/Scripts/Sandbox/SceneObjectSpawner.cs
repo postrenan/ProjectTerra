@@ -82,13 +82,21 @@ namespace ProjectTerra.Sandbox
 
                 if (spawnPos.y < 1.0f) continue;
 
-                GameObject treePrefab = (i % 3 == 0) ? treeDetailed : (i % 2 == 0 ? treeCone : treeDefault);
+                GameObject[] treeModels = { treeDefault, treeCone, treeDetailed };
+                GameObject treePrefab = treeModels[i % treeModels.Length];
                 if (treePrefab != null)
                 {
                     var tree = Object.Instantiate(treePrefab, spawnPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), treeRoot);
-                    float scale = Random.Range(3.5f, 6.0f);
-                    tree.transform.localScale = Vector3.one * scale;
-                    ApplyModelColors(tree, new Color(0.18f, 0.50f, 0.16f), new Color(0.40f, 0.25f, 0.14f));
+                    // Proporcoes variadas: mais alto que largo, com variacao por individuo.
+                    float baseS = Random.Range(2.6f, 5.6f);
+                    float w = baseS * Random.Range(0.82f, 1.18f);
+                    float hgt = baseS * Random.Range(1.05f, 1.65f);
+                    tree.transform.localScale = new Vector3(w, hgt, w);
+                    // Variacao de tom de folhagem e tronco.
+                    float g = Random.Range(0.34f, 0.56f);
+                    Color leaf = new Color(0.10f + Random.Range(0f, 0.12f), g, 0.10f + Random.Range(0f, 0.08f));
+                    Color bark = new Color(0.34f + Random.Range(0f, 0.12f), 0.23f + Random.Range(0f, 0.08f), 0.13f);
+                    ApplyModelColors(tree, leaf, bark);
                 }
                 else
                 {
@@ -99,7 +107,7 @@ namespace ProjectTerra.Sandbox
             }
 
             // 2. Rochas em encostas e relevos
-            int rockCount = 60;
+            int rockCount = 120;
             int rocksSpawned = 0;
             for (int i = 0; i < rockCount; i++)
             {
@@ -110,13 +118,17 @@ namespace ProjectTerra.Sandbox
 
                 if (spawnPos.y < 1.0f) continue;
 
-                GameObject rockPrefab = (i % 3 == 0) ? rockTall : (i % 2 == 0 ? rockLarge : rockSmall);
+                GameObject[] rockModels = { rockSmall, rockLarge, rockTall };
+                GameObject rockPrefab = rockModels[i % rockModels.Length];
                 if (rockPrefab != null)
                 {
-                    var rock = Object.Instantiate(rockPrefab, spawnPos, Quaternion.Euler(Random.Range(-10f, 10f), Random.Range(0f, 360f), Random.Range(-10f, 10f)), rockRoot);
-                    float scale = Random.Range(4.0f, 8.5f);
-                    rock.transform.localScale = Vector3.one * scale;
-                    ApplyModelColors(rock, new Color(0.45f, 0.45f, 0.48f), new Color(0.38f, 0.38f, 0.40f));
+                    var rock = Object.Instantiate(rockPrefab, spawnPos, Quaternion.Euler(Random.Range(-14f, 14f), Random.Range(0f, 360f), Random.Range(-14f, 14f)), rockRoot);
+                    // Formas irregulares: escala nao-uniforme + faixa ampla de tamanho.
+                    float baseS = Random.Range(1.8f, 7.0f);
+                    Vector3 s = new Vector3(baseS * Random.Range(0.7f, 1.4f), baseS * Random.Range(0.5f, 1.1f), baseS * Random.Range(0.7f, 1.4f));
+                    rock.transform.localScale = s;
+                    float gray = Random.Range(0.36f, 0.54f);
+                    ApplyModelColors(rock, new Color(gray, gray, gray + 0.03f), new Color(gray - 0.05f, gray - 0.05f, gray - 0.03f));
                 }
                 else
                 {
