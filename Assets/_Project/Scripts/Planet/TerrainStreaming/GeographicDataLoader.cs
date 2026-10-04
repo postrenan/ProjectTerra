@@ -79,7 +79,19 @@ namespace ProjectTerra.Planet.TerrainStreaming
                             hydro.country = System.Text.Encoding.UTF8.GetString(reader.ReadBytes(countryLen));
 
                             // Resolução vem do cabeçalho (varia por região, escala do ETOPO).
-                            if (res >= 2 && rawBytes.Length >= headerSize + res * res * 2)
+                            // O magic HMAP casa, então este ficheiro TEM cabeçalho: se o
+                            // tamanho não fechar, o ficheiro está truncado/incompleto e
+                            // NÃO é um RAW puro. Sem um return/else aqui o código caía no
+                            // fallback legado, que relia os MESMOS bytes a partir do offset 0
+                            // — ou seja, o magic, os floats de elevação e o nome UTF-8 da
+                            // região viravam ushort de altura — e devolvia true, o que
+                            // desligava o ProceduralFallback e pintava o setor com espetos.
+                            if (res < 2 || rawBytes.Length < headerSize + res * res * 2)
+                            {
+                                Debug.LogWarning($"[GeographicDataLoader] heightmap_{regionId}.raw tem cabeçalho HMAP mas está truncado (res={res}, {rawBytes.Length} bytes). A usar fallback procedural.");
+                                return false;
+                            }
+
                             {
                                 heights = new float[res, res];
                                 int byteIdx = headerSize;

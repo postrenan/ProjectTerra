@@ -267,8 +267,14 @@ namespace ProjectTerra.Sandbox
                         }
                         else
                         {
-                            if (insideMask[y, x - 1] || insideMask[y, x + 1] ||
-                                !insideMask[y - 1, x] || !insideMask[y + 1, x])
+                            // Só é "borda externa" quando o pixel está junto da região na horizontal
+                            // (há vizinho dentro) e longe dela na vertical (vizinho fora).
+                            // A condição anterior (A || B || !C || !D) era verdadeira para
+                            // praticamente todo pixel fora da região — basta um vizinho
+                            // vertical fora para o || curto-circuitar — e deixava os ramos
+                            // de oceano, terra cinza e linha de divisa inalcançáveis.
+                            if ((insideMask[y, x - 1] || insideMask[y, x + 1]) &&
+                                (!insideMask[y - 1, x] || !insideMask[y + 1, x]))
                             {
                                 isOuterGlow[y, x] = true;
                             }

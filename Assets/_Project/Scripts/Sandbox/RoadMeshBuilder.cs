@@ -587,7 +587,14 @@ namespace ProjectTerra.Sandbox
             var yellowSolid = GetMarkingMaterial(new Color(0.98f, 0.80f, 0.08f), isDashed: false);
 
             float edgeOffset = halfRoad - 0.45f;
-            float yOffset = 0.012f; // 12 mm de elevação (espessura real da tinta viária)
+
+            // A faixa precisa ficar ACIMA da superfície, nunca abaixo. O corpo da pista
+            // usa c.y+0.02 nas bordas e c.y+0.06 no abaulamento central (ver
+            // BuildUnifiedRoadBody), interpolando entre os dois. Com o offset antigo de
+            // 12 mm as faixas ficavam 8–52 mm enterradas dentro da malha opaca e nunca
+            // apareciam — o mesmo valia para os sulcos de pista não pavimentada.
+            const float markingClearance = 0.07f;
+            float yOffset = markingClearance;
 
             // Linhas de Bordo Laterais (Brancas contínuas)
             BuildStripRibbon(markingsRoot.transform, center, rights, 0.22f, -edgeOffset, yOffset, whiteSolid, "Bordo_Esq");
@@ -676,7 +683,7 @@ namespace ProjectTerra.Sandbox
             int lanes = (int)config.laneCount;
             float laneW = config.laneWidth;
             float halfRoad = config.TotalRoadwayWidth * 0.5f;
-            float yOffset = 0.008f;
+            float yOffset = 0.07f; // mesmo clearance de BuildPavementMarkings: 8 mm ficavam sob a pista
 
             // Para cada faixa, adiciona 2 trilhas de pneus (roda esquerda e roda direita: distância de ~1.8m)
             int halfLanes = lanes / 2;

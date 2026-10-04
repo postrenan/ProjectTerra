@@ -33,6 +33,9 @@ namespace ProjectTerra.Sandbox
                 return;
             }
             BuildRegionalRivers();
+            // Marca o início dos segmentos de estrada: os canais de rio acima já
+            // ocuparam a lista e precisam sobreviver a futuros rebuilds.
+            RecordRoadMaskMark();
             BuildRegionalRoadNetwork();
             BuildRegionalCities();
         }
@@ -210,8 +213,29 @@ namespace ProjectTerra.Sandbox
         {
             var existing = GameObject.Find("RegionRoadNetwork");
             if (existing != null) Destroy(existing);
-            RoadMaskSegments.Clear();
+
+            // RoadMaskSegments é compartilhado: além das estradas, ele recebe os canais
+            // de rio (BuildRiverChannel), as ruas da cidade (CreateRoad) e os sulcos do
+            // arado (PlowFurrowManager). Um Clear() global apagava a supressão de grama
+            // de todos esses sistemas e a relva brotava sobre rios e ruas. Agora só a
+            // cauda pertencente às estradas é removida (o prefixo foi gravado por
+            // RecordRoadMaskMark).
+            int roadOwnedCount = RoadMaskSegments.Count - roadMaskMark;
+            if (roadOwnedCount > 0) RoadMaskSegments.RemoveRange(roadMaskMark, roadOwnedCount);
+
+            // Após o RemoveRange a lista termina exatamente em roadMaskMark, então os novos
+            // segmentos de estrada passam a ser a "cauda" proprietária.
             BuildRegionalRoadNetwork();
+            roadMaskMark = RoadMaskSegments.Count;
+        }
+
+        // Índice em RoadMaskSegments onde começam os segmentos de estrada. Tudo antes
+        // pertence a rios/ruas/sulhos e deve sobreviver a um rebuild.
+        private int roadMaskMark = 0;
+
+        private void RecordRoadMaskMark()
+        {
+            roadMaskMark = RoadMaskSegments.Count;
         }
 
         private void BuildRoadRibbon(Transform parent, RoadPolyline poly)
@@ -266,7 +290,10 @@ namespace ProjectTerra.Sandbox
             var config = RoadProfileConfig.GetDefault(surface, lanes);
 
             // 3. Registra os segmentos originais para suprimir grama sobre a via e acostamentos
-            float clearance = config.TotalShoulderWidth * 0.5f + 2.0f;
+            // A malha vai até +(halfRoad + shoulder + talude), ou seja, TotalFootprintWidth/2
+            // de cada lado. Usar TotalShoulderWidth/2 (20.3 m contra 22.9 m reais no
+            // perfil de 8 faixas) deixava vegetação nascendo sobre o próprio talude.
+            float clearance = config.TotalFootprintWidth * 0.5f + 2.0f;
             for (int i = 0; i < flat.Count - 1; i++)
                 RoadMaskSegments.Add(new RoadMaskSegment { a = flat[i], b = flat[i + 1], clearance = clearance });
 

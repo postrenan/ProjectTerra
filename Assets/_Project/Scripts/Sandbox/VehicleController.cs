@@ -23,7 +23,26 @@ namespace ProjectTerra.Sandbox
     public partial class VehicleController : MonoBehaviour
     {
         [Header("Configuração Geral")]
-        public VehicleCategory category = VehicleCategory.Tractor;
+        private VehicleCategory _category = VehicleCategory.Tractor;
+
+        /// <summary>
+        /// Categoria do veículo. Atribuir reconfigura na hora massa, amortecimento e centro
+        /// de massa. Antes era um campo público: o builder fazia root.AddComponent (que
+        /// dispara Awake e configurava o Rigidbody com o default Tractor) e só DEPOIS
+        /// atribuía a categoria — então avião, barco e carro ficavam todos com 3800 kg e o
+        /// CoM do trator, e toda a física que escala com rb.mass saía calibrada errado.
+        /// </summary>
+        public VehicleCategory category
+        {
+            get { return _category; }
+            set
+            {
+                if (_category == value) return;
+                _category = value;
+                if (rb != null) ConfigureRigidbodyForCategory();
+            }
+        }
+
         public string vehicleName = "Veículo Utilitário";
         public Transform driverSeatPoint;
         public Transform exitPoint;
@@ -96,10 +115,17 @@ namespace ProjectTerra.Sandbox
         private void Awake()
         {
             rb = GetComponent<Rigidbody>();
+            // Pode já vir com a categoria atribuída por Initialize() (o builder chama
+            // Initialize antes de AddComponent em alguns caminhos); senão usa o default.
             ConfigureRigidbodyForCategory();
         }
 
-        private void ConfigureRigidbodyForCategory()
+        /// <summary>
+        /// (Re)aplica massa, amortecimento e centro de massa da categoria atual.
+        /// Precisa ser chamado de novo sempre que <see cref="category"/> mudar em runtime,
+        /// porque toda a física downstream escala com rb.mass.
+        /// </summary>
+        public void ConfigureRigidbodyForCategory()
         {
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;

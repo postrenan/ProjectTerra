@@ -130,6 +130,7 @@ namespace ProjectTerra.Sandbox
             Vector3 targetPos = Vector3.zero;
             string destName = "";
             var rsm = RegionalSandboxManager.Instance;
+            bool yExplicit = false;
 
             string key = args[0].ToLower();
             switch (key)
@@ -169,29 +170,47 @@ namespace ProjectTerra.Sandbox
                     destName = "Origem da Província (0, 0)";
                     break;
                 default:
-                    // Coordenadas numéricas X e Z (ou X, Y, Z)
-                    if (args.Length >= 2 && float.TryParse(args[0], out float tx))
+                    // Coordenadas numéricas X e Z (ou X, Y, Z).
+                    // Precisa de uma flag de sucesso: antes, se args[0] parseasse mas
+                    // args[1] não ("/tp 1500 abc"), NENHUM dos ramos internos era
+                    // executado, não havia else, e o código seguia para o teleporte
+                    // com targetPos ainda em Vector3.zero — ou seja, o jogador era
+                    // jogado para a origem da província (dezenas de km) sem erro
+                    // e sem aviso, com a mensagem "Teleportado para !".
                     {
-                        if (args.Length >= 3 && float.TryParse(args[1], out float ty) && float.TryParse(args[2], out float tz))
+                        bool coordsParsed = false;
+
+                        if (args.Length >= 2 && float.TryParse(args[0], out float tx))
                         {
-                            targetPos = new Vector3(tx, ty, tz);
-                            destName = $"({tx:F0}, {ty:F0}, {tz:F0})";
+                            if (args.Length >= 3 && float.TryParse(args[1], out float ty) && float.TryParse(args[2], out float tz))
+                            {
+                                targetPos = new Vector3(tx, ty, tz);
+                                destName = $"({tx:F0}, {ty:F0}, {tz:F0})";
+                                coordsParsed = true;
+                                yExplicit = true;
+                            }
+                            else if (float.TryParse(args[1], out float tz2))
+                            {
+                                targetPos = new Vector3(tx, 0f, tz2);
+                                destName = $"({tx:F0}, {tz2:F0})";
+                                coordsParsed = true;
+                            }
                         }
-                        else if (float.TryParse(args[1], out float tz2))
+
+                        if (!coordsParsed)
                         {
-                            targetPos = new Vector3(tx, 0f, tz2);
-                            destName = $"({tx:F0}, {tz2:F0})";
+                            LogMessage($"❌ Destino ou coordenadas inválidas: '{key}'.", new Color(1f, 0.4f, 0.4f));
+                            return;
                         }
-                    }
-                    else
-                    {
-                        LogMessage($"❌ Destino ou coordenadas inválidas: '{key}'.", new Color(1f, 0.4f, 0.4f));
-                        return;
                     }
                     break;
             }
 
-            if (rsm != null)
+            // Só ajusta Y quando ele NÃO foi informado explicitamente. Antes sobrescrevia
+            // sempre, então "/tp 1000 500 2000" (documentado no /help) anunciava
+            // (1000, 500, 2000) mas pousava o jogador no chão desse ponto — o ty
+            // era lido, formatado na mensagem e descartado logo em seguida.
+            if (rsm != null && !yExplicit)
             {
                 targetPos.y = rsm.GetTerrainHeight(targetPos) + 1.0f;
             }

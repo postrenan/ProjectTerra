@@ -173,9 +173,14 @@ namespace ProjectTerra.Sandbox
 
                 float horizInput = TerraInput.GetAxis("Horizontal"); // D=+1, A=-1
 
-                // S ou Espaço ou Seta Baixo: Cabrar (Nariz para CIMA / Subir) -> torque positivo
-                // W ou Seta Cima: Picar (Nariz para BAIXO / Descer) -> torque negativo
-                pitch = -vertInput * pitchRate * controlAuth;
+                // Torque positivo em torno de transform.right (rotação para +Y depois -Z)
+                // LEVA O NARIZ PARA BAIXO: em Unity uma rotação positiva sobre +X leva
+                // +Z (frente) até -Y. Logo o sinal tem de ser:
+                //   W (+1) -> torque positivo -> nariz para baixo (picar)
+                //   S/Espaço (-1) -> torque negativo -> nariz para cima (cabrar)
+                // Com o sinal anterior (-vertInput) era o contrário: W subia e o
+                // Espaço ("sobe/decola") mergulhava o nariz.
+                pitch = vertInput * pitchRate * controlAuth;
 
                 // A ou Seta Esq (-1): Rolar para a esquerda -> torque positivo
                 // D ou Seta Dir (+1): Rolar para a direita -> torque negativo

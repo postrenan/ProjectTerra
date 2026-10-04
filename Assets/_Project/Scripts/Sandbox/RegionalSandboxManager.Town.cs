@@ -116,7 +116,7 @@ namespace ProjectTerra.Sandbox
 
             // Registrar máscara de grama para evitar que vegetação nasça na pista
             var cfg = RoadProfileConfig.GetDefault(surface, lanes);
-            float clearance = cfg.TotalShoulderWidth * 0.5f + 2.0f;
+            float clearance = cfg.TotalFootprintWidth * 0.5f + 2.0f;
             Vector2 a2 = new Vector2(startPos.x, startPos.z);
             Vector2 b2 = new Vector2(endPos.x, endPos.z);
             RoadMaskSegments.Add(new RoadMaskSegment { a = a2, b = b2, clearance = clearance });
