@@ -188,7 +188,8 @@ namespace ProjectTerra.Sandbox
             {
                 dirtParticles.Stop();
             }
-            furrowManager?.StopFurrow();
+            // Limpar todos os sulcos criados para evitar vazamento de GameObjects na cena
+            furrowManager?.ClearAll();
 
             SandboxHUD.Instance?.ShowToast("🚜 Arado DESENGATADO no local.", 2.5f);
             Debug.Log("[PlowImplement] Arado desengatado.");

@@ -107,13 +107,17 @@ namespace ProjectTerra.Planet
 
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             Instance = this;
             InitializePlanet();
         }
 
         private void Start()
         {
-            Instance = this;
             if (rootNodes == null || rootNodes.Length != 6)
             {
                 InitializePlanet();
@@ -127,6 +131,11 @@ namespace ProjectTerra.Planet
 
         private void OnEnable()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             Instance = this;
             if (rootNodes == null || rootNodes.Length != 6)
             {

@@ -456,7 +456,25 @@ namespace ProjectTerra.Sandbox
         private void CreateFlashlight()
         {
             var obj = new GameObject("Player_Flashlight");
-            Transform parent = cameraFollowPoint != null ? cameraFollowPoint : transform;
+            // Sempre parentar à câmera (ou cameraFollowPoint) para seguir pitch/yaw corretamente.
+            // Se cameraFollowPoint for null, usar a câmera ativa diretamente.
+            Transform parent = null;
+            if (cameraFollowPoint != null)
+            {
+                parent = cameraFollowPoint;
+            }
+            else if (activeCamera != null)
+            {
+                parent = activeCamera.transform;
+            }
+            else
+            {
+                // Fallback: criar um pivot no jogador que segue a rotação da câmera
+                var pivot = new GameObject("FlashlightPivot");
+                pivot.transform.SetParent(transform);
+                pivot.transform.localPosition = new Vector3(0f, 1.65f, 0.15f); // Altura dos olhos
+                parent = pivot.transform;
+            }
             obj.transform.SetParent(parent);
             obj.transform.localPosition = new Vector3(0.25f, -0.1f, 0.2f);
             obj.transform.localRotation = Quaternion.identity;

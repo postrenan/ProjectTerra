@@ -40,7 +40,10 @@ namespace ProjectTerra.Sandbox
                 {
                     // Resistência hidrodinâmica nas rodas
                     float dragFactor = Mathf.Clamp(waterDepthOnVehicle * 1.6f, 0.4f, 4.0f);
-                    rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, Time.fixedDeltaTime * dragFactor);
+                    // Vector3.Lerp não clampa t; em time warp alto t > 1 inverte a velocidade.
+                    // Usar decaimento exponencial (sempre em [0,1]) para evitar overshoot.
+                    float dampT = 1f - Mathf.Exp(-dragFactor * Time.fixedDeltaTime);
+                    rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, dampT);
 
                     // Se água profunda cobrir o bloco do motor (> 0.95m)
                     if (waterDepthOnVehicle > 0.95f)
@@ -100,7 +103,9 @@ namespace ProjectTerra.Sandbox
             else
             {
                 // Freio motor / atrito de rolamento
-                rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, Time.fixedDeltaTime * 0.4f);
+                // Vector3.Lerp não clampa t; usar decaimento exponencial para time warp seguro.
+                float rollDampT = 1f - Mathf.Exp(-0.4f * Time.fixedDeltaTime);
+                rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, rollDampT);
             }
 
             // Esterçamento adaptativo com a velocidade
@@ -230,7 +235,9 @@ namespace ProjectTerra.Sandbox
             }
 
             // Amortecimento aerodinâmico suave
-            rb.angularVelocity = Vector3.Lerp(rb.angularVelocity, Vector3.zero, Time.fixedDeltaTime * 0.6f);
+            // Vector3.Lerp não clampa t; usar decaimento exponencial para time warp seguro.
+            float aeroDampT = 1f - Mathf.Exp(-0.6f * Time.fixedDeltaTime);
+            rb.angularVelocity = Vector3.Lerp(rb.angularVelocity, Vector3.zero, aeroDampT);
         }
 
         private void FixedUpdateBoat()
@@ -270,6 +277,8 @@ namespace ProjectTerra.Sandbox
                 // Vector3.Lerp NÃO limita t como Mathf.Lerp: acima de ~18x de warp o
                 // dt fixo passa de 0.55 s, t > 1 e a velocidade ATRAVESSA o zero
                 // invertendo o sentido. Exp(1-t) é limitado em [0,1] para qualquer dt.
+                // Vector3.Lerp não clampa t; em time warp alto t > 1 extrapola.
+                // Usar decaimento exponencial (sempre em [0,1]) para evitar overshoot.
                 float waterDampT = 1f - Mathf.Exp(-waterDrag * Time.fixedDeltaTime);
                 rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z), waterDampT);
 

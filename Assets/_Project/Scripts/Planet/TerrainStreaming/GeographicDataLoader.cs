@@ -89,6 +89,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
                             if (res < 2 || rawBytes.Length < headerSize + res * res * 2)
                             {
                                 Debug.LogWarning($"[GeographicDataLoader] heightmap_{regionId}.raw tem cabeçalho HMAP mas está truncado (res={res}, {rawBytes.Length} bytes). A usar fallback procedural.");
+                                GenerateProceduralFallback(out heights);
                                 return false;
                             }
 

@@ -103,9 +103,14 @@ namespace ProjectTerra.Core
                         if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) val -= 1f;
                     }
                     var gp = Gamepad.current;
-                    if (gp != null && Mathf.Abs(gp.leftStick.x.ReadValue()) > Mathf.Abs(val))
+                    if (gp != null)
                     {
-                        val = gp.leftStick.x.ReadValue();
+                        float stickX = gp.leftStick.x.ReadValue();
+                        // Deadzone de 0.15 para evitar micro-drifts do stick sobrescreverem teclado
+                        if (Mathf.Abs(stickX) > 0.15f && Mathf.Abs(stickX) > Mathf.Abs(val))
+                        {
+                            val = stickX;
+                        }
                     }
                     return val;
                 }
@@ -119,9 +124,14 @@ namespace ProjectTerra.Core
                         if (kb.sKey.isPressed || kb.downArrowKey.isPressed) val -= 1f;
                     }
                     var gp = Gamepad.current;
-                    if (gp != null && Mathf.Abs(gp.leftStick.y.ReadValue()) > Mathf.Abs(val))
+                    if (gp != null)
                     {
-                        val = gp.leftStick.y.ReadValue();
+                        float stickY = gp.leftStick.y.ReadValue();
+                        // Deadzone de 0.15 para evitar micro-drifts do stick sobrescreverem teclado
+                        if (Mathf.Abs(stickY) > 0.15f && Mathf.Abs(stickY) > Mathf.Abs(val))
+                        {
+                            val = stickY;
+                        }
                     }
                     return val;
                 }

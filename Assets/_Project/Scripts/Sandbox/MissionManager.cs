@@ -43,6 +43,9 @@ namespace ProjectTerra.Sandbox
         public string completionBannerMessage = "";
         public float completionBannerTimer = 0f;
 
+        // Lock para evitar reentrância em CompleteActiveContract
+        private bool isCompletingContract = false;
+
         private void Awake()
         {
             Instance = this;
@@ -140,8 +143,11 @@ namespace ProjectTerra.Sandbox
 
         public void CompleteActiveContract()
         {
+            // Evitar reentrância (spam de F/Enter no mesmo frame)
+            if (isCompletingContract) return;
             if (!hasActiveContract || currentContract == null || currentContract.isCompleted) return;
 
+            isCompletingContract = true;
             currentContract.isCompleted = true;
 
             // Descarregar veículo se estiver conduzindo
@@ -168,6 +174,8 @@ namespace ProjectTerra.Sandbox
 
             // Gerar próximo contrato após 3 segundos
             Invoke(nameof(GenerateNextContract), 3.0f);
+
+            isCompletingContract = false;
         }
 
         private void GenerateNextContract()

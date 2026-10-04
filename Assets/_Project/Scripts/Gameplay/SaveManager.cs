@@ -293,20 +293,19 @@ namespace ProjectTerra.Gameplay
                     fs.Flush(true);
                 }
 
+                // File.Move é atômico no mesmo filesystem (POSIX rename / Windows MoveFileEx).
+                // File.Replace com backupPath=null não é atômico em Linux/macOS.
+                // Se o arquivo destino existe, Delete + Move é seguro pois o .tmp já está no disco.
                 if (File.Exists(filePath))
                 {
-                    // File.Replace e atomico (substitui sem janela de "nenhum arquivo").
-                    File.Replace(tempPath, filePath, null, true);
+                    File.Delete(filePath);
                 }
-                else
-                {
-                    File.Move(tempPath, filePath);
-                }
+                File.Move(tempPath, filePath);
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[SaveManager] Falha ao salvar '{save.saveId}': {ex.Message}");
-                // O .tmp e preservado de proposito: o LoadAllSaves tenta recupera-lo.
+                // O .tmp é preservado de propósito: o LoadAllSaves tenta recuperá-lo.
             }
         }
 

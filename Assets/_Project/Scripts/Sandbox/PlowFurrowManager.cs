@@ -211,6 +211,35 @@ namespace ProjectTerra.Sandbox
             currentMesh = null;
         }
 
+        /// <summary>
+        /// Destroi todos os sulcos criados e limpa o container. Chamado ao desengatar o arado
+        /// para evitar vazamento de memória visual e de GameObjects em sessões longas.
+        /// </summary>
+        public void ClearAll()
+        {
+            StopFurrow();
+            if (furrowsContainer != null)
+            {
+                // Destruir todos os filhos (fitas de sulco)
+                for (int i = furrowsContainer.childCount - 1; i >= 0; i--)
+                {
+                    var child = furrowsContainer.GetChild(i);
+                    if (child != null)
+                    {
+                        if (Application.isPlaying)
+                            Destroy(child.gameObject);
+                        else
+                            DestroyImmediate(child.gameObject);
+                    }
+                }
+            }
+            // Resetar listas por segurança
+            vertices.Clear();
+            triangles.Clear();
+            uvs.Clear();
+            normals.Clear();
+        }
+
         private void StartNewRibbon()
         {
             EnsureContainer();

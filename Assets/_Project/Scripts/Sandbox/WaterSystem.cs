@@ -108,11 +108,10 @@ namespace ProjectTerra.Sandbox
 
             if (ocean != null)
             {
-                // Só o eixo XZ é percorrido pelo jogador/barco; o Y do nível do mar é
-                // absoluto e não muda com o rebase.
+                // O rebase do FloatingOrigin ocorre apenas no plano XZ (offset.y == 0),
+                // mas aplicar offset.y também garante consistência se houver mudança futura.
                 Vector3 c = ocean.bounds.center;
-                c.x -= offset.x;
-                c.z -= offset.z;
+                c -= offset;
                 ocean.bounds = new Bounds(c, ocean.bounds.size);
             }
         }
@@ -190,8 +189,11 @@ namespace ProjectTerra.Sandbox
             // pontas. Com um ±10 m fixo, um segmento que desce mais de ~20 m (o relevo
             // real chega a 3200 m) só reportava água numa faixa de 20 m em torno do
             // ponto médio: empuxo e natação sumiam no resto do curso do rio.
-            var min = Vector3.Min(a, b) - new Vector3(width * 0.7f, 0f, width * 0.7f);
-            var max = Vector3.Max(a, b) + new Vector3(width * 0.7f, 0f, width * 0.7f);
+            // Expandir bounds verticalmente para cobrir toda a variação de altura do segmento.
+            float minY = Mathf.Min(a.y, b.y) - width * 0.7f;
+            float maxY = Mathf.Max(a.y, b.y) + width * 0.7f;
+            var min = new Vector3(Mathf.Min(a.x, b.x), minY, Mathf.Min(a.z, b.z)) - new Vector3(width * 0.7f, 0f, width * 0.7f);
+            var max = new Vector3(Mathf.Max(a.x, b.x), maxY, Mathf.Max(a.z, b.z)) + new Vector3(width * 0.7f, 0f, width * 0.7f);
 
             var bounds = new Bounds((min + max) * 0.5f, max - min);
 
@@ -410,7 +412,8 @@ namespace ProjectTerra.Sandbox
 
         private void UpdateUnderwaterEffects()
         {
-            if (cachedCamera == null)
+            // Verificar se a câmera cacheada ainda existe (pode ter sido destruída em troca de cena)
+            if (cachedCamera == null || cachedCamera.gameObject == null)
             {
                 cachedCamera = Camera.main;
                 if (cachedCamera == null) return;

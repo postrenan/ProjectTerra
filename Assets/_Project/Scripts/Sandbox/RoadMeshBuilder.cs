@@ -46,6 +46,44 @@ namespace ProjectTerra.Sandbox
                 return edTex;
             }
 #endif
+
+            // Em builds, tentar carregar de Resources (texturas devem estar em Assets/Resources/PBR/...)
+            string resourcesPath = $"PBR/{relativeSubPath}/{fileName}";
+            var resTex = Resources.Load<Texture2D>(resourcesPath);
+            if (resTex != null)
+            {
+                textureCache[key] = resTex;
+                return resTex;
+            }
+
+            // Fallback: StreamingAssets (texturas devem estar copiadas para StreamingAssets/PBR/...)
+            string streamingPath = System.IO.Path.Combine(Application.streamingAssetsPath, "PBR", relativeSubPath, $"{fileName}.png");
+            if (!System.IO.File.Exists(streamingPath))
+            {
+                streamingPath = System.IO.Path.Combine(Application.streamingAssetsPath, "PBR", relativeSubPath, $"{fileName}.tga");
+            }
+
+            if (System.IO.File.Exists(streamingPath))
+            {
+                try
+                {
+                    byte[] bytes = System.IO.File.ReadAllBytes(streamingPath);
+                    var tex = new Texture2D(2, 2, TextureFormat.RGBA32, true);
+                    if (tex.LoadImage(bytes))
+                    {
+                        tex.wrapMode = TextureWrapMode.Repeat;
+                        tex.filterMode = FilterMode.Trilinear;
+                        textureCache[key] = tex;
+                        return tex;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[RoadMeshBuilder] Falha ao carregar textura de StreamingAssets {streamingPath}: {ex.Message}");
+                }
+            }
+
+            // Último recurso: tentar caminho relativo ao DataPath (só funciona no Editor)
             string diskPath = System.IO.Path.Combine(Application.dataPath, "_Project", "Textures", "PBR", relativeSubPath, $"{fileName}.png");
             if (!System.IO.File.Exists(diskPath))
             {
@@ -71,6 +109,11 @@ namespace ProjectTerra.Sandbox
                     Debug.LogWarning($"[RoadMeshBuilder] Falha ao carregar textura {diskPath}: {ex.Message}");
                 }
             }
+
+#if UNITY_EDITOR
+            // No Editor, log um aviso claro se a textura não foi encontrada
+            Debug.LogWarning($"[RoadMeshBuilder] Textura não encontrada: {relativeSubPath}/{fileName}. Coloque em Resources/PBR/ ou StreamingAssets/PBR/ para funcionar em builds.");
+#endif
             return null;
         }
 
