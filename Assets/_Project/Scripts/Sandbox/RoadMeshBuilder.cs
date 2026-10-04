@@ -6,11 +6,11 @@ using ProjectTerra.Planet;
 namespace ProjectTerra.Sandbox
 {
     /// <summary>
-    /// Gerador procedural avançado de estradas fotorrealistas conformatórias ao terreno.
-    /// Elimina completamente qualquer vão/espaço vazio entre a pista e o solo através de
+    /// Gerador procedural avanÃƒÂ§ado de estradas fotorrealistas conformatÃƒÂ³rias ao terreno.
+    /// Elimina completamente qualquer vÃƒÂ£o/espaÃƒÂ§o vazio entre a pista e o solo atravÃƒÂ©s de
     /// taludes de aterro integrados (saias de ancoragem que penetram suavemente no terreno).
-    /// Suporta 4 tipos de superfície (Asfalto, Concreto, Terra, Britas) e 4 configurações de faixas (2, 4, 6 e 8 faixas),
-    /// com acostamentos, sinalização viária completa (faixas contínuas, seccionadas/tracejadas) e barreiras New Jersey.
+    /// Suporta 4 tipos de superfÃƒÂ­cie (Asfalto, Concreto, Terra, Britas) e 4 configuraÃƒÂ§ÃƒÂµes de faixas (2, 4, 6 e 8 faixas),
+    /// com acostamentos, sinalizaÃƒÂ§ÃƒÂ£o viÃƒÂ¡ria completa (faixas contÃƒÂ­nuas, seccionadas/tracejadas) e barreiras New Jersey.
     /// </summary>
     public static class RoadMeshBuilder
     {
@@ -74,14 +74,18 @@ namespace ProjectTerra.Sandbox
             return null;
         }
 
+        /// <summary>
+        /// Cria um material no pipeline real do projeto. O pacote HDRP foi removido
+        /// (ver RegionalSandboxManager.Terrain.EnsureTerrainMaterial), entÃƒÂ£o este projeto
+        /// roda no Built-in: as propriedades HDRP (_BaseColorMap, _MaskMap, _Smoothness,
+        /// _AlphaCutoffEnable) nÃƒÂ£o existem e nunca eram aplicadas.
+        /// </summary>
         private static Material CreatePipelineMaterial(string name, Color baseColor, float glossiness = 0.2f, float metallic = 0.0f)
         {
-            Shader shader = Shader.Find("HDRP/Lit") ?? Shader.Find("Standard") ?? Shader.Find("Diffuse");
+            Shader shader = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Color");
             var mat = new Material(shader) { name = name };
 
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", baseColor);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", baseColor);
-            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", glossiness);
             if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", glossiness);
             if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", metallic);
 
@@ -126,22 +130,16 @@ namespace ProjectTerra.Sandbox
 
             var albedo = LoadTexture(subDir, "Albedo");
             var normal = LoadTexture(subDir, "Normal");
-            var mask = LoadTexture(subDir, "MaskMap");
 
-            if (albedo != null)
+            if (albedo != null && mat.HasProperty("_MainTex"))
             {
-                if (mat.HasProperty("_BaseColorMap")) mat.SetTexture("_BaseColorMap", albedo);
-                if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", albedo);
+                mat.SetTexture("_MainTex", albedo);
             }
-            if (normal != null)
+            if (normal != null && mat.HasProperty("_BumpMap"))
             {
-                if (mat.HasProperty("_NormalMap")) { mat.SetTexture("_NormalMap", normal); mat.EnableKeyword("_NORMALMAP"); }
-                if (mat.HasProperty("_BumpMap")) { mat.SetTexture("_BumpMap", normal); mat.EnableKeyword("_NORMALMAP"); }
-            }
-            if (mask != null && mat.HasProperty("_MaskMap"))
-            {
-                mat.SetTexture("_MaskMap", mask);
-                mat.EnableKeyword("_MASKMAP");
+                mat.SetTexture("_BumpMap", normal);
+                mat.SetFloat("_BumpScale", 1.0f);
+                mat.EnableKeyword("_NORMALMAP");
             }
 
             materialCache[key] = mat;
@@ -160,11 +158,7 @@ namespace ProjectTerra.Sandbox
 
             mat = CreatePipelineMaterial(key, tint, 0.10f, 0.0f);
             var gravelTex = LoadTexture("Ground/Gravel", "Albedo") ?? LoadTexture("Ground/Soil", "Albedo");
-            if (gravelTex != null)
-            {
-                if (mat.HasProperty("_BaseColorMap")) mat.SetTexture("_BaseColorMap", gravelTex);
-                if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", gravelTex);
-            }
+            if (gravelTex != null && mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", gravelTex);
 
             materialCache[key] = mat;
             return mat;
@@ -177,11 +171,7 @@ namespace ProjectTerra.Sandbox
 
             mat = CreatePipelineMaterial(key, new Color(0.38f, 0.30f, 0.20f), 0.05f, 0.0f);
             var soilTex = LoadTexture("Ground/Soil", "Albedo");
-            if (soilTex != null)
-            {
-                if (mat.HasProperty("_BaseColorMap")) mat.SetTexture("_BaseColorMap", soilTex);
-                if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", soilTex);
-            }
+            if (soilTex != null && mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", soilTex);
 
             materialCache[key] = mat;
             return mat;
@@ -192,29 +182,27 @@ namespace ProjectTerra.Sandbox
             string key = $"Marking_{color.GetHashCode()}_{isDashed}";
             if (materialCache.TryGetValue(key, out var mat) && mat != null) return mat;
 
-            Shader s = isDashed 
-                ? (Shader.Find("HDRP/Lit") ?? Shader.Find("Standard"))
-                : (Shader.Find("HDRP/Lit") ?? Shader.Find("Standard") ?? Shader.Find("Unlit/Color"));
+            Shader s = Shader.Find("Standard") ?? Shader.Find("Unlit/Color");
 
             mat = new Material(s) { name = key };
 
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
-            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.35f);
             if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.35f);
 
             if (isDashed)
             {
                 var dashTex = GetDashedLineTexture();
-                if (mat.HasProperty("_BaseColorMap")) mat.SetTexture("_BaseColorMap", dashTex);
                 if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", dashTex);
 
-                // Configurar modo Cutout / Transparent
-                if (mat.HasProperty("_Mode")) mat.SetFloat("_Mode", 1f); // Cutout no Standard
+                // Cutout no Standard. A propriedade correta ÃƒÂ© _AlphaCutoff (nÃƒÂ£o _Cutoff,
+                // que nÃƒÂ£o existe no Standard) e a geometria alpha-testada pertence ÃƒÂ 
+                // fila opaque: em 3000 ela ordenava como transparente e podia ocluir
+                // outros transparentes.
+                if (mat.HasProperty("_Mode")) mat.SetFloat("_Mode", 1f);
+                if (mat.HasProperty("_AlphaCutoff")) mat.SetFloat("_AlphaCutoff", 0.5f);
                 if (mat.HasProperty("_Cutoff")) mat.SetFloat("_Cutoff", 0.5f);
-                if (mat.HasProperty("_AlphaCutoffEnable")) mat.SetFloat("_AlphaCutoffEnable", 1f); // HDRP
                 mat.EnableKeyword("_ALPHATEST_ON");
-                mat.renderQueue = 3000;
+                mat.renderQueue = 2000;
             }
 
             materialCache[key] = mat;
@@ -250,11 +238,7 @@ namespace ProjectTerra.Sandbox
 
             mat = CreatePipelineMaterial(key, new Color(0.76f, 0.76f, 0.77f), 0.25f, 0.0f);
             var conTex = LoadTexture("Infrastructure/Concrete", "Albedo");
-            if (conTex != null)
-            {
-                if (mat.HasProperty("_BaseColorMap")) mat.SetTexture("_BaseColorMap", conTex);
-                if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", conTex);
-            }
+            if (conTex != null && mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", conTex);
             materialCache[key] = mat;
             return mat;
         }
@@ -263,7 +247,7 @@ namespace ProjectTerra.Sandbox
         {
             if (dashedLineTexture != null) return dashedLineTexture;
 
-            // Textura 32x64: metade superior branca sólida, metade inferior transparente
+            // Textura 32x64: metade superior branca sÃƒÂ³lida, metade inferior transparente
             dashedLineTexture = new Texture2D(32, 64, TextureFormat.RGBA32, true);
             dashedLineTexture.name = "Tex_Road_DashedLine";
             dashedLineTexture.wrapMode = TextureWrapMode.Repeat;
@@ -272,10 +256,10 @@ namespace ProjectTerra.Sandbox
             var colors = new Color[32 * 64];
             for (int y = 0; y < 64; y++)
             {
-                bool isPaint = (y < 32); // 50% de ciclo de pintura (ex: 4m tinta, 4m vão)
+                bool isPaint = (y < 32); // 50% de ciclo de pintura (ex: 4m tinta, 4m vÃƒÂ£o)
                 for (int x = 0; x < 32; x++)
                 {
-                    // Suavização lateral das bordas da linha
+                    // SuavizaÃƒÂ§ÃƒÂ£o lateral das bordas da linha
                     float edgeDist = Mathf.Min(x, 31 - x) / 3.0f;
                     float alpha = isPaint ? Mathf.Clamp01(edgeDist) : 0f;
                     colors[y * 32 + x] = new Color(0.98f, 0.98f, 0.95f, alpha);
@@ -315,8 +299,8 @@ namespace ProjectTerra.Sandbox
         #region Construtor Principal de Geometria de Estrada
 
         /// <summary>
-        /// Constrói uma estrada contínua com perfil completo, acostamentos, taludes de ancoragem no solo
-        /// e sinalização viária conforme a quantidade de faixas (2, 4, 6, 8) e tipo de pavimento.
+        /// ConstrÃƒÂ³i uma estrada contÃƒÂ­nua com perfil completo, acostamentos, taludes de ancoragem no solo
+        /// e sinalizaÃƒÂ§ÃƒÂ£o viÃƒÂ¡ria conforme a quantidade de faixas (2, 4, 6, 8) e tipo de pavimento.
         /// </summary>
         public static GameObject BuildRoad(
             Transform parent,
@@ -340,7 +324,7 @@ namespace ProjectTerra.Sandbox
                 center[i] = p;
             }
 
-            // Suavização das elevações verticais para evitar descontinuidades abruptas
+            // SuavizaÃƒÂ§ÃƒÂ£o das elevaÃƒÂ§ÃƒÂµes verticais para evitar descontinuidades abruptas
             for (int pass = 0; pass < 2; pass++)
             {
                 for (int i = 1; i < m - 1; i++)
@@ -371,7 +355,7 @@ namespace ProjectTerra.Sandbox
             // 2. Construir Malha Unificada com Pista, Acostamentos e Taludes de Ancoragem
             BuildUnifiedRoadBody(roadRoot.transform, center, rights, config, halfRoad, shoulderW, taludeW, getTerrainHeight);
 
-            // 3. Adicionar Sinalização Viária (Asfalto / Concreto) ou Trilhas de Rodagem (Terra / Brita)
+            // 3. Adicionar SinalizaÃƒÂ§ÃƒÂ£o ViÃƒÂ¡ria (Asfalto / Concreto) ou Trilhas de Rodagem (Terra / Brita)
             if (config.surfaceType == RoadSurfaceType.Asphalt || config.surfaceType == RoadSurfaceType.Concrete)
             {
                 BuildPavementMarkings(roadRoot.transform, center, rights, config, halfRoad);
@@ -391,14 +375,14 @@ namespace ProjectTerra.Sandbox
         }
 
         /// <summary>
-        /// Constrói o corpo contínuo da estrada composto por 7 colunas de vértices transversais:
-        /// [0] Talude Esquerdo (ancorado -0.30m dentro do terreno) -> ZERO VÃOS
+        /// ConstrÃƒÂ³i o corpo contÃƒÂ­nuo da estrada composto por 7 colunas de vÃƒÂ©rtices transversais:
+        /// [0] Talude Esquerdo (ancorado -0.30m dentro do terreno) -> ZERO VÃƒÆ’OS
         /// [1] Acostamento Esquerdo
         /// [2] Borda Esquerda da Pista
         /// [3] Centro da Pista (abaulado +0.06m)
         /// [4] Borda Direita da Pista
         /// [5] Acostamento Direito
-        /// [6] Talude Direito (ancorado -0.30m dentro do terreno) -> ZERO VÃOS
+        /// [6] Talude Direito (ancorado -0.30m dentro do terreno) -> ZERO VÃƒÆ’OS
         /// </summary>
         private static void BuildUnifiedRoadBody(
             Transform parent,
@@ -419,13 +403,13 @@ namespace ProjectTerra.Sandbox
 
             float[] lateralOffsets = new float[cols]
             {
-                -(halfRoad + shoulderW + taludeW), // 0: Pé do talude esquerdo
+                -(halfRoad + shoulderW + taludeW), // 0: PÃƒÂ© do talude esquerdo
                 -(halfRoad + shoulderW),           // 1: Borda externa acostamento esquerdo
                 -halfRoad,                          // 2: Borda esquerda da pista
                 0f,                                 // 3: Eixo central
                 halfRoad,                           // 4: Borda direita da pista
                 halfRoad + shoulderW,              // 5: Borda externa acostamento direito
-                halfRoad + shoulderW + taludeW     // 6: Pé do talude direito
+                halfRoad + shoulderW + taludeW     // 6: PÃƒÂ© do talude direito
             };
 
             float uRun = 0f;
@@ -447,8 +431,8 @@ namespace ProjectTerra.Sandbox
                     if (col == 0 || col == 6)
                     {
                         // TALUDE DE ANCORAGEM:
-                        // Amostra a altura real do terreno no pé do talude e afunda 30 cm ABAIXO DO SOLO!
-                        // Isso garante vedação hermética 100% à prova de vãos em qualquer topografia ou encosta.
+                        // Amostra a altura real do terreno no pÃƒÂ© do talude e afunda 30 cm ABAIXO DO SOLO!
+                        // Isso garante vedaÃƒÂ§ÃƒÂ£o hermÃƒÂ©tica 100% ÃƒÂ  prova de vÃƒÂ£os em qualquer topografia ou encosta.
                         float groundY = (getTerrainHeight != null) ? getTerrainHeight(worldPos) : (c.y - 0.5f);
                         y = groundY - 0.30f;
                     }
@@ -485,7 +469,7 @@ namespace ProjectTerra.Sandbox
                 }
             }
 
-            // Geração de Triângulos separados por Submeshes:
+            // GeraÃƒÂ§ÃƒÂ£o de TriÃƒÂ¢ngulos separados por Submeshes:
             // Submesh 0: Pista de rolamento (Colunas 2 a 4)
             // Submesh 1: Acostamentos laterais (Colunas 1->2 e 4->5)
             // Submesh 2: Taludes de ancoragem no solo (Colunas 0->1 e 5->6)
@@ -524,6 +508,7 @@ namespace ProjectTerra.Sandbox
             mesh.SetTriangles(shoulderTris, 1);
             mesh.SetTriangles(taludeTris, 2);
             mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
             mesh.RecalculateBounds();
 
             var bodyObj = new GameObject("Pista_Principal");
@@ -538,7 +523,7 @@ namespace ProjectTerra.Sandbox
                 GetEmbankmentMaterial()
             };
 
-            // Adicionar colisor físico na pista para suporte a veículos e pedestre
+            // Adicionar colisor fÃƒÂ­sico na pista para suporte a veÃƒÂ­culos e pedestre
             var colMesh = new Mesh { name = "Road_Collider_Mesh" };
             if (verts.Length > 65000) colMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             colMesh.vertices = verts;
@@ -549,6 +534,8 @@ namespace ProjectTerra.Sandbox
             colTris.AddRange(roadTris);
             colMesh.SetTriangles(colTris, 0);
             colMesh.RecalculateBounds();
+            // Sem RecalculateTangents aqui de propósito: o mesh de colisão não tem UVs e
+            // não é renderizado — só o corpo visível precisa de tangentes para o normal map.
 
             var collider = bodyObj.AddComponent<MeshCollider>();
             collider.sharedMesh = colMesh;
@@ -562,15 +549,15 @@ namespace ProjectTerra.Sandbox
 
         #endregion
 
-        #region Sinalização Viária e Faixas de Rolamento (2, 4, 6 e 8 faixas)
+        #region SinalizaÃƒÂ§ÃƒÂ£o ViÃƒÂ¡ria e Faixas de Rolamento (2, 4, 6 e 8 faixas)
 
         /// <summary>
-        /// Gera a sinalização horizontal de faixas para Asfalto e Concreto:
+        /// Gera a sinalizaÃƒÂ§ÃƒÂ£o horizontal de faixas para Asfalto e Concreto:
         /// - 2 Faixas: Linha amarela central (eixo) + 2 faixas brancas de bordo
         /// - 4 Faixas: Eixo duplo amarelo/canteiro + linhas brancas tracejadas dividindo as 2 faixas em cada sentido + bordos
         /// - 6 Faixas: Eixo central largo + 2 linhas tracejadas em cada sentido (3 faixas cada) + bordos
         /// - 8 Faixas: Eixo central largo + 3 linhas tracejadas em cada sentido (4 faixas cada) + bordos
-        /// Todas as faixas ficam coladas à pista (1.2 cm de espessura de tinta termoplástica) sem flutuação!
+        /// Todas as faixas ficam coladas ÃƒÂ  pista (1.2 cm de espessura de tinta termoplÃƒÂ¡stica) sem flutuaÃƒÂ§ÃƒÂ£o!
         /// </summary>
         private static void BuildPavementMarkings(
             Transform parent,
@@ -588,15 +575,15 @@ namespace ProjectTerra.Sandbox
 
             float edgeOffset = halfRoad - 0.45f;
 
-            // A faixa precisa ficar ACIMA da superfície, nunca abaixo. O corpo da pista
+            // A faixa precisa ficar ACIMA da superfÃƒÂ­cie, nunca abaixo. O corpo da pista
             // usa c.y+0.02 nas bordas e c.y+0.06 no abaulamento central (ver
             // BuildUnifiedRoadBody), interpolando entre os dois. Com o offset antigo de
-            // 12 mm as faixas ficavam 8–52 mm enterradas dentro da malha opaca e nunca
-            // apareciam — o mesmo valia para os sulcos de pista não pavimentada.
+            // 12 mm as faixas ficavam 8Ã¢â‚¬â€œ52 mm enterradas dentro da malha opaca e nunca
+            // apareciam Ã¢â‚¬â€ o mesmo valia para os sulcos de pista nÃƒÂ£o pavimentada.
             const float markingClearance = 0.07f;
             float yOffset = markingClearance;
 
-            // Linhas de Bordo Laterais (Brancas contínuas)
+            // Linhas de Bordo Laterais (Brancas contÃƒÂ­nuas)
             BuildStripRibbon(markingsRoot.transform, center, rights, 0.22f, -edgeOffset, yOffset, whiteSolid, "Bordo_Esq");
             BuildStripRibbon(markingsRoot.transform, center, rights, 0.22f, edgeOffset, yOffset, whiteSolid, "Bordo_Dir");
 
@@ -630,14 +617,14 @@ namespace ProjectTerra.Sandbox
                 BuildStripRibbon(markingsRoot.transform, center, rights, 0.20f, -halfMedian, yOffset, yellowSolid, "Centro_Esq");
                 BuildStripRibbon(markingsRoot.transform, center, rights, 0.20f, halfMedian, yOffset, yellowSolid, "Centro_Dir");
 
-                // 2 divisórias tracejadas no lado esquerdo
+                // 2 divisÃƒÂ³rias tracejadas no lado esquerdo
                 for (int l = 1; l <= 2; l++)
                 {
                     float off = -(halfMedian + l * laneW);
                     BuildStripRibbon(markingsRoot.transform, center, rights, 0.18f, off, yOffset, whiteDashed, $"Tracejada_Esq_{l}", dashTiling: true);
                 }
 
-                // 2 divisórias tracejadas no lado direito
+                // 2 divisÃƒÂ³rias tracejadas no lado direito
                 for (int l = 1; l <= 2; l++)
                 {
                     float off = (halfMedian + l * laneW);
@@ -651,14 +638,14 @@ namespace ProjectTerra.Sandbox
                 BuildStripRibbon(markingsRoot.transform, center, rights, 0.22f, -halfMedian, yOffset, yellowSolid, "Centro_Esq");
                 BuildStripRibbon(markingsRoot.transform, center, rights, 0.22f, halfMedian, yOffset, yellowSolid, "Centro_Dir");
 
-                // 3 divisórias tracejadas no lado esquerdo
+                // 3 divisÃƒÂ³rias tracejadas no lado esquerdo
                 for (int l = 1; l <= 3; l++)
                 {
                     float off = -(halfMedian + l * laneW);
                     BuildStripRibbon(markingsRoot.transform, center, rights, 0.18f, off, yOffset, whiteDashed, $"Tracejada_Esq_{l}", dashTiling: true);
                 }
 
-                // 3 divisórias tracejadas no lado direito
+                // 3 divisÃƒÂ³rias tracejadas no lado direito
                 for (int l = 1; l <= 3; l++)
                 {
                     float off = (halfMedian + l * laneW);
@@ -685,7 +672,7 @@ namespace ProjectTerra.Sandbox
             float halfRoad = config.TotalRoadwayWidth * 0.5f;
             float yOffset = 0.07f; // mesmo clearance de BuildPavementMarkings: 8 mm ficavam sob a pista
 
-            // Para cada faixa, adiciona 2 trilhas de pneus (roda esquerda e roda direita: distância de ~1.8m)
+            // Para cada faixa, adiciona 2 trilhas de pneus (roda esquerda e roda direita: distÃƒÂ¢ncia de ~1.8m)
             int halfLanes = lanes / 2;
             for (int l = 0; l < halfLanes; l++)
             {
@@ -702,7 +689,7 @@ namespace ProjectTerra.Sandbox
         }
 
         /// <summary>
-        /// Constrói uma barreira New Jersey de concreto contínua ao longo do canteiro central.
+        /// ConstrÃƒÂ³i uma barreira New Jersey de concreto contÃƒÂ­nua ao longo do canteiro central.
         /// </summary>
         private static void BuildCenterBarrier(
             Transform parent,
@@ -713,7 +700,7 @@ namespace ProjectTerra.Sandbox
             int m = center.Length;
             var barrierMat = GetConcreteBarrierMaterial();
 
-            // Perfil transversal da barreira New Jersey (4 vértices: base larga 0.6m, topo 0.3m, altura 0.85m)
+            // Perfil transversal da barreira New Jersey (4 vÃƒÂ©rtices: base larga 0.6m, topo 0.3m, altura 0.85m)
             float halfB = 0.32f;
             float halfT = 0.16f;
             float h = 0.85f;
@@ -759,6 +746,7 @@ namespace ProjectTerra.Sandbox
             mesh.uv = uvs;
             mesh.SetTriangles(tris, 0);
             mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
             mesh.RecalculateBounds();
 
             var barrierObj = new GameObject("Barreira_NewJersey_Central");
@@ -769,7 +757,7 @@ namespace ProjectTerra.Sandbox
         }
 
         /// <summary>
-        /// Constrói uma faixa paralela (fita) posicionada na superfície da pista com largura e offset próprios.
+        /// ConstrÃƒÂ³i uma faixa paralela (fita) posicionada na superfÃƒÂ­cie da pista com largura e offset prÃƒÂ³prios.
         /// </summary>
         private static void BuildStripRibbon(
             Transform parent,
@@ -796,7 +784,7 @@ namespace ProjectTerra.Sandbox
                 verts[i * 2 + 0] = c - rights[i] * halfW;
                 verts[i * 2 + 1] = c + rights[i] * halfW;
 
-                // Para linhas tracejadas, mapear o ciclo (4m tinta, 4m espaço = 8 metros por repetição)
+                // Para linhas tracejadas, mapear o ciclo (4m tinta, 4m espaÃƒÂ§o = 8 metros por repetiÃƒÂ§ÃƒÂ£o)
                 float v = dashTiling ? (uRun / 8.0f) : (uRun / 5.0f);
                 uvs[i * 2 + 0] = new Vector2(0f, v);
                 uvs[i * 2 + 1] = new Vector2(1f, v);
@@ -817,6 +805,7 @@ namespace ProjectTerra.Sandbox
             mesh.uv = uvs;
             mesh.triangles = tris;
             mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
             mesh.RecalculateBounds();
 
             var go = new GameObject(name);
@@ -827,12 +816,12 @@ namespace ProjectTerra.Sandbox
 
         #endregion
 
-        #region Utilitários de Traçado Suave e Vias Retas
+        #region UtilitÃƒÂ¡rios de TraÃƒÂ§ado Suave e Vias Retas
 
         /// <summary>
-        /// Constrói uma rodovia reta ou transversal adaptativa entre dois pontos no espaço,
-        /// subdividindo a cada 12-15 metros e amostrando a altura real do terreno em cada nó.
-        /// Substitui primitivos de caixas estáticas por estradas conformatórias de verdade!
+        /// ConstrÃƒÂ³i uma rodovia reta ou transversal adaptativa entre dois pontos no espaÃƒÂ§o,
+        /// subdividindo a cada 12-15 metros e amostrando a altura real do terreno em cada nÃƒÂ³.
+        /// Substitui primitivos de caixas estÃƒÂ¡ticas por estradas conformatÃƒÂ³rias de verdade!
         /// </summary>
         public static GameObject BuildStraightRoad(
             Transform parent,
@@ -860,8 +849,8 @@ namespace ProjectTerra.Sandbox
         }
 
         /// <summary>
-        /// Suaviza coordenadas XZ usando interpolação Catmull-Rom com passo fino (12 a 15m),
-        /// garantindo que curvas acompanhem fielmente o relevo montanhoso e vales sem vãos.
+        /// Suaviza coordenadas XZ usando interpolaÃƒÂ§ÃƒÂ£o Catmull-Rom com passo fino (12 a 15m),
+        /// garantindo que curvas acompanhem fielmente o relevo montanhoso e vales sem vÃƒÂ£os.
         /// </summary>
         public static List<Vector2> SmoothPolylineXZ(List<Vector2> points, float targetSpacing = 14f)
         {
@@ -909,8 +898,8 @@ namespace ProjectTerra.Sandbox
         }
 
         /// <summary>
-        /// Constrói um trecho demonstrativo de estrada diretamente na frente do jogador
-        /// para permitir inspeção e testes imediatos no jogo.
+        /// ConstrÃƒÂ³i um trecho demonstrativo de estrada diretamente na frente do jogador
+        /// para permitir inspeÃƒÂ§ÃƒÂ£o e testes imediatos no jogo.
         /// </summary>
         public static GameObject SpawnShowcaseRoad(
             Vector3 origin,
@@ -928,7 +917,7 @@ namespace ProjectTerra.Sandbox
 
             string name = $"Showcase_{surface}_{lanes}Faixas_{DateTime.Now.Ticks % 10000}";
             var go = BuildStraightRoad(null, start, end, surface, lanes, getTerrainHeight, name);
-            Debug.Log($"[RoadMeshBuilder] Trecho de demonstração gerado com sucesso: '{name}' (Superfície: {surface}, Faixas: {(int)lanes}).");
+            Debug.Log($"[RoadMeshBuilder] Trecho de demonstraÃƒÂ§ÃƒÂ£o gerado com sucesso: '{name}' (SuperfÃƒÂ­cie: {surface}, Faixas: {(int)lanes}).");
             return go;
         }
 

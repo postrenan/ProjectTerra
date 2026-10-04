@@ -1,6 +1,8 @@
 # Project Terra 🌍
 
-Simulação e jogo de exploração e gestão global em escala real 1:1 desenvolvido na **Unity 6 (6000.6.3f1)** com pipeline **HDRP (High Definition Render Pipeline)**.
+Simulação e jogo de exploração e gestão global em escala real 1:1 desenvolvido na **Unity 6 (6000.6.3f1)** com o **Built-in Render Pipeline**.
+
+> **Nota sobre o pipeline:** o projeto roda no **Built-in Render Pipeline**. O pacote HDRP foi removido de propósito — ele forçava os materiais padrão (inclusive o do terreno) a serem HDRP, que não renderizam no Built-in, causando o terreno rosa/branco. Nenhum material ou shader deste projeto deve usar propriedades de HDRP (`_BaseColorMap`, `_MaskMap`, `_Smoothness`, `_AlphaCutoffEnable`). A classe `HDRPAtmosphereController` mantém o nome histórico, mas implementa atmosfera sobre o Built-in.
 
 O **Project Terra** combina a observação do globo terrestre a partir do espaço com a descida contínua para uma simulação territorial regional detalhada, permitindo ao jogador gerenciar territórios, explorar topografia real, administrar carreiras econômicas e conduzir veículos em escala métrica 1:1.
 
@@ -44,7 +46,7 @@ Ao confirmar a entrada na região, o jogo instancia o ambiente sandbox em escala
   - Geração métrica do terreno Unity ajustado nas dimensões geodésicas reais da região selecionada (largura, comprimento e altimetria).
   - Multi-camadas de texturas PBR de alta definição (Grama, Solo/Terra, Rocha e Cascalho) sintetizadas via `TerrainPBRFactory`.
   - Hidrografia regional com simulação de rios e corpos d'água dinâmicos.
-- **Atmosfera e Iluminação HDRP:**
+- **Atmosfera e Iluminação (Built-in RP):**
   - Ciclo Dia/Noite com iluminação solar física e posicionamento celeste georreferenciado.
   - Nevoeiro volumétrico (*Volumetric Fog*) e densidade atmosférica calculada via `HDRPAtmosphereController`.
 - **Personagem em Terceira/Primeira Pessoa:**
@@ -168,6 +170,6 @@ testejogo/
 ## ⚙️ Tecnologias Utilizadas
 
 - **Engine:** Unity 6 (6000.6.3f1)
-- **Render Pipeline:** High Definition Render Pipeline (HDRP)
+- **Render Pipeline:** Built-in Render Pipeline (o HDRP foi removido — ver nota no topo)
 - **Linguagens:** C# (.NET Standard 2.1) & Python 3
 - **Datasets Geográficos:** Natural Earth Data 10m (Admin 0 & Admin 1), Mapzen/AWS Terrarium Elevation
