@@ -26,3 +26,7 @@
 # OS Generated
 .DS_Store
 Thumbs.db
+
+# Unity crash recovery (criado automaticamente apos crash do Editor)
+/Assets/_Recovery/
+
