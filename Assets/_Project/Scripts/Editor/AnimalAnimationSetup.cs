@@ -6,15 +6,15 @@ using UnityEditor.Animations;
 
 namespace ProjectTerra.Editor
 {
-    [InitializeOnLoad]
+    // Sem [InitializeOnLoad]: antes o static constructor chamava ExecuteSetup em
+    // TODA recompilação/domínio reload, executando 5x SaveAndReimport + 5x Refresh +
+    // 5 regenerações de controller sem nenhuma verificação. Um crash do Editor no meio
+    // deixava os assets pela metade, e o AssetDatabase.Refresh() no meio da execução
+    // podia disparar outro reload que abortava o setup. Agora só roda a pedido
+    // explícito pelo menu Tools/Fauna/Setup Animal Animations.
     public static class AnimalAnimationSetup
     {
         private const string ANIMATORS_DIR = "Assets/_Project/Resources/Models/Animals/Animators";
-
-        static AnimalAnimationSetup()
-        {
-            EditorApplication.delayCall += ExecuteSetup;
-        }
 
         [MenuItem("Tools/Fauna/Setup Animal Animations")]
         public static void ExecuteSetup()
@@ -182,6 +182,11 @@ namespace ProjectTerra.Editor
             // Parâmetros do Animator
             controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
             controller.AddParameter("IsMoving", AnimatorControllerParameterType.Bool);
+            // IsRunning e IsGrazing sao escritos todo frame por AnimalController.cs
+            // (graze e corrida). Sem declara-los aqui, o Unity loga "parameter not
+            // found" e o estado de pastoreio nunca fica expressavel no grafo.
+            controller.AddParameter("IsRunning", AnimatorControllerParameterType.Bool);
+            controller.AddParameter("IsGrazing", AnimatorControllerParameterType.Bool);
             controller.AddParameter("Jump", AnimatorControllerParameterType.Trigger);
 
             // Identificar clip Idle e Walk
@@ -189,12 +194,23 @@ namespace ProjectTerra.Editor
             AnimationClip walkClip = null;
             AnimationClip runClip = null;
 
+            // Passe 1: resolve walk por nome especifico. O matcher anterior aceitava "run"
+            // aqui, entao se o Run fosse enumerado primeiro ele virava o clip de
+            // caminhada -- e o estado "Run" deixava de existir, porque runClip
+            // acabava igual a walkClip. Resultado no Cow.controller commitado:
+            // o estado Walk apontava para o clip Run e todos os animais galopavam.
             foreach (var kvp in clips)
             {
                 string name = kvp.Key.ToLower();
                 if (idleClip == null && name.Contains("idle")) idleClip = kvp.Value;
-                if (walkClip == null && (name.Contains("walk") || name.Contains("action") || name.Contains("run"))) walkClip = kvp.Value;
-                if (runClip == null && name.Contains("run")) runClip = kvp.Value;
+                if (walkClip == null && (name.Contains("walk") || name.Contains("action"))) walkClip = kvp.Value;
+            }
+
+            // Passe 2: so agora escolhe o run, pulando o clip que ja virou walk.
+            foreach (var kvp in clips)
+            {
+                if (kvp.Value == walkClip) continue;
+                if (kvp.Key.ToLower().Contains("run")) { runClip = kvp.Value; break; }
             }
 
             // Fallback: se não achou idle ou walk especificamente, use os disponíveis

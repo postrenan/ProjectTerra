@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace ProjectTerra.Gameplay
 {
@@ -108,7 +109,29 @@ namespace ProjectTerra.Gameplay
             writer.Write(originalWaterPercent);
         }
 
-        public static RegionSaveData ReadBinary(System.IO.BinaryReader reader, byte version = 1)
+        public const byte CurrentVersion = 1;
+
+        /// <summary>
+        /// Deserializa um save. O byte de versão decide o layout: cada layout tem o seu
+        /// próprio leitor e uma versão desconhecida é recusada em vez de ser adivinhada.
+        /// </summary>
+        public static RegionSaveData ReadBinary(System.IO.BinaryReader reader, byte version = CurrentVersion)
+        {
+            switch (version)
+            {
+                case 1:
+                    return ReadBinaryV1(reader);
+                default:
+                    // Antes o byte de versão era lido e descartado, sempre usando o layout v1.
+                    // Um save de versão futura (com um campo extra) seria lido fora de fase
+                    // campo-a-campo: currentMoney leria um string prefixada por tamanho como
+                    // long, e a partida apareceria com economia corrompida em vez de falhar alto.
+                    Debug.LogError($"[RegionSaveData] Save na versão {version} é mais recente que a suportada ({CurrentVersion}). Recusando carregar para não corromper a partida.");
+                    return null;
+            }
+        }
+
+        private static RegionSaveData ReadBinaryV1(System.IO.BinaryReader reader)
         {
             var save = new RegionSaveData();
             save.saveId = reader.ReadString();

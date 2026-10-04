@@ -247,6 +247,13 @@ namespace ProjectTerra.Sandbox
                 oceanObj.transform.position = oceanPos;
                 oceanObj.transform.localScale = oceanScale;
 
+                // O plano nasce com MeshCollider. Se ele permanecer, vira uma barreira
+                // invisivel no nivel do mar: o CharacterController nao consegue descer
+                // abaixo da superficie (Ctrl-mergulho e bloqueado pela despenetracao) e
+                // o casco do barco ancora em vez de boiar. O lago abaixo remove o dele.
+                var oceanCollider = oceanObj.GetComponent<Collider>();
+                if (oceanCollider != null) Destroy(oceanCollider);
+
                 var rend = oceanObj.GetComponent<Renderer>();
                 if (rend != null)
                 {
@@ -262,7 +269,11 @@ namespace ProjectTerra.Sandbox
                 // Grande lago / represa hidroelétrica no vale interior
                 var lakeObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 lakeObj.name = "Water_InlandLake";
-                Vector3 lakePos = new Vector3(worldWidthMeters * 0.15f, 0f, worldLengthMeters * 0.1f);
+                // O terreno e posicionado em (-W*0.5, 0, -L*0.5) com tamanho (W, h, L),
+                // logo ocupa x in [-W, 0] e z in [-L, 0]. Lake/SampleHeight devolvem 0
+                // fora desse retangulo, entao o lago precisa ser calculado em coordenadas
+                // relativas a origem do terreno, nunca em coordenadas 0-based.
+                Vector3 lakePos = new Vector3(-worldWidthMeters * 0.35f, 0f, -worldLengthMeters * 0.4f);
                 lakePos.y = GetTerrainHeight(lakePos) + 0.4f;
                 lakeObj.transform.position = lakePos;
                 lakeObj.transform.localScale = new Vector3(1800f, 0.2f, 1200f);

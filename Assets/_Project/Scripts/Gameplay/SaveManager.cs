@@ -42,12 +42,28 @@ namespace ProjectTerra.Gameplay
         }
 
         private const uint SaveMagic = 0x56415350; // 'PSAV'
-        private const byte SaveVersion = 1;
+        private const byte SaveVersion = RegionSaveData.CurrentVersion;
 
         public void LoadAllSaves()
         {
             loadedSaves.Clear();
             if (!Directory.Exists(saveDirectory)) return;
+
+            // 0. Recuperar saves que ficaram so em .tmp (crash durante uma escrita)
+            foreach (var tmp in Directory.GetFiles(saveDirectory, "*.bin.tmp"))
+            {
+                try
+                {
+                    string target = tmp.Substring(0, tmp.Length - 4); // remove ".tmp"
+                    if (File.Exists(target)) continue; // save definitivo ja existe, .tmp e lixo
+                    File.Move(tmp, target);
+                    Debug.LogWarning($"[SaveManager] Save recuperado de ficheiro temporário: {Path.GetFileName(target)}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[SaveManager] Falha ao recuperar {tmp}: {ex.Message}");
+                }
+            }
 
             // 1. Carregar saves binários (.bin)
             string[] binFiles = Directory.GetFiles(saveDirectory, "*.bin");
@@ -67,6 +83,12 @@ namespace ProjectTerra.Gameplay
                             {
                                 loadedSaves[save.saveId] = save;
                             }
+                        }
+                        else
+                        {
+                            // Antes era um "if" silencioso: um save corrompido sumia sem
+                            // deixar rasto. Agora o arquivo orfao e preservado e logado.
+                            Debug.LogWarning($"[SaveManager] Assinatura inválida em '{Path.GetFileName(file)}' (magic 0x{magic:X8}). Arquivo preservado em disco; se o save era importante, restaura-lo de um backup.");
                         }
                     }
                 }
@@ -253,12 +275,38 @@ namespace ProjectTerra.Gameplay
         {
             if (save == null) return;
             string filePath = Path.Combine(saveDirectory, $"save_{save.saveId}.bin");
-            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
-            using (var writer = new BinaryWriter(fs, System.Text.Encoding.UTF8))
+            string tempPath = filePath + ".tmp";
+
+            // Escrita atomica: serializa em .tmp, forca os dados ao disco e so entao
+            // substitui o save definitivo. Sem isso, um crash/ALT-F4 no meio da escrita
+            // deixaria um .bin truncado que falha no magic check e e descartado em
+            // silencio no LoadAllSaves -- perda permanente da partida.
+            try
             {
-                writer.Write(SaveMagic);
-                writer.Write(SaveVersion);
-                save.WriteBinary(writer);
+                using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var writer = new BinaryWriter(fs, System.Text.Encoding.UTF8))
+                {
+                    writer.Write(SaveMagic);
+                    writer.Write(SaveVersion);
+                    save.WriteBinary(writer);
+                    writer.Flush();
+                    fs.Flush(true);
+                }
+
+                if (File.Exists(filePath))
+                {
+                    // File.Replace e atomico (substitui sem janela de "nenhum arquivo").
+                    File.Replace(tempPath, filePath, null, true);
+                }
+                else
+                {
+                    File.Move(tempPath, filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[SaveManager] Falha ao salvar '{save.saveId}': {ex.Message}");
+                // O .tmp e preservado de proposito: o LoadAllSaves tenta recupera-lo.
             }
         }
 
