@@ -55,8 +55,13 @@ namespace ProjectTerra.Sandbox
                         }
                         activeThrottle = 0f; // Corta potência do motor inundado
 
-                        // Empuxo parcial da carcaça
-                        float vehicleBuoyancy = Mathf.Clamp(waterDepthOnVehicle * 5.0f, 0f, 18f);
+                        // Empuxo parcial da carcaça.
+                        // O teto era 18 m/s² contra uma gravidade de 9,81: acima de ~2 m
+                        // de água a aceleração líquida vertical ficava positiva e o
+                        // veículo era arremessado para fora, caindo e sendo arremessado
+                        // de novo indefinidamente. O teto tem de ficar ABAIXO da gravidade
+                        // para o veículo afundar/emergir até o equilíbrio em vez de pular.
+                        float vehicleBuoyancy = Mathf.Min(waterDepthOnVehicle * 5.0f, Physics.gravity.magnitude * 0.9f);
                         rb.AddForce(Vector3.up * vehicleBuoyancy, ForceMode.Acceleration);
                     }
                     else
@@ -176,15 +181,20 @@ namespace ProjectTerra.Sandbox
                 // D ou Seta Dir (+1): Rolar para a direita -> torque negativo
                 roll = -horizInput * rollRate * controlAuth;
 
-                // Leme de cauda (Yaw) via Q / E
-                if (TerraInput.GetKey(Key.Q)) yaw -= yawRate * controlAuth;
-                if (TerraInput.GetKey(Key.E)) yaw += yawRate * controlAuth;
+                // Leme de cauda (Yaw) via , e .
+                // NÃO pode usar E: PlayerCharacterController.Vehicle.cs trata Key.E
+                // como "desembarcar" e roda no mesmo frame, então tocar o leme
+                // direito por um único frame expulsava o piloto e o deixava caindo
+                // de 800 m no vazio. Virgula/ponto é o par natural de guinada e
+                // estava livre (o warp de tempo usa [ e ] como teclas primárias).
+                if (TerraInput.GetKey(Key.Comma)) yaw -= yawRate * controlAuth;
+                if (TerraInput.GetKey(Key.Period)) yaw += yawRate * controlAuth;
 
                 // Direção no solo (Taxiing com bequilha dianteira):
-                // No chão, A/D ou Q/E esterça o leme e a roda dianteira para manobrar na pista
+                // No chão, A/D ou , e . esterça o leme e a roda dianteira para manobrar na pista
                 if (currentAltitudeMeters < 2.5f && forwardSpeed > 0.5f)
                 {
-                    float groundSteer = (TerraInput.GetKey(Key.Q) ? -1f : (TerraInput.GetKey(Key.E) ? 1f : horizInput));
+                    float groundSteer = (TerraInput.GetKey(Key.Comma) ? -1f : (TerraInput.GetKey(Key.Period) ? 1f : horizInput));
                     yaw += groundSteer * yawRate * 1.2f;
                 }
             }
@@ -241,12 +251,22 @@ namespace ProjectTerra.Sandbox
 
             if (submergedDepth > 0f)
             {
-                // Empuxo hidrostático de Arquimedes com amortecimento adaptativo
-                float buoyantLift = Mathf.Clamp(submergedDepth * buoyancyForce, 0f, buoyancyForce * 2.8f);
-                rb.AddForce(Vector3.up * buoyantLift * rb.mass * 0.1f, ForceMode.Acceleration);
+                // Empuxo hidrostático de Arquimedes com amortecimento adaptativo.
+                // ForceMode.Acceleration JÁ é independente de massa: o argumento É a
+                // aceleração em m/s². Multiplicar por rb.mass (3200 no barco) não
+                // "compensa" a massa, eleva o empuxo 3200x -> ~22.000 m/s² e o barco
+                // era arremessado para fora da água. Aqui o empuxo é uma aceleração
+                // real, com teto logo acima da gravidade para o casco flutuar em
+                // equilíbrio (aprofundamento de projeto) em vez de ser catapultado.
+                float buoyantAccel = Mathf.Min(submergedDepth * 4f, Physics.gravity.magnitude * 1.15f);
+                rb.AddForce(Vector3.up * buoyantAccel, ForceMode.Acceleration);
 
-                // Amortecimento de ondas e resistência na água
-                rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z), Time.fixedDeltaTime * waterDrag);
+                // Amortecimento de ondas e resistência na água.
+                // Vector3.Lerp NÃO limita t como Mathf.Lerp: acima de ~18x de warp o
+                // dt fixo passa de 0.55 s, t > 1 e a velocidade ATRAVESSA o zero
+                // invertendo o sentido. Exp(1-t) é limitado em [0,1] para qualquer dt.
+                float waterDampT = 1f - Mathf.Exp(-waterDrag * Time.fixedDeltaTime);
+                rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z), waterDampT);
 
                 // Correnteza da água
                 if (flow.sqrMagnitude > 0.01f)
@@ -265,7 +285,10 @@ namespace ProjectTerra.Sandbox
                         sternY = sternInfo.surfaceY;
 
                     float pitchDiff = bowY - sternY;
-                    rb.AddTorque(transform.right * (pitchDiff * 12f * rb.mass * 0.01f), ForceMode.Acceleration);
+                    // Mesma armadilha do empuxo: em ForceMode.Acceleration a massa não
+                    // precisa (e não pode) entrar no cálculo. Com rb.mass aqui o torque
+                    // era ~384x maior e qualquer onda de 0,2 m girava o casco violentamente.
+                    rb.AddTorque(transform.right * (pitchDiff * 12f * 0.01f), ForceMode.Acceleration);
                 }
             }
 
@@ -276,20 +299,27 @@ namespace ProjectTerra.Sandbox
                 rb.AddForce(marineThrust, ForceMode.Acceleration);
             }
 
-            // Leme e curva na água
-            if (currentSpeedKmh > 0.5f)
-            {
-                float rudderTurn = currentSteer * 35f * Mathf.Sign(activeThrottle >= 0 ? 1f : -1f);
-                Quaternion deltaRotation = Quaternion.Euler(0f, rudderTurn * Time.fixedDeltaTime, 0f);
-                rb.MoveRotation(rb.rotation * deltaRotation);
-            }
-
-            // Estabilização contra capotamento náutico
+            // Leme e estabilização contra capotamento, fundidos em UMA única chamada.
+            // MoveRotation define um único alvo consumido no próximo passo da simulação;
+            // a segunda chamada no mesmo FixedUpdate sobrescrevia a primeira e o leme
+            // era descartado. Pior: targetUpRot é construído com o forward do frame
+            // ANTERIOR, então a guinada líquida da chamada sobrevivente era exatamente
+            // zero — o barco acelerava em linha reta para sempre, sem resposta ao leme.
             Vector3 flatForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
             if (flatForward != Vector3.zero)
             {
                 Quaternion targetUpRot = Quaternion.LookRotation(flatForward, Vector3.up);
-                rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetUpRot, Time.fixedDeltaTime * 1.5f));
+
+                if (currentSpeedKmh > 0.5f)
+                {
+                    float rudderTurn = currentSteer * 35f * (activeThrottle >= 0f ? 1f : -1f);
+                    targetUpRot = Quaternion.Euler(0f, rudderTurn * Time.fixedDeltaTime, 0f) * targetUpRot;
+                }
+
+                // Quaternion.Slerp também NÃO limita t (ao contrário de Mathf.Lerp),
+                // então em warp alto ele extrapolaria além do alvo. exp(1-t) é limitado.
+                float uprightT = 1f - Mathf.Exp(-1.5f * Time.fixedDeltaTime);
+                rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetUpRot, uprightT));
             }
         }
     }

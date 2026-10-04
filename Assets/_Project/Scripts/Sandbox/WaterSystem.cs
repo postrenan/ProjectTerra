@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ProjectTerra.Core;
 using UnityEngine;
 
 namespace ProjectTerra.Sandbox
@@ -28,7 +29,7 @@ namespace ProjectTerra.Sandbox
     /// Sistema centralizado de hidrografia, dinâmica de ondas, correntezas e efeitos aquáticos.
     /// Fornece consultas em tempo real para física de barcos, natação do jogador, veículos e efeitos de câmera submersa.
     /// </summary>
-    public class WaterSystem : MonoBehaviour
+    public class WaterSystem : OriginRebasedBehaviour
     {
         public static WaterSystem Instance { get; private set; }
 
@@ -78,6 +79,43 @@ namespace ProjectTerra.Sandbox
         private bool savedOriginalFog = false;
 
         private Camera cachedCamera;
+
+        /// <summary>
+        /// Rebase do FloatingOrigin: os corpos d'água são registrados com posições
+        /// world-space absolutas no momento da construção da região, mas o rebase
+        /// translada só os GameObjects raiz. Sem este ajuste, todo Bounds.Contains em
+        /// GetWaterInfo ficava deslocado em 25 km: o barco perdia o empuxo no meio do
+        /// oceano e o jogador deixava de nadar mesmo parado dentro d'água visível.
+        /// </summary>
+        protected override void OnOriginRebased(Vector3 offset)
+        {
+            for (int i = 0; i < rivers.Count; i++)
+            {
+                var r = rivers[i];
+                if (r == null) continue;
+                r.start -= offset;
+                r.end -= offset;
+                // Bounds não tem operator-, então desloca centro e reinsere o mesmo tamanho.
+                r.bounds = new Bounds(r.bounds.center - offset, r.bounds.size);
+            }
+
+            for (int i = 0; i < lakes.Count; i++)
+            {
+                var l = lakes[i];
+                if (l == null) continue;
+                l.center -= offset;
+            }
+
+            if (ocean != null)
+            {
+                // Só o eixo XZ é percorrido pelo jogador/barco; o Y do nível do mar é
+                // absoluto e não muda com o rebase.
+                Vector3 c = ocean.bounds.center;
+                c.x -= offset.x;
+                c.z -= offset.z;
+                ocean.bounds = new Bounds(c, ocean.bounds.size);
+            }
+        }
 
         public static WaterSystem EnsureInstance()
         {
@@ -147,8 +185,13 @@ namespace ProjectTerra.Sandbox
             if (len < 0.01f) return;
 
             Vector3 flowDir = dir.normalized;
-            var min = Vector3.Min(a, b) - new Vector3(width * 0.7f, 10f, width * 0.7f);
-            var max = Vector3.Max(a, b) + new Vector3(width * 0.7f, 10f, width * 0.7f);
+
+            // A extensão vertical tem de vir da própria diferença de altura entre as
+            // pontas. Com um ±10 m fixo, um segmento que desce mais de ~20 m (o relevo
+            // real chega a 3200 m) só reportava água numa faixa de 20 m em torno do
+            // ponto médio: empuxo e natação sumiam no resto do curso do rio.
+            var min = Vector3.Min(a, b) - new Vector3(width * 0.7f, 0f, width * 0.7f);
+            var max = Vector3.Max(a, b) + new Vector3(width * 0.7f, 0f, width * 0.7f);
 
             var bounds = new Bounds((min + max) * 0.5f, max - min);
 

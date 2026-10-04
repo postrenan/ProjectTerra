@@ -15,6 +15,7 @@ namespace ProjectTerra.Planet
         public const int MapHeight = 2048;
         private static byte[] idMapData;
         private static bool isLoaded = false;
+        private static bool loadAttempted = false;
         private static readonly object lockObj = new object();
 
         public static byte[] Data
@@ -34,29 +35,44 @@ namespace ProjectTerra.Planet
         /// </summary>
         public static void EnsureLoaded()
         {
-            if (isLoaded && idMapData != null) return;
+            // IsLoaded sozinho não bastava: ele só era setado no caminho de sucesso,
+            // então um ficheiro ausente/truncado fazia EnsureLoaded ser um no-op e
+            // TODO chamador reentrava no lock, refazia File.Exists + Log e relia os
+            // 16 MB. O mapa tático chama isto 2x por pixel (512x512 = 524.288 vezes por
+            // abertura), o que travava o jogo por minutos e inundava o console.
+            // A tentativa é marcada como "feita" antes de ler: o ficheiro em
+            // StreamingAssets é imutável em runtime, então não há ganho em repetir.
+            if (loadAttempted) return;
 
             lock (lockObj)
             {
-                if (isLoaded && idMapData != null) return;
+                if (loadAttempted) return;
+                loadAttempted = true;
 
                 string path = Path.Combine(Application.streamingAssetsPath, "region_id_map.bin");
-                if (File.Exists(path))
-                {
-                    try
-                    {
-                        idMapData = File.ReadAllBytes(path);
-                        isLoaded = idMapData.Length == MapWidth * MapHeight * 2;
-                        Debug.Log($"[RegionBoundaryService] Mapa binário de fronteiras geográficas carregado ({idMapData.Length / (1024 * 1024)} MB).");
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogWarning($"[RegionBoundaryService] Falha ao carregar region_id_map.bin: {ex.Message}");
-                    }
-                }
-                else
+                if (!File.Exists(path))
                 {
                     Debug.LogWarning($"[RegionBoundaryService] Arquivo region_id_map.bin não encontrado em: {path}");
+                    return;
+                }
+
+                try
+                {
+                    byte[] raw = File.ReadAllBytes(path);
+                    int expected = MapWidth * MapHeight * 2;
+                    if (raw.Length != expected)
+                    {
+                        Debug.LogWarning($"[RegionBoundaryService] region_id_map.bin com tamanho inesperado ({raw.Length} bytes, esperado {expected}). Contorno de província indisponível.");
+                        return;
+                    }
+
+                    idMapData = raw;
+                    isLoaded = true;
+                    Debug.Log($"[RegionBoundaryService] Mapa binário de fronteiras geográficas carregado ({raw.Length / (1024 * 1024)} MB).");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[RegionBoundaryService] Falha ao carregar region_id_map.bin: {ex.Message}");
                 }
             }
         }
@@ -85,7 +101,13 @@ namespace ProjectTerra.Planet
         {
             if (targetRegionId <= 0) return true;
             EnsureLoaded();
-            if (idMapData == null) return true;
+
+            // Sem o mapa não há como provar que o ponto está dentro, então a resposta
+            // é "fora". Devolver true aqui marcava os 262.144 pixels do retângulo da
+            // província como interiores, o contorno preenchia o mapa inteiro e o
+            // hasRegionMask do HUD desligava o fallback de linha de costa. A
+            // out-of-range logo abaixo já devolvia false — esta era a inconsistência.
+            if (idMapData == null) return false;
 
             int px = Mathf.Clamp((int)((lon + 180f) / 360f * (MapWidth - 1)), 0, MapWidth - 1);
             int py = Mathf.Clamp((int)((90f - lat) / 180f * (MapHeight - 1)), 0, MapHeight - 1);

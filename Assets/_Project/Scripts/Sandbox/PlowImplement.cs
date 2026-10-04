@@ -15,7 +15,7 @@ namespace ProjectTerra.Sandbox
     /// com partículas de terra e telemetria de área arada.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
-    public class PlowImplement : MonoBehaviour
+    public class PlowImplement : OriginRebasedBehaviour
     {
         public static readonly List<PlowImplement> AllPlows = new List<PlowImplement>();
 
@@ -67,6 +67,16 @@ namespace ProjectTerra.Sandbox
             furrowManager = GetComponent<PlowFurrowManager>();
             if (furrowManager == null) furrowManager = gameObject.AddComponent<PlowFurrowManager>();
             furrowManager.Initialize(transform, discGangPivot, plowWorkingWidthMeters);
+        }
+
+        /// <summary>
+        /// Rebase do FloatingOrigin: lastPlowPos é uma posição world em cache. Sem
+        /// deslocá-la, o rebase de 25 km fazia distSinceLast ≈ 25000 m e somava
+        /// ~65.000 m² de área arada falsa num único passo, visível no HUD.
+        /// </summary>
+        protected override void OnOriginRebased(Vector3 offset)
+        {
+            lastPlowPos -= offset;
         }
 
         private void Update()
@@ -287,7 +297,11 @@ namespace ProjectTerra.Sandbox
 
             if (discGangPivot != null)
             {
-                discGangPivot.localRotation = Quaternion.Euler(currentPivotAngle, 0f, 0f);
+                // Os discos ficam em Y local negativo dentro do pivô (cerca de -0.47).
+                // Uma rotação de +currentPivotAngle em torno de +X levanta um ponto em
+                // -Y, então o sinal estava invertido e "abaixar os discos" erguia o
+                // conjunto em ~3 cm. O ângulo precisa ser negativo.
+                discGangPivot.localRotation = Quaternion.Euler(-currentPivotAngle, 0f, 0f);
             }
 
             // Rotação contínua dos discos quando o implemento roda

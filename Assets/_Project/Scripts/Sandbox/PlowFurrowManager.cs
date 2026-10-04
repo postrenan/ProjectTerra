@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ProjectTerra.Core;
 using UnityEngine;
 using ProjectTerra.Planet;
 using ProjectTerra.Planet.TerrainStreaming;
@@ -10,7 +11,7 @@ namespace ProjectTerra.Sandbox
     /// Constrói fitas de malha 3D conformatórias ao relevo com textura PBR de terra fértil revolvida,
     /// suprimindo simultaneamente a grama nativa sobre a faixa arada através da máscara de vias.
     /// </summary>
-    public class PlowFurrowManager : MonoBehaviour
+    public class PlowFurrowManager : OriginRebasedBehaviour
     {
         private static Material furrowMaterial;
 
@@ -44,6 +45,18 @@ namespace ProjectTerra.Sandbox
             discGang = discs;
             furrowWidth = width;
             EnsureMaterial();
+        }
+
+        /// <summary>
+        /// Rebase do FloatingOrigin: os três pontos do sulco anterior são vertices
+        /// world em cache. Sem deslocá-los, o primeiro passo após um rebase emitia um
+        /// quad (e um RoadMaskSegment) atravessando os 25 km do salto.
+        /// </summary>
+        protected override void OnOriginRebased(Vector3 offset)
+        {
+            lastRecordedCenter -= offset;
+            lastLeftVertex -= offset;
+            lastRightVertex -= offset;
         }
 
         private static void EnsureMaterial()

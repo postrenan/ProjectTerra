@@ -223,10 +223,13 @@ namespace ProjectTerra.Planet.TerrainStreaming
 
                     // B) Grama Lush / Pastagem:
                     float grassWeight = (grassAffinity * 0.85f + 0.20f) * (0.6f + 0.8f * macro1);
-                    // Se estiver em lavoura de terra arada, a grama cede espaço ao solo arado
+                    // Se estiver em lavoura de terra arada, a grama cede espaço ao solo arado.
+                    // Clamp01 é obrigatório: soilWeight chega a (0,85 + 0,4) * 1,4 = 1,75, e
+                    // o fator cruza zero em 1,119 — sem o clamp o peso de grama ficava NEGATIVO
+                    // e SetAlphamaps grava negativo no alphamap (ele não valida).
                     if (soilWeight > 0.35f)
                     {
-                        grassWeight *= (1.0f - (soilWeight - 0.35f) * 1.3f);
+                        grassWeight *= Mathf.Clamp01(1.0f - (soilWeight - 0.35f) * 1.3f);
                     }
 
                     // C) Selva / Floresta Densa:
@@ -259,14 +262,17 @@ namespace ProjectTerra.Planet.TerrainStreaming
 
                     if (totalWeight > 0.0001f)
                     {
-                        splatmap[y, x, LayerGrass] = grassWeight / totalWeight;
-                        splatmap[y, x, LayerJungle] = jungleWeight / totalWeight;
-                        splatmap[y, x, LayerSavanna] = savannaWeight / totalWeight;
-                        splatmap[y, x, LayerSoil] = soilWeight / totalWeight;
-                        splatmap[y, x, LayerSand] = sandWeight / totalWeight;
-                        splatmap[y, x, LayerGravel] = gravelWeight / totalWeight;
-                        splatmap[y, x, LayerRock] = rockWeight / totalWeight;
-                        splatmap[y, x, LayerSnow] = snowWeight / totalWeight;
+                        // Rede de segurança: os pesos nunca podem sair negativos nem estourar 1,
+                        // senão o shader extrapola a cor da camada e o TerrainGroundPainter
+                        // (que soma os "outros" pesos) passa a zerar todas as camadas do texel.
+                        splatmap[y, x, LayerGrass] = Mathf.Max(0f, grassWeight / totalWeight);
+                        splatmap[y, x, LayerJungle] = Mathf.Max(0f, jungleWeight / totalWeight);
+                        splatmap[y, x, LayerSavanna] = Mathf.Max(0f, savannaWeight / totalWeight);
+                        splatmap[y, x, LayerSoil] = Mathf.Max(0f, soilWeight / totalWeight);
+                        splatmap[y, x, LayerSand] = Mathf.Max(0f, sandWeight / totalWeight);
+                        splatmap[y, x, LayerGravel] = Mathf.Max(0f, gravelWeight / totalWeight);
+                        splatmap[y, x, LayerRock] = Mathf.Max(0f, rockWeight / totalWeight);
+                        splatmap[y, x, LayerSnow] = Mathf.Max(0f, snowWeight / totalWeight);
                     }
                     else
                     {

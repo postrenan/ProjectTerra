@@ -403,6 +403,17 @@ namespace ProjectTerra.Sandbox
             Vector3 exitPos = currentVehicle.exitPoint != null ?
                 currentVehicle.exitPoint.position : currentVehicle.transform.position + currentVehicle.transform.right * -2.5f + Vector3.up * 0.5f;
 
+            // Desembarcar em pleno voo colocava o jogador no exitPoint do veículo
+            // (800 m de altitude, no ar) sem nenhuma verificação de solo — ele caía
+            // de queda-livre até o guard de void. Nunca pior que o chão: pousa na
+            // superfície do terreno se o ponto de saída estiver abaixo dela.
+            if (RegionalSandboxManager.Instance != null)
+            {
+                float groundY = RegionalSandboxManager.Instance.GetTerrainHeight(exitPos);
+                if (exitPos.y < groundY + 0.2f)
+                    exitPos.y = groundY + 0.2f;
+            }
+
             currentVehicle.isPlayerDriven = false;
             transform.SetParent(null);
             transform.position = exitPos;

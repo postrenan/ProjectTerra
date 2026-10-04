@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ProjectTerra.Core;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
@@ -33,7 +34,7 @@ namespace ProjectTerra.Sandbox
     /// - Suporte total a modelos FBX e fallback procedural para primitivos.
     /// </summary>
     [DisallowMultipleComponent]
-    public class AnimalController : MonoBehaviour
+    public class AnimalController : OriginRebasedBehaviour
     {
         [Header("Configuração da Espécie")]
         public AnimalSpecies species = AnimalSpecies.Cow;
@@ -76,6 +77,9 @@ namespace ProjectTerra.Sandbox
         private Transform bodyBone;
         private readonly List<Transform> legBones = new List<Transform>();
 
+        // Pose de repouso de cada perna, capturada em LocateBones().
+        private readonly List<Quaternion> initialLegLocalRots = new List<Quaternion>();
+
         // Rotações e escalas locais iniciais dos ossos
         private Quaternion initialHeadLocalRot = Quaternion.identity;
         private Quaternion initialNeckLocalRot = Quaternion.identity;
@@ -115,6 +119,17 @@ namespace ProjectTerra.Sandbox
             // Iniciar com um destino de repouso
             currentDestination = transform.position;
             SwitchToState(AnimalState.Idle, UnityEngine.Random.Range(3f, 8f));
+        }
+
+        /// <summary>
+        /// Rebase do FloatingOrigin: homePosition e currentDestination são pontos world
+        /// em cache. Sem deslocá-los, cada animal passava a caminhar para um destino
+        /// ~25 km distante e nunca mais voltava ao pasto.
+        /// </summary>
+        protected override void OnOriginRebased(Vector3 offset)
+        {
+            homePosition -= offset;
+            currentDestination -= offset;
         }
 
         private void ConfigureSpeciesAttributes()
@@ -170,6 +185,20 @@ namespace ProjectTerra.Sandbox
 
             // Localizar pernas para o fallback procedural
             FindBonesMatching(transform, legBones, "leg", "perna", "foot", "pata", "011", "014", "017", "019");
+
+            // Cache das poses de repouso de cada perna. A animação procedural precisa
+            // partir da pose do rig, não da pose do frame anterior.
+            initialLegLocalRots.Clear();
+            for (int i = 0; i < legBones.Count; i++)
+            {
+                initialLegLocalRots.Add(legBones[i] != null ? legBones[i].localRotation : Quaternion.identity);
+            }
+        }
+
+        private Quaternion GetInitialLegLocalRot(int index)
+        {
+            if (index < 0 || index >= initialLegLocalRots.Count) return Quaternion.identity;
+            return initialLegLocalRots[index];
         }
 
         private Transform FindBone(Transform root, params string[] keywords)
@@ -623,7 +652,7 @@ namespace ProjectTerra.Sandbox
             if (neckBone != null)
             {
                 float neckGrazePitch = grazeWeight * 18f;
-                headBone.localRotation = initialHeadLocalRot * Quaternion.Euler(neckGrazePitch, currentLookYaw * 0.5f, 0f);
+                neckBone.localRotation = initialNeckLocalRot * Quaternion.Euler(neckGrazePitch, currentLookYaw * 0.5f, 0f);
             }
 
             // 2. Procedural: Cauda (balanço sinusoidal natural contra moscas e reatividade)
@@ -671,7 +700,10 @@ namespace ProjectTerra.Sandbox
                     {
                         float phaseOffset = (i % 2 == 0) ? 0f : Mathf.PI;
                         float legAngle = Mathf.Sin(strideCycle + phaseOffset) * 20f * (currentSpeed / walkSpeed);
-                        leg.localRotation *= Quaternion.Euler(legAngle, 0f, 0f);
+                        // Precisa ser *atribuição* a partir da pose de repouso. Com *= a
+                        // rotação acumulava ~20° por frame (~1200°/s) e as pernas viravam
+                        // hélices; com = a cada frame pisava a pose original do rig.
+                        leg.localRotation = GetInitialLegLocalRot(i) * Quaternion.Euler(legAngle, 0f, 0f);
                     }
                 }
             }

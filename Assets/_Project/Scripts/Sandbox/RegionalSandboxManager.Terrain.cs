@@ -260,7 +260,10 @@ namespace ProjectTerra.Sandbox
                     rend.sharedMaterial = WaterSystem.CreateWaterMaterial(isRiver: false);
                 }
 
-                Bounds oceanBounds = new Bounds(oceanPos, new Vector3(worldWidthMeters, 200f, worldLengthMeters * 0.5f));
+                // O Y do Bounds precisa cobrir toda a coluna d'água, não uma faixa de 200 m:
+                // Bounds.Contains é 3D, então um casco afundado mais de 100 m abaixo de
+                // seaY era classificado como "sem água" e perdia o empuxo.
+                Bounds oceanBounds = new Bounds(oceanPos, new Vector3(worldWidthMeters, activeTerrainData.size.y + Mathf.Abs(seaY) * 2f, worldLengthMeters * 0.5f));
                 waterSys.RegisterOcean(seaY, oceanBounds, infra != null && !string.IsNullOrEmpty(infra.waterBodyName) ? infra.waterBodyName : "Oceano Costeiro");
                 Debug.Log($"[RegionalSandbox] Litoral oceânico construído com plataforma marítima costeira e ondas dinâmicas.");
             }

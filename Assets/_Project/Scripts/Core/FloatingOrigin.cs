@@ -82,9 +82,19 @@ namespace ProjectTerra.Core
 
             // Desativa temporariamente CharacterControllers para evitar que o PhysX os desloque ou corrompa colisões
             var charControllers = Object.FindObjectsByType<CharacterController>();
+
+            // Guarda quais estavam realmente ativos. EnterVehicle desativa o controller do
+            // jogador de proposito (ele fica parentado ao Rigidbody do veículo); reativar
+            // todo mundo aqui ressuscitava essa capsula dentro do collider composto do
+            // veículo a cada rebase, empurrando o caminhão/avião e quebrando a pose do banco.
+            bool[] charControllerWasEnabled = new bool[charControllers.Length];
             for (int i = 0; i < charControllers.Length; i++)
             {
-                if (charControllers[i] != null) charControllers[i].enabled = false;
+                if (charControllers[i] != null)
+                {
+                    charControllerWasEnabled[i] = charControllers[i].enabled;
+                    charControllers[i].enabled = false;
+                }
             }
 
             // Transladar todos os GameObjects na raiz da cena ativa
@@ -104,7 +114,10 @@ namespace ProjectTerra.Core
 
             for (int i = 0; i < charControllers.Length; i++)
             {
-                if (charControllers[i] != null) charControllers[i].enabled = true;
+                if (charControllers[i] != null)
+                {
+                    charControllers[i].enabled = charControllerWasEnabled[i];
+                }
             }
 
             // Notificar sistemas que precisam de ajuste (partículas, trilhas, física)

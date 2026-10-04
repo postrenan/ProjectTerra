@@ -139,14 +139,17 @@ namespace ProjectTerra.Sandbox
                 IsHudVisible = !IsHudVisible;
             }
 
-            // Time Warp via [ e ] ou , e . (Apenas se não estiver no menu de pausa)
+            // Time Warp via [ e ] (Apenas se não estiver no menu de pausa).
+            // Os aliases , e . foram removidos de propósito: eles passaram a ser o
+            // leme de cauda do avião (VehicleController.Physics). Com as duas
+            // formas ativas, virar o leme também mudava a velocidade do tempo.
             if (!IsOptionsMenuOpen)
             {
-                if (TerraInput.GetKeyDown(Key.RightBracket) || TerraInput.GetKeyDown(Key.Period))
+                if (TerraInput.GetKeyDown(Key.RightBracket))
                 {
                     SetTimeWarp(currentTimeWarpIdx + 1);
                 }
-                else if (TerraInput.GetKeyDown(Key.LeftBracket) || TerraInput.GetKeyDown(Key.Comma))
+                else if (TerraInput.GetKeyDown(Key.LeftBracket))
                 {
                     SetTimeWarp(currentTimeWarpIdx - 1);
                 }

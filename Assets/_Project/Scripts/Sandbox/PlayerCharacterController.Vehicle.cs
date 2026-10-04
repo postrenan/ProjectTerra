@@ -210,8 +210,13 @@ namespace ProjectTerra.Sandbox
                         }
                     }
 
-                    // Amortecimento suave da câmera externa
-                    activeCamera.transform.position = Vector3.Lerp(activeCamera.transform.position, desiredCamPos, Time.deltaTime * 18f);
+                    // Amortecimento suave da câmera externa.
+                    // Vector3.Lerp NÃO limita t (Mathf.Lerp limita). Com dt > 0,055 s
+                    // (~18 fps, hitch de GC, ou o warp de 16x do HUD) t passa de 1 e a
+                    // câmera é colocada DEPOIS do alvo, voltando no frame seguinte:
+                    // oscilação violenta. exp(1-t) é limitado em [0,1) para qualquer dt.
+                    float camT = 1f - Mathf.Exp(-18f * Time.deltaTime);
+                    activeCamera.transform.position = Vector3.Lerp(activeCamera.transform.position, desiredCamPos, camT);
 
                     Vector3 lookDir = focusPoint - activeCamera.transform.position;
                     if (lookDir.sqrMagnitude > 0.001f)
