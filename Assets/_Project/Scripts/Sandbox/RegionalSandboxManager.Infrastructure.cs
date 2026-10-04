@@ -38,6 +38,16 @@ namespace ProjectTerra.Sandbox
             RecordRoadMaskMark();
             BuildRegionalRoadNetwork();
             BuildRegionalCities();
+
+            // Marcos geográficos (vulcões, montanhas, chapadas, quedas d'água, rios)
+            if (activeTerrain != null)
+            {
+                LandmarkManager.Create(activeTerrain, activeRegionData);
+            }
+            else
+            {
+                Debug.LogWarning("[RegionInfra] Terreno não disponível — marcos geográficos não posicionados.");
+            }
         }
 
         private void BuildRegionalRivers()
