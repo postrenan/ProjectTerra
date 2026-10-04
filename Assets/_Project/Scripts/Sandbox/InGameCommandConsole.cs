@@ -84,6 +84,11 @@ namespace ProjectTerra.Sandbox
             "/pos",
             "/hud",
             "/map",
+            "/road",
+            "/paint",
+            "/animals",
+            "/contract",
+            "/delivery",
             "/save",
             "/clear"
         };
@@ -129,6 +134,15 @@ namespace ProjectTerra.Sandbox
 
         public void OpenConsole()
         {
+            // Mapa e console disputavam a mesma tela: com o mapa aberto, '/' abria o
+            // console e HandleMapInteraction continuava aplicando pan em WASD enquanto se
+            // digitava, além de chamar e.Use() em todo MouseDown e impedir o clique no
+            // campo de texto. ToggleOptionsMenu já fecha o mapa; o console faz o mesmo.
+            if (SandboxHUD.Instance != null && SandboxHUD.Instance.IsRegionalMapOpen)
+            {
+                SandboxHUD.Instance.CloseRegionalMap();
+            }
+
             IsOpen = true;
             inputCommand = "/";
             historyIndex = -1;

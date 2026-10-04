@@ -79,7 +79,10 @@ namespace ProjectTerra.Sandbox
             // Assento, Câmera de Cabine (1ª Pessoa) e Saída
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(0f, 1.8f, -0.6f), "DriverSeat");
             vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(0f, 2.1f, -0.35f), "CockpitCam");
-            vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-1.8f, 0.2f, -0.6f), "ExitPoint");
+            // Fora do collider da roda dianteira (centro -1.05,0.85,-0.8 r=0.85): a 1.01 m
+            // de distância o jogador (capsula r=0.4) nascia dentro do Rigidbody.
+            // Precisa de >= 0.85 + 0.4 = 1.25 m; agora está a 1.63 m.
+            vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-2.6f, 0.4f, -0.6f), "ExitPoint");
             vehicle.rearHitchPoint = CreatePoint(root.transform, new Vector3(0f, 0.5f, -1.9f), "RearHitchPoint");
             CreatePart(root.transform, new Vector3(0f, 0.45f, -1.85f), new Vector3(0.3f, 0.15f, 0.35f), new Color(0.2f, 0.2f, 0.22f), "Engate_Traseiro_Trator");
             vehicle.CreateDefaultHeadlights();
@@ -154,7 +157,9 @@ namespace ProjectTerra.Sandbox
 
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(-0.6f, 1.9f, 2.1f), "DriverSeat");
             vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(-0.6f, 2.2f, 2.3f), "CockpitCam");
-            vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-2.1f, 0.2f, 2.1f), "ExitPoint");
+            // Fora do collider da roda (centro -1.25,0.55,2.2 r=0.55): a 0.93 m de distância
+            // o jogador nascia dentro do Rigidbody. Precisa de >= 0.55 + 0.4 = 0.95 m.
+            vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-3.0f, 0.4f, 2.1f), "ExitPoint");
             vehicle.CreateDefaultHeadlights();
 
             return vehicle;

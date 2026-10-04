@@ -91,6 +91,16 @@ namespace ProjectTerra.Sandbox
 
         private void Update()
         {
+            // O IMGUI não consome o teclado do Input System: digitar qualquer "p" no
+            // console (ex: /spawn plane) chegava em Keyboard.current.wasPressedThisFrame
+            // e abria o pincel 3D, destravando o cursor com o console ainda em foco.
+            // Os outros sistemas (PlowImplement, VehicleController) já checam IsInputBlocked.
+            if (PlayerCharacterController.Instance != null && PlayerCharacterController.Instance.IsInputBlocked())
+            {
+                if (isToolActive) SetToolActive(false);
+                return;
+            }
+
             // Atalho universal para ligar/desligar o pincel de terreno: tecla [P]
             if (TerraInput.GetKeyDown(Key.P))
             {

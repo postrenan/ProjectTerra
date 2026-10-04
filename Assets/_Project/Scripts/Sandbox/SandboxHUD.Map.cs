@@ -54,6 +54,12 @@ namespace ProjectTerra.Sandbox
             IsRegionalMapOpen = !IsRegionalMapOpen;
             if (IsRegionalMapOpen)
             {
+                // Simétrico ao console: abrir o mapa fecha o console pelo mesmo motivo.
+                if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpen)
+                {
+                    InGameCommandConsole.Instance.CloseConsole();
+                }
+
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
                 EnsureMapTexture();
