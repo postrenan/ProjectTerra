@@ -365,7 +365,17 @@ namespace ProjectTerra.Sandbox
 
         public static Material CreateWaterMaterial(bool isRiver = false, float flowSpeed = 0.5f)
         {
+            // O shader é criado só por Shader.Find e nenhum .mat o referencia, então
+            // dependia de m_AlwaysIncludedShaders para não ser removido no build (foi
+            // adicionado lá). O guard evita que um Stripping mais agressivo vire
+            // new Material(null) -> ArgumentNullException derrubando a construção da região.
             var shader = Shader.Find("ProjectTerra/WaterSurface") ?? Shader.Find("Standard");
+            if (shader == null)
+            {
+                Debug.LogError("[WaterSystem] Nenhum shader de água disponível (WaterSurface nem Standard). Superfície de água não será criada.");
+                return null;
+            }
+
             var mat = new Material(shader);
             mat.name = isRiver ? "Mat_RiverWater_Dynamic" : "Mat_OceanLake_Dynamic";
 

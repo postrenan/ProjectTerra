@@ -172,7 +172,7 @@ namespace ProjectTerra.Cameras
             if (dir.sqrMagnitude < 0.001f) return;
 
             // Alinha a câmera para olhar diretamente para o ponto centralizando a região na tela
-            Quaternion rot = Quaternion.LookRotation(-dir, Vector3.up);
+            Quaternion rot = BuildLookRotation(-dir);
             Vector3 euler = rot.eulerAngles;
 
             float pitch = euler.x;
@@ -184,6 +184,19 @@ namespace ProjectTerra.Cameras
             {
                 targetDistance = System.Math.Clamp(planetRadius + desiredAltitude, planetRadius + minAltitude, planetRadius * 6.0);
             }
+        }
+
+        /// <summary>
+        /// Quaternion de look com vetor de referência seguro. Quaternion.LookRotation
+        /// devolve identity e loga erro quando <paramref name="forward"/> é paralelo ao
+        /// up — exatamente o caso de focar ou mergulhar para uma região polar (dir ~ ±up).
+        /// A câmera então saltava para pitch 0 / yaw 0, ou seja, o equador. Aqui usa-se
+        /// forward como referência quando dir está praticamente vertical.
+        /// </summary>
+        private static Quaternion BuildLookRotation(Vector3 forward)
+        {
+            Vector3 upRef = Mathf.Abs(Vector3.Dot(forward, Vector3.up)) > 0.999f ? Vector3.forward : Vector3.up;
+            return Quaternion.LookRotation(forward, upRef);
         }
 
         public void DiveTowardsPoint(Vector3 worldPoint, float duration, System.Action onComplete = null)
@@ -198,7 +211,7 @@ namespace ProjectTerra.Cameras
             Vector3 center = target != null ? target.position : Vector3.zero;
             Vector3 dir = (worldPoint - center).normalized;
 
-            Quaternion rot = Quaternion.LookRotation(-dir, Vector3.up);
+            Quaternion rot = BuildLookRotation(-dir);
             Vector3 euler = rot.eulerAngles;
             float pitch = euler.x;
             if (pitch > 180f) pitch -= 360f;
