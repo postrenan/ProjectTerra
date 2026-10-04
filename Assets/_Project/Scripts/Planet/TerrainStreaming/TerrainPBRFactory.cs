@@ -16,54 +16,87 @@ namespace ProjectTerra.Planet.TerrainStreaming
 
         private enum TextureMapType { Albedo, Normal, MaskMap }
 
-        public const int LayerCount = 8;
-        public const int LayerGrass = 0;
-        public const int LayerJungle = 1;
-        public const int LayerSavanna = 2;
-        public const int LayerSoil = 3;
-        public const int LayerSand = 4;
-        public const int LayerGravel = 5;
-        public const int LayerRock = 6;
-        public const int LayerSnow = 7;
+        public const int LayerCount = 16;
+        public const int LayerGrass = 0;             // Grama Lush (Pradaria Verde)
+        public const int LayerJungle = 1;            // Selva / Floresta Tropical
+        public const int LayerSavanna = 2;           // Savana / Pasto Seco
+        public const int LayerSoil = 3;              // Solo Arado / Lavoura
+        public const int LayerSand = 4;              // Areia de Dunas / Praia
+        public const int LayerGravel = 5;            // Cascalho de Rio / Britas
+        public const int LayerRock = 6;              // Rocha de Encosta / Penhasco
+        public const int LayerSnow = 7;              // Neve Alpina / Tundra
+        // Camadas adicionais de pintura e engenharia civil:
+        public const int LayerDirtSimple = 8;        // Terra Simples / Chão Batido
+        public const int LayerConcrete = 9;          // Concreto Urbano / Cimento
+        public const int LayerAsphalt = 10;          // Asfalto Pavimentado
+        public const int LayerCobblestone = 11;      // Paralelepípedo / Calçada de Pedra
+        public const int LayerWhiteGravel = 12;      // Pedrisco / Brita Fina
+        public const int LayerMud = 13;              // Lama Úmida / Barro
+        public const int LayerRedClay = 14;          // Argila Vermelha / Terra Roxa
+        public const int LayerDeadGrass = 15;        // Grama Queimada / Feno Seco
 
         public static TerrainLayer[] CreateTerrainLayers()
         {
             var layers = new TerrainLayer[LayerCount];
 
             // 0: Grama Lush / Pradaria verde
-            layers[LayerGrass] = CreateLayer("Grama_Lush", "Ground/Grass", new Vector2(14f, 14f), new Color(0.25f, 0.45f, 0.2f));
+            layers[LayerGrass] = CreateLayer("Grama_Lush", "Ground/Grass", new Vector2(14f, 14f), new Color(0.25f, 0.45f, 0.2f), smoothness: 0.08f);
 
             // 1: Selva / Floresta Densa Tropical
-            layers[LayerJungle] = CreateLayer("Selva_Foliage", "Vegetation/Foliage", new Vector2(18f, 18f), new Color(0.18f, 0.48f, 0.15f));
+            layers[LayerJungle] = CreateLayer("Selva_Foliage", "Vegetation/Foliage", new Vector2(18f, 18f), new Color(0.18f, 0.48f, 0.15f), smoothness: 0.10f);
 
             // 2: Savana Seca / Estepe / Pasto Dourado
-            layers[LayerSavanna] = CreateLayer("Savana_Seca", "Ground/DryGrass", new Vector2(16f, 16f), new Color(0.6f, 0.56f, 0.26f));
+            layers[LayerSavanna] = CreateLayer("Savana_Seca", "Ground/DryGrass", new Vector2(16f, 16f), new Color(0.6f, 0.56f, 0.26f), smoothness: 0.06f);
 
             // 3: Solo Arável / Terra Fértil
-            layers[LayerSoil] = CreateLayer("Solo_Arado", "Ground/Soil", new Vector2(12f, 12f), new Color(0.37f, 0.26f, 0.18f));
+            layers[LayerSoil] = CreateLayer("Solo_Arado", "Ground/Soil", new Vector2(12f, 12f), new Color(0.37f, 0.26f, 0.18f), smoothness: 0.06f);
 
             // 4: Areia de Dunas / Deserto / Praia
-            layers[LayerSand] = CreateLayer("Areia_Dunas", "Ground/Sand", new Vector2(12f, 12f), new Color(0.76f, 0.68f, 0.5f));
+            layers[LayerSand] = CreateLayer("Areia_Dunas", "Ground/Sand", new Vector2(12f, 12f), new Color(0.76f, 0.68f, 0.5f), smoothness: 0.05f);
 
             // 5: Cascalho / Leito de Rios e Seixos
-            layers[LayerGravel] = CreateLayer("Cascalho_Rio", "Ground/Gravel", new Vector2(10f, 10f), new Color(0.41f, 0.4f, 0.38f));
+            layers[LayerGravel] = CreateLayer("Cascalho_Rio", "Ground/Gravel", new Vector2(10f, 10f), new Color(0.41f, 0.4f, 0.38f), smoothness: 0.10f);
 
             // 6: Rocha de Encosta / Penhasco
-            layers[LayerRock] = CreateLayer("Rocha_Penhasco", "Ground/Rock", new Vector2(24f, 24f), new Color(0.47f, 0.45f, 0.43f));
+            layers[LayerRock] = CreateLayer("Rocha_Penhasco", "Ground/Rock", new Vector2(24f, 24f), new Color(0.47f, 0.45f, 0.43f), smoothness: 0.12f);
 
             // 7: Neve Alpina / Tundra Glacial
-            layers[LayerSnow] = CreateLayer("Neve_Alpina", "Ground/Snow", new Vector2(16f, 16f), new Color(0.9f, 0.92f, 0.96f));
+            layers[LayerSnow] = CreateLayer("Neve_Alpina", "Ground/Snow", new Vector2(16f, 16f), new Color(0.9f, 0.92f, 0.96f), smoothness: 0.15f);
+
+            // 8: Terra Simples / Chão Batido (Solo compactado não-cultivado)
+            layers[LayerDirtSimple] = CreateLayer("Terra_Simples", "Ground/Soil", new Vector2(8f, 8f), new Color(0.48f, 0.35f, 0.22f), smoothness: 0.05f);
+
+            // 9: Concreto Urbano / Cimento Armado (Piso pavimentado moderno)
+            layers[LayerConcrete] = CreateLayer("Concreto_Urbano", "Infrastructure/Concrete", new Vector2(6f, 6f), new Color(0.72f, 0.72f, 0.74f), smoothness: 0.28f);
+
+            // 10: Asfalto Pavimentado (PBR rodoviário)
+            layers[LayerAsphalt] = CreateLayer("Asfalto_Pavimento", "Infrastructure/Asphalt", new Vector2(6f, 6f), new Color(0.24f, 0.24f, 0.25f), smoothness: 0.22f);
+
+            // 11: Paralelepípedo / Calçamento de Pedra Rústica
+            layers[LayerCobblestone] = CreateLayer("Paralelepipedo_Pedra", "Infrastructure/Cobblestone", new Vector2(5f, 5f), new Color(0.52f, 0.51f, 0.49f), smoothness: 0.18f);
+
+            // 12: Pedrisco Fino / Brita Branca de Paisagismo
+            layers[LayerWhiteGravel] = CreateLayer("Pedrisco_Fino", "Ground/Gravel", new Vector2(5f, 5f), new Color(0.72f, 0.71f, 0.69f), smoothness: 0.12f);
+
+            // 13: Lama Úmida / Barro Encharcado
+            layers[LayerMud] = CreateLayer("Lama_Umida", "Ground/Mud", new Vector2(7f, 7f), new Color(0.25f, 0.18f, 0.11f), smoothness: 0.42f);
+
+            // 14: Argila Vermelha / Terra Roxa
+            layers[LayerRedClay] = CreateLayer("Argila_Vermelha", "Ground/RedClay", new Vector2(8f, 8f), new Color(0.62f, 0.27f, 0.15f), smoothness: 0.06f);
+
+            // 15: Grama Queimada / Feno Seco
+            layers[LayerDeadGrass] = CreateLayer("Grama_Seca_Palha", "Ground/DryGrass", new Vector2(12f, 12f), new Color(0.68f, 0.58f, 0.28f), smoothness: 0.05f);
 
             return layers;
         }
 
-        private static TerrainLayer CreateLayer(string name, string subPath, Vector2 tileSize, Color fallbackColor)
+        private static TerrainLayer CreateLayer(string name, string subPath, Vector2 tileSize, Color fallbackColor, float smoothness = 0.08f, float metallic = 0.0f)
         {
             var layer = new TerrainLayer();
             layer.name = name;
             layer.tileSize = tileSize;
-            layer.smoothness = 0.08f;
-            layer.metallic = 0.0f;
+            layer.smoothness = smoothness;
+            layer.metallic = metallic;
             layer.normalScale = 0.8f;
             layer.specular = new Color(0.08f, 0.08f, 0.08f, 1.0f);
 

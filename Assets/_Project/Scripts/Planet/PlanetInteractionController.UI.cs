@@ -70,10 +70,25 @@ namespace ProjectTerra.Planet
                 fontSize = 12,
                 fontStyle = FontStyle.Bold
             };
+
+            recentBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 13,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            recentBtnStyle.normal.textColor = new Color(0.85f, 0.95f, 1f);
+            recentBtnStyle.hover.textColor = Color.white;
         }
 
         private void OnGUI()
         {
+            InitStyles();
+
+            // 1. Sempre renderiza o botão e modal retrátil de Saves Recentes (Modo Planeta)
+            DrawRecentSavesUI();
+
+            // 2. Balão de detalhes da região selecionada
             if (!hasSelection || selectedRegion == null || mainCamera == null)
             {
                 lastCardRect = Rect.zero;
@@ -95,8 +110,6 @@ namespace ProjectTerra.Planet
                 lastCardRect = Rect.zero;
                 return;
             }
-
-            InitStyles();
 
             // Dimensões dinâmicas do card conforme a aba
             float width = currentCardMode == CardMode.RegionDetails ? 360f : (currentCardMode == CardMode.NewGamePrompt ? 460f : 400f);

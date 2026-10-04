@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -29,6 +31,8 @@ namespace ProjectTerra.Sandbox
         public static InGameCommandConsole Instance { get; private set; }
 
         public bool IsOpen { get; private set; } = false;
+        private int closedFrame = -1;
+        public bool IsOpenOrJustClosed => IsOpen || Time.frameCount == closedFrame;
 
         private string inputCommand = "";
         private readonly List<string> commandHistory = new List<string>();
@@ -109,14 +113,14 @@ namespace ProjectTerra.Sandbox
             // Atalho [/] para abrir o console
             if (!IsOpen)
             {
-                if (Input.GetKeyDown(KeyCode.Slash) || Input.GetKeyDown(KeyCode.KeypadDivide))
+                if (TerraInput.GetKeyDown(Key.Slash) || TerraInput.GetKeyDown(Key.NumpadDivide))
                 {
                     OpenConsole();
                 }
             }
             else
             {
-                if (Input.GetKeyDown(KeyCode.Escape))
+                if (TerraInput.GetKeyDown(Key.Escape))
                 {
                     CloseConsole();
                 }
@@ -137,6 +141,7 @@ namespace ProjectTerra.Sandbox
         public void CloseConsole()
         {
             IsOpen = false;
+            closedFrame = Time.frameCount;
             inputCommand = "";
             historyIndex = -1;
 

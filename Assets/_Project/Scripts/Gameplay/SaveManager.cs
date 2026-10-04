@@ -158,6 +158,22 @@ namespace ProjectTerra.Gameplay
             loadedSaves[saveSP2.saveId] = saveSP2;
         }
 
+        public int TotalSaveCount => loadedSaves.Count;
+
+        public List<RegionSaveData> GetAllSaves()
+        {
+            var list = new List<RegionSaveData>(loadedSaves.Values);
+            list.Sort(CompareSaveDates);
+            return list;
+        }
+
+        public RegionSaveData GetSaveById(string saveId)
+        {
+            if (string.IsNullOrEmpty(saveId)) return null;
+            loadedSaves.TryGetValue(saveId, out var save);
+            return save;
+        }
+
         public List<RegionSaveData> GetSavesForRegion(int regionId)
         {
             var list = new List<RegionSaveData>();
@@ -168,9 +184,28 @@ namespace ProjectTerra.Gameplay
                     list.Add(kvp);
                 }
             }
-            // Ordenar pelas mais recentes
-            list.Sort((a, b) => string.Compare(b.lastSavedDate, a.lastSavedDate, StringComparison.Ordinal));
+            list.Sort(CompareSaveDates);
             return list;
+        }
+
+        private static int CompareSaveDates(RegionSaveData a, RegionSaveData b)
+        {
+            if (a == null && b == null) return 0;
+            if (a == null) return 1;
+            if (b == null) return -1;
+
+            DateTime dateA, dateB;
+            bool okA = DateTime.TryParse(a.lastSavedDate, out dateA);
+            bool okB = DateTime.TryParse(b.lastSavedDate, out dateB);
+
+            if (okA && okB)
+            {
+                return dateB.CompareTo(dateA); // Do mais recente para o mais antigo
+            }
+            if (okA) return -1;
+            if (okB) return 1;
+
+            return string.Compare(b.lastSavedDate, a.lastSavedDate, StringComparison.Ordinal);
         }
 
         public RegionSaveData CreateNewSave(RegionData region, string saveName, long startingMoney, StarterCareer career = StarterCareer.Farmer)

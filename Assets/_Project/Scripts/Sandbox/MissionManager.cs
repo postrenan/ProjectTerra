@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using ProjectTerra.Core;
 using ProjectTerra.Gameplay;
 
 namespace ProjectTerra.Sandbox
@@ -125,8 +127,11 @@ namespace ProjectTerra.Sandbox
             // Verificar se o jogador chegou ao ponto de entrega
             if (distToDelivery <= deliveryRadius)
             {
-                // Se o jogador pressionar F ou Espaço, ou se estiver com o veículo no ponto
-                if (Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.Return))
+                if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpenOrJustClosed)
+                    return;
+
+                // Se o jogador pressionar F ou Retorno, entrega a carga
+                if (TerraInput.GetKeyDown(Key.F) || TerraInput.GetKeyDown(Key.Enter))
                 {
                     CompleteActiveContract();
                 }

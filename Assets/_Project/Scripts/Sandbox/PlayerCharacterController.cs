@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -51,6 +53,13 @@ namespace ProjectTerra.Sandbox
         public bool isDriving = false;
         public VehicleController currentVehicle;
 
+        [Header("Dinâmica de Água e Natação")]
+        public bool isSwimming { get; private set; } = false;
+        public bool isWading { get; private set; } = false;
+        public float swimSpeed = 3.6f;
+        public float swimFastSpeed = 5.2f;
+        public float waterBuoyancy = 8.5f;
+
         private CharacterController controller;
         private Vector3 velocity;
         private bool isGrounded;
@@ -91,7 +100,7 @@ namespace ProjectTerra.Sandbox
                 Debug.Log($"[PlayerCharacterController] Usando Camera.main existente: '{activeCamera.name}' em {activeCamera.transform.position}. Jogador em: {transform.position}");
             }
 
-            activeCamera.nearClipPlane = 0.3f;
+            activeCamera.nearClipPlane = 0.75f;
             activeCamera.farClipPlane = 45000f;
 
             yaw = transform.eulerAngles.y;
@@ -126,12 +135,21 @@ namespace ProjectTerra.Sandbox
             }
         }
 
+        public bool IsInputBlocked()
+        {
+            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen))
+                return true;
+            if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpenOrJustClosed)
+                return true;
+            return false;
+        }
+
         private void Update()
         {
             HandleCursorLock();
 
-            // Interrompe movimentação se o Menu de Opções ou Mapa Regional estiver aberto
-            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen))
+            // Interrompe movimentação e atalhos se o Menu de Opções, Mapa Regional ou Console de Comandos estiver aberto
+            if (IsInputBlocked())
             {
                 return;
             }
@@ -148,8 +166,8 @@ namespace ProjectTerra.Sandbox
 
         private void LateUpdate()
         {
-            // Não rotaciona a câmera com o mouse se o cursor estiver livre para o Mapa ou Menu
-            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen))
+            // Não rotaciona a câmera se menus, mapa ou console estiverem com foco
+            if (IsInputBlocked())
             {
                 return;
             }
@@ -159,20 +177,20 @@ namespace ProjectTerra.Sandbox
 
         private void HandleCursorLock()
         {
-            // Se o Mapa Regional ou Menu de Opções estiver aberto, mantém o cursor liberado
-            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen))
+            // Se o Console, Mapa Regional ou Menu de Opções estiver aberto, mantém o cursor liberado
+            if (IsInputBlocked())
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
                 return;
             }
 
-            if (Input.GetMouseButtonDown(0))
+            if (TerraInput.GetMouseButtonDown(0))
             {
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
             }
-            else if (Input.GetKeyDown(KeyCode.Escape))
+            else if (TerraInput.GetKeyDown(Key.Escape))
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
@@ -181,15 +199,33 @@ namespace ProjectTerra.Sandbox
 
         private void UpdateOnFoot()
         {
+            // Consultar água e dinâmicas
+            bool inWater = false;
+            WaterInfo waterInfo = default;
+            if (WaterSystem.Instance != null && WaterSystem.Instance.GetWaterInfo(transform.position, out waterInfo))
+            {
+                inWater = waterInfo.isInWater;
+            }
+
+            float submersion = inWater ? (waterInfo.surfaceY - transform.position.y) : 0f;
+            bool wasSwimming = isSwimming;
+            isSwimming = inWater && submersion > 1.25f;
+            isWading = inWater && submersion > 0.15f && !isSwimming;
+
+            if (isSwimming && !wasSwimming)
+            {
+                SandboxHUD.Instance?.ShowToast("🏊 Nadando na água [Espaço: Subir / Ctrl: Mergulhar]", 3.0f);
+            }
+
             isGrounded = controller.isGrounded;
-            if (isGrounded && velocity.y < 0)
+            if (isGrounded && velocity.y < 0 && !isSwimming)
             {
                 velocity.y = -2f;
             }
 
             // Entrada do Mouse para Visão em 1ª Pessoa
-            float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-            float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+            float mouseX = TerraInput.GetAxis("Mouse X") * mouseSensitivity;
+            float mouseY = TerraInput.GetAxis("Mouse Y") * mouseSensitivity;
 
             yaw += mouseX;
             pitch -= mouseY;
@@ -198,24 +234,84 @@ namespace ProjectTerra.Sandbox
             // O corpo do jogador rotaciona diretamente com o yaw da câmera
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
 
-            // Movimentação em 1ª Pessoa (relativa à direção que o jogador está olhando)
-            float horizontal = Input.GetAxis("Horizontal");
-            float vertical = Input.GetAxis("Vertical");
-            Vector3 moveDir = transform.forward * vertical + transform.right * horizontal;
-            if (moveDir.magnitude > 1f) moveDir.Normalize();
+            // Entradas de movimentação
+            float horizontal = TerraInput.GetAxis("Horizontal");
+            float vertical = TerraInput.GetAxis("Vertical");
 
-            float speed = Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : walkSpeed;
-            controller.Move(moveDir * (speed * Time.deltaTime));
-
-            // Pulo
-            if (Input.GetButtonDown("Jump") && isGrounded)
+            if (isSwimming)
             {
-                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-            }
+                // MODO NATAÇÃO: Movimentação tridimensional suave no fluido
+                Vector3 camForward = activeCamera != null ? activeCamera.transform.forward : transform.forward;
+                Vector3 camRight = activeCamera != null ? activeCamera.transform.right : transform.right;
 
-            // Gravidade
-            velocity.y += gravity * Time.deltaTime;
-            controller.Move(velocity * Time.deltaTime);
+                Vector3 swimDir = camForward * vertical + camRight * horizontal;
+
+                // Nado vertical: Espaço para dar braçadas para cima, Ctrl/C para mergulhar
+                float verticalSwim = 0f;
+                if (TerraInput.GetButton("Jump") || TerraInput.GetKey(Key.Space)) verticalSwim += 1.0f;
+                if (TerraInput.GetKey(Key.LeftCtrl) || TerraInput.GetKey(Key.C)) verticalSwim -= 1.0f;
+
+                swimDir.y += verticalSwim * 0.9f;
+                if (swimDir.magnitude > 1f) swimDir.Normalize();
+
+                float currentSwimSpeed = TerraInput.GetKey(Key.LeftShift) ? swimFastSpeed : swimSpeed;
+                controller.Move(swimDir * (currentSwimSpeed * Time.deltaTime));
+
+                // Empuxo natural de flutuação hidrostática
+                float targetWaterSurfaceY = waterInfo.surfaceY - 1.25f; // Cabeça do jogador na superfície
+                float heightDelta = targetWaterSurfaceY - transform.position.y;
+
+                if (heightDelta > 0.05f)
+                {
+                    // Abaixo da superfície ideal: empuxo empurra o jogador para cima
+                    velocity.y = Mathf.Lerp(velocity.y, Mathf.Clamp(heightDelta * waterBuoyancy, 0.4f, 4.5f), Time.deltaTime * 3.5f);
+                }
+                else if (heightDelta < -0.2f)
+                {
+                    // Acima da água: desce suavemente para a linha d'água
+                    velocity.y = Mathf.Lerp(velocity.y, -3.5f, Time.deltaTime * 3.0f);
+                }
+                else
+                {
+                    // Treading water: oscilação suave acompanhando a onda
+                    velocity.y = Mathf.Lerp(velocity.y, 0f, Time.deltaTime * 6.0f);
+                }
+
+                // Deslocamento por correnteza fluvial ou marítima
+                Vector3 totalMove = (velocity + waterInfo.flowVelocity) * Time.deltaTime;
+                controller.Move(totalMove);
+            }
+            else
+            {
+                // MODO TERRESTRE / VADEAMENTO
+                Vector3 moveDir = transform.forward * vertical + transform.right * horizontal;
+                if (moveDir.magnitude > 1f) moveDir.Normalize();
+
+                float speed = TerraInput.GetKey(Key.LeftShift) ? sprintSpeed : walkSpeed;
+                if (isWading)
+                {
+                    // Arrasto hidrodinâmico desacelera o caminhar na água rasa
+                    float wadingDrag = Mathf.Lerp(0.85f, 0.45f, Mathf.Clamp01(submersion / 1.25f));
+                    speed *= wadingDrag;
+                }
+
+                controller.Move(moveDir * (speed * Time.deltaTime));
+
+                // Pulo
+                if (TerraInput.GetButtonDown("Jump") && isGrounded)
+                {
+                    velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                }
+
+                // Gravidade
+                velocity.y += gravity * Time.deltaTime;
+                Vector3 totalMove = velocity;
+                if (isWading)
+                {
+                    totalMove += waterInfo.flowVelocity * (submersion / 1.25f);
+                }
+                controller.Move(totalMove * Time.deltaTime);
+            }
 
             // Proteção contra queda no vazio / perda de colisão do terreno
             float groundH = RegionalSandboxManager.Instance != null ? RegionalSandboxManager.Instance.GetTerrainHeight(transform.position) : 0f;
@@ -231,13 +327,13 @@ namespace ProjectTerra.Sandbox
             CheckNearbyVehicles();
 
             // Tecla L para alternar lanterna
-            if (Input.GetKeyDown(KeyCode.L))
+            if (TerraInput.GetKeyDown(Key.L))
             {
                 ToggleFlashlight();
             }
 
             // Tecla E para embarcar
-            if (Input.GetKeyDown(KeyCode.E) && nearbyVehicle != null)
+            if (TerraInput.GetKeyDown(Key.E) && nearbyVehicle != null)
             {
                 EnterVehicle(nearbyVehicle);
             }
@@ -362,6 +458,35 @@ namespace ProjectTerra.Sandbox
             flashlight.intensity = 2.4f;
             flashlight.shadows = LightShadows.Soft;
             flashlight.enabled = isFlashlightOn;
+        }
+
+        #endregion
+
+        #region Teletransporte / Reposicionamento
+
+        public void TeleportTo(Vector3 targetPosition)
+        {
+            if (isDriving)
+            {
+                ExitVehicle();
+            }
+
+            if (controller != null)
+            {
+                controller.enabled = false;
+                transform.position = targetPosition;
+                velocity = Vector3.zero;
+                controller.enabled = true;
+            }
+            else
+            {
+                transform.position = targetPosition;
+            }
+
+            if (activeCamera != null && cameraFollowPoint != null)
+            {
+                activeCamera.transform.position = cameraFollowPoint.position;
+            }
         }
 
         #endregion

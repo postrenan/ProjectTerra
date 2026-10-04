@@ -103,7 +103,7 @@ namespace ProjectTerra.Sandbox
             terrainObj.transform.position = new Vector3(-worldWidthMeters * 0.5f, 0f, -worldLengthMeters * 0.5f);
             activeTerrain = terrainObj.GetComponent<Terrain>();
             activeTerrain.drawTreesAndFoliage = true;
-            activeTerrain.heightmapPixelError = 2;
+            activeTerrain.heightmapPixelError = 5;
 
             // Garantir que o colisor do terreno está ativo
             var tc = terrainObj.GetComponent<Collider>();
@@ -143,7 +143,7 @@ namespace ProjectTerra.Sandbox
 
             // Renderiza as camadas PBR reais em todo o setor ativo (até 60 km), sem cair no basemap de baixa-res.
             terrain.basemapDistance = 40000f;
-            terrain.heightmapPixelError = 2;
+            terrain.heightmapPixelError = 5;
         }
 
         private int ChooseHeightmapResolution(float widthMeters)
@@ -229,6 +229,9 @@ namespace ProjectTerra.Sandbox
 
         private void BuildHydrographySurfaces()
         {
+            var waterSys = WaterSystem.EnsureInstance();
+            waterSys.ClearAll();
+
             var infra = RegionInfrastructureDatabase.GetInfrastructure(activeSave.regionId);
             bool isCoastal = (infra != null && infra.hasCoastline) || (activeHydroData != null && activeHydroData.isCoastal);
             bool hasInlandWater = (infra != null && (infra.hasRivers || infra.hasLakes)) || activeSave.waterPercent > 15;
@@ -239,10 +242,20 @@ namespace ProjectTerra.Sandbox
                 var oceanObj = GameObject.CreatePrimitive(PrimitiveType.Plane);
                 oceanObj.name = "Water_OceanBasin";
                 float seaY = activeHydroData != null ? activeHydroData.seaLevelNormalized * activeTerrainData.size.y + 0.5f : 1.5f;
-                oceanObj.transform.position = new Vector3(0f, seaY, -worldLengthMeters * 0.38f);
-                oceanObj.transform.localScale = new Vector3(worldWidthMeters / 10f, 1f, (worldLengthMeters * 0.35f) / 10f);
-                oceanObj.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(new Color(0.1f, 0.32f, 0.52f, 0.88f));
-                Debug.Log("[RegionalSandbox] Litoral oceânico construído com plataforma marítima costeira.");
+                Vector3 oceanPos = new Vector3(0f, seaY, -worldLengthMeters * 0.38f);
+                Vector3 oceanScale = new Vector3(worldWidthMeters / 10f, 1f, (worldLengthMeters * 0.35f) / 10f);
+                oceanObj.transform.position = oceanPos;
+                oceanObj.transform.localScale = oceanScale;
+
+                var rend = oceanObj.GetComponent<Renderer>();
+                if (rend != null)
+                {
+                    rend.sharedMaterial = WaterSystem.CreateWaterMaterial(isRiver: false);
+                }
+
+                Bounds oceanBounds = new Bounds(oceanPos, new Vector3(worldWidthMeters, 200f, worldLengthMeters * 0.5f));
+                waterSys.RegisterOcean(seaY, oceanBounds, infra != null && !string.IsNullOrEmpty(infra.waterBodyName) ? infra.waterBodyName : "Oceano Costeiro");
+                Debug.Log($"[RegionalSandbox] Litoral oceânico construído com plataforma marítima costeira e ondas dinâmicas.");
             }
             else if (hasInlandWater)
             {
@@ -254,12 +267,26 @@ namespace ProjectTerra.Sandbox
                 lakeObj.transform.position = lakePos;
                 lakeObj.transform.localScale = new Vector3(1800f, 0.2f, 1200f);
                 Destroy(lakeObj.GetComponent<Collider>());
-                lakeObj.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(new Color(0.12f, 0.38f, 0.48f, 0.88f));
-                Debug.Log($"[RegionalSandbox] Bacia hidrográfica/lacustre interior construída ({(infra != null ? infra.waterBodyName : "Corpo Hídrico")}).");
+
+                var rend = lakeObj.GetComponent<Renderer>();
+                if (rend != null)
+                {
+                    rend.sharedMaterial = WaterSystem.CreateWaterMaterial(isRiver: false);
+                }
+
+                string lakeName = infra != null && !string.IsNullOrEmpty(infra.waterBodyName) ? infra.waterBodyName : "Lago/Represa Regional";
+                waterSys.RegisterLake(lakePos, 900f, 600f, lakePos.y, lakeName);
+                Debug.Log($"[RegionalSandbox] Bacia hidrográfica/lacustre interior construída ({lakeName}) com física e dinâmica ativas.");
             }
             else
             {
-                Debug.Log("[RegionalSandbox] Região interior sem corpos d'água superficiais significativos (terreno continental/árido mantido).");
+                Debug.Log("[RegionalSandbox] Região interior sem bacia de mar aberto (terreno continental com rios).");
+            }
+
+            // Inicializar rede de rios georreferenciados da região
+            if (activeRegionData != null && activeTerrain != null)
+            {
+                RiverManager.Create(activeTerrain, activeRegionData);
             }
         }
 

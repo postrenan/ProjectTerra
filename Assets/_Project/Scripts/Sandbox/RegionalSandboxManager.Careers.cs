@@ -98,6 +98,62 @@ namespace ProjectTerra.Sandbox
             tratorPos.y = GetTerrainHeight(tratorPos) + 0.8f;
             starterVehicle = VehicleBuilder.CreateTractor(tratorPos);
             starterVehicle.LoadCargo(cropCargo, 2000f);
+
+            // 1. Instanciar o Arado Agrícola alinhado logo atrás do trator
+            Vector3 aradoPos = tratorPos - new Vector3(0f, 0f, 6.2f);
+            aradoPos.y = GetTerrainHeight(aradoPos) + 0.35f;
+            PlowBuilder.CreatePlow(aradoPos, Quaternion.identity);
+
+            // 2. Pista de Pouso Rural da Fazenda e Aeronave Utilitária
+            var airstripRoot = new GameObject("Pista_Pouso_Rural_Fazenda");
+            airstripRoot.transform.SetParent(farmRoot.transform, true);
+
+            Vector3 airstripStart = starterBasePosition + new Vector3(70f, 0f, -60f);
+            Vector3 airstripEnd = starterBasePosition + new Vector3(70f, 0f, 320f);
+            Vector3 runwayCenter = (airstripStart + airstripEnd) * 0.5f;
+            runwayCenter.y = GetTerrainHeight(runwayCenter);
+
+            CreateRoad(airstripRoot.transform, runwayCenter, new Vector3(22f, 0.15f, 380f), "Pista de Pouso Rural da Fazenda");
+            CreateAirfieldMarkers(airstripRoot.transform, airstripStart, airstripEnd, 22f);
+
+            // Aeronave pronta para decolagem na cabeceira da pista rural
+            Vector3 planePos = airstripStart + new Vector3(0f, 0f, 20f);
+            planePos.y = GetTerrainHeight(planePos) + 1.15f;
+            var plane = VehicleBuilder.CreatePlane(planePos);
+            plane.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+
+            if (VehicleManager.Instance != null)
+            {
+                VehicleManager.Instance.RegisterVehicle(plane);
+            }
+        }
+
+        private void CreateAirfieldMarkers(Transform parent, Vector3 start, Vector3 end, float width)
+        {
+            Vector3 fwd = (end - start).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, fwd).normalized;
+            float len = Vector3.Distance(start, end);
+            int count = Mathf.Max(4, Mathf.RoundToInt(len / 45f));
+
+            for (int i = 0; i <= count; i++)
+            {
+                float t = (float)i / count;
+                Vector3 center = Vector3.Lerp(start, end, t);
+
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 conePos = center + right * (side * (width * 0.5f + 1.2f));
+                    conePos.y = GetTerrainHeight(conePos) + 0.35f;
+
+                    var cone = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                    cone.name = $"Balizador_Pista_{i}_{side}";
+                    cone.transform.SetParent(parent);
+                    cone.transform.position = conePos;
+                    cone.transform.localScale = new Vector3(0.4f, 0.45f, 0.4f);
+                    cone.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(i == 0 || i == count ? new Color(0.2f, 0.85f, 0.3f) : new Color(1.0f, 0.55f, 0.1f));
+                    Destroy(cone.GetComponent<Collider>());
+                }
+            }
         }
 
         private void BuildTruckerBase()
@@ -109,7 +165,7 @@ namespace ProjectTerra.Sandbox
             depotRoot.transform.position = starterBasePosition;
 
             CreateRoad(depotRoot.transform, new Vector3(-1600f, 0f, 600f), new Vector3(3400f, 0.15f, 28f), "Rodovia Estadual Principal");
-            CreateBuilding(depotRoot.transform, starterBasePosition + new Vector3(0f, 0f, 50f), new Vector3(65f, 14f, 35f), new Color(0.35f, 0.45f, 0.6f), "🏭 Galpão de Cargas & Docas Intermodais");
+            // [removido] assets de predios nao relevantes para a cena atual
 
             Vector3 truckPos = starterBasePosition;
             truckPos.y = GetTerrainHeight(truckPos) + 0.9f;
@@ -130,7 +186,7 @@ namespace ProjectTerra.Sandbox
 
             // Pista de Pouso Asfaltada Real de 1.800 metros de extensão!
             CreateRoad(airfieldRoot.transform, starterBasePosition, new Vector3(45f, 0.15f, 1800f), $"Pista 09/27 - {airportName} (1800m)");
-            CreateBuilding(airfieldRoot.transform, starterBasePosition + new Vector3(60f, 0f, -120f), new Vector3(45f, 15f, 38f), new Color(0.75f, 0.8f, 0.85f), $"✈️ Hangar Operacional ({airportName})");
+            // [removido] assets de predios nao relevantes para a cena atual
 
             Vector3 planePos = starterBasePosition + new Vector3(0f, 0f, -750f);
             planePos.y = GetTerrainHeight(planePos) + 1.2f;
@@ -160,7 +216,7 @@ namespace ProjectTerra.Sandbox
             pier.transform.localScale = new Vector3(25f, 1.2f, 180f);
             pier.GetComponent<Renderer>().sharedMaterial = CreateSolidMaterial(new Color(0.48f, 0.35f, 0.25f));
 
-            CreateBuilding(pierRoot.transform, starterBasePosition + new Vector3(40f, 0f, 25f), new Vector3(36f, 11f, 28f), new Color(0.45f, 0.65f, 0.75f), $"🐟 {portTitle} & Mercado de Pescados");
+            // [removido] assets de predios nao relevantes para a cena atual
 
             Vector3 boatPos = new Vector3(waterX - 20f, 0.5f, waterZ - 100f);
             starterVehicle = VehicleBuilder.CreateBoat(boatPos);

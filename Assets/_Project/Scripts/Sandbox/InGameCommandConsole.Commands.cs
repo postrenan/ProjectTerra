@@ -60,6 +60,27 @@ namespace ProjectTerra.Sandbox
                         CmdTeleport(args);
                         break;
 
+                    case "road":
+                    case "estrada":
+                    case "rodovia":
+                    case "roads":
+                        CmdRoad(args);
+                        break;
+
+                    case "paint":
+                    case "chao":
+                    case "chão":
+                    case "pintar":
+                    case "piso":
+                        CmdPaint(args);
+                        break;
+
+                    case "animals":
+                    case "fauna":
+                    case "animais":
+                        CmdAnimals(args);
+                        break;
+
                     case "speed":
                     case "movespeed":
                         CmdSpeed(args);
@@ -214,15 +235,28 @@ namespace ProjectTerra.Sandbox
                         LogMessage("📖 /tp <town | base | market | airport | port | origin | x z | x y z>", Color.cyan);
                         LogMessage("Teleporta o jogador (e o veículo atual) para locais chave ou coordenadas exatas.", Color.white);
                         return;
+                    case "road":
+                    case "estrada":
+                        LogMessage("📖 /road <spawn | type | lanes | rebuild | list>", Color.cyan);
+                        LogMessage("Tipos: asfalto, concreto, terra, brita | Faixas: 2, 4, 6, 8", Color.white);
+                        return;
+                    case "paint":
+                    case "chao":
+                        LogMessage("📖 /paint <textura> [raio]  |  /paint tool  |  /paint list", Color.cyan);
+                        LogMessage("Altera a textura/pintura do terreno (concreto, terra simples, asfalto, brita, etc.). Pressione [P] para o pincel 3D.", Color.white);
+                        return;
                 }
             }
 
             LogMessage("═════════ LISTA DE COMANDOS DA PROVÍNCIA ═════════", Color.cyan);
+            LogMessage("🎨 <b>Pintura de Chão:</b> /paint <textura> [raio], /paint tool <i>(ou tecla [P])</i>, /paint list", Color.white);
+            LogMessage("🛣️ <b>Estradas:</b> /road spawn <tipo> <faixas>, /road type <tipo>, /road lanes <2/4/6/8>, /road rebuild", Color.white);
             LogMessage("🚗 <b>Veículos:</b> /spawn <tipo>, /vehicles, /switch, /clearvehicles, /refuel, /repair, /unflip", Color.white);
             LogMessage("🕒 <b>Horário & Tempo:</b> /time <h/preset>, /timescale <mult>, /weather <clima>", Color.white);
             LogMessage("📍 <b>Navegação:</b> /tp <local/coords>, /coords", Color.white);
             LogMessage("⚡ <b>Jogador:</b> /fly (noclip), /speed <mult>, /god, /light", Color.white);
             LogMessage("💼 <b>Economia:</b> /money <quantia>, /setmoney <quantia>, /mission <complete/new>, /reputation <qnt>", Color.white);
+            LogMessage("🐾 <b>Fauna & Animais:</b> /animals (status/stats), /animals tp <pasture/wild>", Color.white);
             LogMessage("🎮 <b>Interface:</b> /camera <modo>, /hud <on/off>, /map, /save, /clear", Color.white);
             LogMessage("💡 <b>Atalhos:</b> [/] Console, [L] Lanterna/Farol, [Tab] Trocar Veículo, [C] Câmera", new Color(0.3f, 1f, 0.6f));
         }

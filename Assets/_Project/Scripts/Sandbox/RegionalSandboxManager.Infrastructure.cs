@@ -202,6 +202,17 @@ namespace ProjectTerra.Sandbox
             // NÃO aplicar culling de estrutura (1.4 km): no 1:1 real (ex: SP = 886 km) as vias
             // ficam dezenas de km do spawn. Mantém na layer padrão (0) para renderizar até o far-clip (45 km).
         }
+        public static RoadSurfaceType GlobalPreferredSurface = RoadSurfaceType.Asphalt;
+        public static RoadLaneCount GlobalPreferredLanes = RoadLaneCount.FourLanes;
+        public static bool UseCustomGlobalRoadSettings = false;
+
+        public void RebuildRoadNetwork()
+        {
+            var existing = GameObject.Find("RegionRoadNetwork");
+            if (existing != null) Destroy(existing);
+            RoadMaskSegments.Clear();
+            BuildRegionalRoadNetwork();
+        }
 
         private void BuildRoadRibbon(Transform parent, RoadPolyline poly)
         {
@@ -214,26 +225,99 @@ namespace ProjectTerra.Sandbox
                 flat.Add(new Vector2(local.x, local.z));
             }
 
-            float halfWidth = RoadHalfWidth(poly.roadClass);
+            // 2. Determinar tipo de pavimento e quantidade de faixas
+            RoadSurfaceType surface;
+            RoadLaneCount lanes;
 
-            // 2. Registra os segmentos (retos, originais) para suprimir grama por cima da via.
-            float clearance = halfWidth + 2.5f;
+            if (UseCustomGlobalRoadSettings)
+            {
+                surface = GlobalPreferredSurface;
+                lanes = GlobalPreferredLanes;
+            }
+            else
+            {
+                switch (poly.roadClass)
+                {
+                    case RoadClass.Expressway:
+                        surface = RoadSurfaceType.Asphalt;
+                        lanes = RoadLaneCount.SixLanes; // 6 faixas para autoestrada expressa
+                        break;
+                    case RoadClass.MajorHighway:
+                        surface = RoadSurfaceType.Asphalt;
+                        lanes = RoadLaneCount.FourLanes; // 4 faixas para rodovia tronco
+                        break;
+                    case RoadClass.SecondaryHighway:
+                        surface = RoadSurfaceType.Asphalt;
+                        lanes = RoadLaneCount.TwoLanes;  // 2 faixas para rodovia secundária
+                        break;
+                    case RoadClass.Connector:
+                        // Conectores vicinais: alternância orgânica entre Terra batida e Britas
+                        surface = ((flat[0].GetHashCode() & 1) == 0) ? RoadSurfaceType.Dirt : RoadSurfaceType.Gravel;
+                        lanes = RoadLaneCount.TwoLanes;
+                        break;
+                    case RoadClass.Railroad:
+                    default:
+                        surface = RoadSurfaceType.Gravel;
+                        lanes = RoadLaneCount.TwoLanes;
+                        break;
+                }
+            }
+
+            var config = RoadProfileConfig.GetDefault(surface, lanes);
+
+            // 3. Registra os segmentos originais para suprimir grama sobre a via e acostamentos
+            float clearance = config.TotalShoulderWidth * 0.5f + 2.0f;
             for (int i = 0; i < flat.Count - 1; i++)
                 RoadMaskSegments.Add(new RoadMaskSegment { a = flat[i], b = flat[i + 1], clearance = clearance });
 
-            // 3. Suaviza a traçado (Catmull-Rom) para curvas de verdade, não cantos pontudos.
-            var sm = SmoothXZ(flat);
+            // 4. Suavização XZ densa (passo fino de ~14m para contornar relevos suavemente sem vãos)
+            var sm = RoadMeshBuilder.SmoothPolylineXZ(flat, 14f);
             int m = sm.Count;
             if (m < 2) return;
 
-            // 4. Drapeia no terreno (altura por ponto) e calcula perpendiculares.
-            var center = new Vector3[m];
-            var rights = new Vector3[m];
+            // 5. Ferrovia especial (lastro com ancoragem de solo + trilhos) ou Rodovia com perfil completo
+            if (poly.roadClass == RoadClass.Railroad)
+            {
+                BuildRailroadTrack(parent, sm);
+            }
+            else
+            {
+                var spine = new Vector3[m];
+                for (int i = 0; i < m; i++)
+                {
+                    spine[i] = new Vector3(sm[i].x, 0f, sm[i].y);
+                }
+                RoadMeshBuilder.BuildRoad(parent, spine, config, GetTerrainHeight, $"Road_{poly.roadClass}_{surface}_{(int)lanes}L");
+            }
+        }
+
+        private void BuildRailroadTrack(Transform parent, List<Vector2> sm)
+        {
+            int m = sm.Count;
+            var spine = new Vector3[m];
             for (int i = 0; i < m; i++)
             {
-                var p = new Vector3(sm[i].x, 0f, sm[i].y);
-                p.y = GetTerrainHeight(p);
-                center[i] = p;
+                spine[i] = new Vector3(sm[i].x, 0f, sm[i].y);
+            }
+
+            var railCfg = new RoadProfileConfig
+            {
+                surfaceType = RoadSurfaceType.Gravel,
+                laneCount = RoadLaneCount.TwoLanes,
+                laneWidth = 2.2f,
+                shoulderWidth = 1.2f,
+                embankmentWidth = 2.6f,
+                medianWidth = 0f
+            };
+
+            var roadObj = RoadMeshBuilder.BuildRoad(parent, spine, railCfg, GetTerrainHeight, "Ferrovia_Leito");
+
+            // Trilhos metálicos de aço
+            var rights = new Vector3[m];
+            var center = new Vector3[m];
+            for (int i = 0; i < m; i++)
+            {
+                center[i] = new Vector3(sm[i].x, GetTerrainHeight(new Vector3(sm[i].x, 0f, sm[i].y)) + 0.16f, sm[i].y);
             }
             for (int i = 0; i < m; i++)
             {
@@ -246,33 +330,9 @@ namespace ProjectTerra.Sandbox
                 rights[i] = new Vector3(fwd.z, 0f, -fwd.x);
             }
 
-            var root = new GameObject($"Road_{poly.roadClass}");
-            root.transform.SetParent(parent);
-
-            if (poly.roadClass == RoadClass.Railroad)
-            {
-                // Leito ferroviário + dois trilhos de aço.
-                BuildStrip(root.transform, center, rights, halfWidth, 0f, 0.35f, GetRoadMaterial(RoadClass.Railroad), "Leito");
-                var steel = GetMarkingMaterial(new Color(0.62f, 0.64f, 0.68f));
-                BuildStrip(root.transform, center, rights, 0.2f, -1.9f, 0.55f, steel, "Trilho_E");
-                BuildStrip(root.transform, center, rights, 0.2f, 1.9f, 0.55f, steel, "Trilho_D");
-            }
-            else
-            {
-                // Superfície asfáltica + sinalização de faixa.
-                BuildStrip(root.transform, center, rights, halfWidth, 0f, 0.4f, GetRoadMaterial(poly.roadClass), "Pista");
-                if (poly.roadClass != RoadClass.Connector)
-                {
-                    var white = GetMarkingMaterial(new Color(0.95f, 0.95f, 0.92f));
-                    BuildStrip(root.transform, center, rights, 0.3f, 0f, 0.5f, white, "Eixo"); // linha central
-                    if (poly.roadClass == RoadClass.Expressway || poly.roadClass == RoadClass.MajorHighway)
-                    {
-                        float edge = halfWidth - 0.9f;
-                        BuildStrip(root.transform, center, rights, 0.25f, -edge, 0.5f, white, "Bordo_E");
-                        BuildStrip(root.transform, center, rights, 0.25f, edge, 0.5f, white, "Bordo_D");
-                    }
-                }
-            }
+            var steelMat = RoadMeshBuilder.GetMarkingMaterial(new Color(0.65f, 0.67f, 0.72f));
+            BuildStrip(roadObj.transform, center, rights, 0.18f, -1.8f, 0.12f, steelMat, "Trilho_Esq");
+            BuildStrip(roadObj.transform, center, rights, 0.18f, 1.8f, 0.12f, steelMat, "Trilho_Dir");
         }
 
         /// <summary>Constrói uma faixa (fita) paralela ao traçado, com largura, deslocamento lateral e altura próprios.</summary>
@@ -315,26 +375,7 @@ namespace ProjectTerra.Sandbox
 
         private static List<Vector2> SmoothXZ(List<Vector2> p)
         {
-            if (p.Count < 3) return p;
-            var outp = new List<Vector2>(p.Count * 4);
-            outp.Add(p[0]);
-            for (int i = 0; i < p.Count - 1; i++)
-            {
-                Vector2 p0 = p[Mathf.Max(0, i - 1)];
-                Vector2 p1 = p[i];
-                Vector2 p2 = p[i + 1];
-                Vector2 p3 = p[Mathf.Min(p.Count - 1, i + 2)];
-                int sub = Mathf.Clamp(Mathf.RoundToInt(Vector2.Distance(p1, p2) / 120f), 3, 10);
-                for (int s = 1; s <= sub; s++)
-                    outp.Add(CatmullRom(p0, p1, p2, p3, s / (float)sub));
-            }
-            return outp;
-        }
-
-        private static Vector2 CatmullRom(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t)
-        {
-            float t2 = t * t, t3 = t2 * t;
-            return 0.5f * ((2f * p1) + (-p0 + p2) * t + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 + (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
+            return RoadMeshBuilder.SmoothPolylineXZ(p, 14f);
         }
 
         private static float RoadHalfWidth(RoadClass c)
@@ -348,47 +389,6 @@ namespace ProjectTerra.Sandbox
                 case RoadClass.Connector: return 5f;
                 default: return 6f;
             }
-        }
-
-        private static readonly Dictionary<int, Material> markingMatCache = new Dictionary<int, Material>();
-
-        private Material GetMarkingMaterial(Color color)
-        {
-            int key = color.GetHashCode();
-            if (markingMatCache.TryGetValue(key, out var m) && m != null) return m;
-            var mat = CreateSolidMaterial(color);
-            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.1f);
-            markingMatCache[key] = mat;
-            return mat;
-        }
-
-        private static readonly Dictionary<RoadClass, Material> roadMatCache = new Dictionary<RoadClass, Material>();
-
-        private Material GetRoadMaterial(RoadClass c)
-        {
-            if (roadMatCache.TryGetValue(c, out var cached) && cached != null) return cached;
-
-            Color color;
-            float gloss;
-            switch (c)
-            {
-                case RoadClass.Expressway: color = new Color(0.22f, 0.22f, 0.24f); gloss = 0.18f; break;
-                case RoadClass.MajorHighway: color = new Color(0.26f, 0.26f, 0.28f); gloss = 0.14f; break;
-                case RoadClass.SecondaryHighway: color = new Color(0.30f, 0.29f, 0.30f); gloss = 0.12f; break;
-                case RoadClass.Railroad: color = new Color(0.33f, 0.28f, 0.22f); gloss = 0.08f; break; // leito ferroviário
-                default: color = new Color(0.40f, 0.36f, 0.30f); gloss = 0.08f; break;              // conector de terra
-            }
-
-            var mat = CreatePrimitiveMaterial(color);
-            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", gloss);
-
-            if (c != RoadClass.Railroad && c != RoadClass.Connector)
-            {
-                var tex = GetAsphaltTexture();
-                if (tex != null) { mat.mainTexture = tex; mat.mainTextureScale = new Vector2(1f, 1f); }
-            }
-            roadMatCache[c] = mat;
-            return mat;
         }
 
         private void BuildRegionalCities()

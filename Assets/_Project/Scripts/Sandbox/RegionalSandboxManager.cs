@@ -61,8 +61,61 @@ namespace ProjectTerra.Sandbox
             ApplyWorldCulling();
             SpawnPlayerAndVehicle();
             EnsureVehicleManager();
+            EnsurePlowAndAirplaneInScene();
             EnsureCommandConsole();
+            EnsureGroundPainter();
             SetupInitialMission();
+        }
+
+        private void EnsurePlowAndAirplaneInScene()
+        {
+            // Garante que o Arado sempre existe na cena
+            if (PlowImplement.AllPlows.Count == 0)
+            {
+                Vector3 aradoPos = starterBasePosition + new Vector3(10f, 0f, 4f);
+                aradoPos.y = GetTerrainHeight(aradoPos) + 0.35f;
+                PlowBuilder.CreatePlow(aradoPos, Quaternion.identity);
+            }
+
+            // Garante que o Avião sempre existe na cena
+            bool hasPlane = false;
+            if (VehicleManager.Instance != null)
+            {
+                foreach (var v in VehicleManager.Instance.possessedVehicles)
+                {
+                    if (v != null && v.category == VehicleCategory.Plane)
+                    {
+                        hasPlane = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasPlane)
+            {
+                var allVehicles = FindObjectsByType<VehicleController>();
+                foreach (var v in allVehicles)
+                {
+                    if (v != null && v.category == VehicleCategory.Plane)
+                    {
+                        hasPlane = true;
+                        if (VehicleManager.Instance != null) VehicleManager.Instance.RegisterVehicle(v);
+                        break;
+                    }
+                }
+            }
+
+            if (!hasPlane)
+            {
+                Vector3 planePos = starterBasePosition + new Vector3(70f, 0f, -40f);
+                planePos.y = GetTerrainHeight(planePos) + 1.15f;
+                var plane = VehicleBuilder.CreatePlane(planePos);
+                plane.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+                if (VehicleManager.Instance != null)
+                {
+                    VehicleManager.Instance.RegisterVehicle(plane);
+                }
+            }
         }
 
         private void EnsureVehicleManager()
@@ -84,6 +137,15 @@ namespace ProjectTerra.Sandbox
             {
                 var consoleObj = new GameObject("InGameCommandConsole");
                 consoleObj.AddComponent<InGameCommandConsole>();
+            }
+        }
+
+        private void EnsureGroundPainter()
+        {
+            if (FindAnyObjectByType<GroundPainterTool>() == null)
+            {
+                var painterObj = new GameObject("GroundPainterTool");
+                painterObj.AddComponent<GroundPainterTool>();
             }
         }
 

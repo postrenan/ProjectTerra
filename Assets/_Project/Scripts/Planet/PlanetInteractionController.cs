@@ -1,7 +1,9 @@
 using System;
 using UnityEngine;
+using ProjectTerra.Core;
 using ProjectTerra.Gameplay;
 using ProjectTerra.UI;
+using ProjectTerra.Cameras;
 using ProjectTerra.Planet.TerrainStreaming;
 
 namespace ProjectTerra.Planet
@@ -61,15 +63,28 @@ namespace ProjectTerra.Planet
         private GUIStyle dangerButtonStyle;
         private GUIStyle saveCardBoxStyle;
         private GUIStyle textFieldStyle;
+        private GUIStyle recentBtnStyle;
         private Texture2D whiteTex;
+
+        // Estado do Modal Retrátil de Saves Recentes
+        private bool isRecentSavesOpen = false;
+        private float recentSavesAnimProgress = 0f;
+        private Rect recentSavesButtonRect;
+        private Rect recentSavesModalRect;
+        private string recentSavesSearchQuery = "";
+        private Vector2 recentSavesScrollPos = Vector2.zero;
+        private string saveIdConfirmDelete = null;
+        private float deleteConfirmTimer = 0f;
 
         public static PlanetInteractionController Instance { get; private set; }
 
         public bool IsPointerOverUI()
         {
-            if (!hasSelection) return false;
-            Vector2 guiMouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
-            return lastCardRect.Contains(guiMouse);
+            Vector2 guiMouse = new Vector2(TerraInput.MousePosition.x, Screen.height - TerraInput.MousePosition.y);
+            if (hasSelection && lastCardRect.Contains(guiMouse)) return true;
+            if (recentSavesButtonRect.Contains(guiMouse)) return true;
+            if (recentSavesAnimProgress > 0.01f && recentSavesModalRect.Contains(guiMouse)) return true;
+            return false;
         }
 
         private void Awake()
@@ -136,21 +151,33 @@ namespace ProjectTerra.Planet
                 if (notificationTimer <= 0f) notificationMessage = "";
             }
 
-            if (Input.GetMouseButtonDown(0))
+            if (deleteConfirmTimer > 0f)
             {
-                Vector2 guiMouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
-                isMouseDownOnCard = hasSelection && lastCardRect.Contains(guiMouse);
-                mouseDownPos = Input.mousePosition;
+                deleteConfirmTimer -= Time.deltaTime;
+                if (deleteConfirmTimer <= 0f) saveIdConfirmDelete = null;
             }
 
-            if (Input.GetMouseButtonUp(0))
+            // Animação de transição suave do modal retrátil
+            float targetProgress = isRecentSavesOpen ? 1.0f : 0.0f;
+            recentSavesAnimProgress = Mathf.MoveTowards(recentSavesAnimProgress, targetProgress, Time.deltaTime * 6.0f);
+
+            if (TerraInput.GetMouseButtonDown(0))
+            {
+                Vector2 guiMouse = new Vector2(TerraInput.MousePosition.x, Screen.height - TerraInput.MousePosition.y);
+                isMouseDownOnCard = (hasSelection && lastCardRect.Contains(guiMouse)) ||
+                                    recentSavesButtonRect.Contains(guiMouse) ||
+                                    (recentSavesAnimProgress > 0.01f && recentSavesModalRect.Contains(guiMouse));
+                mouseDownPos = TerraInput.MousePosition;
+            }
+
+            if (TerraInput.GetMouseButtonUp(0))
             {
                 if (!isMouseDownOnCard)
                 {
-                    float dragDist = Vector2.Distance(mouseDownPos, (Vector2)Input.mousePosition);
+                    float dragDist = Vector2.Distance(mouseDownPos, TerraInput.MousePosition);
                     if (dragDist < 12.0f)
                     {
-                        TryRaycastPlanet(Input.mousePosition);
+                        TryRaycastPlanet(TerraInput.MousePosition);
                     }
                 }
                 isMouseDownOnCard = false;
@@ -277,6 +304,173 @@ namespace ProjectTerra.Planet
             if (planet != null)
             {
                 planet.SetRotationPaused(false);
+            }
+        }
+
+        public void ToggleRecentSavesModal()
+        {
+            isRecentSavesOpen = !isRecentSavesOpen;
+            if (isRecentSavesOpen)
+            {
+                saveIdConfirmDelete = null;
+                if (SaveManager.Instance != null)
+                {
+                    SaveManager.Instance.LoadAllSaves();
+                }
+            }
+        }
+
+        public void CloseRecentSavesModal()
+        {
+            isRecentSavesOpen = false;
+            saveIdConfirmDelete = null;
+        }
+
+        public RegionData GetRegionById(int id)
+        {
+            if (!isDatabaseLoaded || database == null || database.regions.Count == 0)
+            {
+                LoadDatabase();
+            }
+            if (database == null || database.regions == null) return null;
+
+            if (id > 0 && id <= database.regions.Count)
+            {
+                var r = database.regions[id - 1];
+                if (r.id == id) return r;
+            }
+            return database.regions.Find(r => r.id == id);
+        }
+
+        public void FocusAndSelectRegion(int regionId, bool openDetails = true)
+        {
+            var region = GetRegionById(regionId);
+            if (region == null)
+            {
+                Debug.LogWarning($"[PlanetInteraction] Região com ID {regionId} não encontrada no banco de dados.");
+                return;
+            }
+
+            SelectRegion(region, openDetails);
+        }
+
+        public void SelectRegion(RegionData region, bool openDetails = true)
+        {
+            if (region == null) return;
+
+            selectedRegion = region;
+            float latRad = region.centerLat * Mathf.Deg2Rad;
+            float lonRad = region.centerLon * Mathf.Deg2Rad;
+            float cosLat = Mathf.Cos(latRad);
+            selectedLocalNormal = new Vector3(
+                cosLat * Mathf.Sin(lonRad),
+                Mathf.Sin(latRad),
+                -cosLat * Mathf.Cos(lonRad)
+            ).normalized;
+
+            if (planet == null)
+            {
+                planet = CubeSpherePlanet.Instance ?? FindAnyObjectByType<CubeSpherePlanet>();
+            }
+
+            if (planet != null)
+            {
+                selectedWorldPoint = planet.transform.TransformPoint(selectedLocalNormal * (float)planet.PlanetRadius);
+                planet.SetRotationPaused(true);
+            }
+
+            SetTerrainHighlight(region.id);
+
+            currentCardMode = CardMode.RegionDetails;
+            newGameSaveName = $"Governo de {selectedRegion.name}";
+            newGameBudget = 500000;
+            notificationMessage = "";
+            hasSelection = openDetails;
+
+            if (mainCamera == null) mainCamera = Camera.main;
+            if (mainCamera != null && selectedWorldPoint != Vector3.zero)
+            {
+                var orbitCam = mainCamera.GetComponent<OrbitCameraController>();
+                if (orbitCam != null)
+                {
+                    orbitCam.FocusOnPoint(selectedWorldPoint, 3200000.0);
+                }
+            }
+        }
+
+        public void LoadSaveGame(RegionSaveData save)
+        {
+            if (save == null) return;
+
+            if (SaveManager.Instance != null)
+            {
+                SaveManager.Instance.ActiveSave = save;
+            }
+
+            RegionData region = GetRegionById(save.regionId);
+            if (region == null)
+            {
+                region = new RegionData
+                {
+                    id = save.regionId,
+                    name = save.regionName,
+                    country = save.countryName,
+                    type = save.regionType,
+                    forestPercent = save.forestPercent,
+                    mineralsPercent = save.mineralsPercent,
+                    arablePercent = save.arablePercent,
+                    waterPercent = save.waterPercent
+                };
+            }
+
+            hasSelection = false;
+            lastCardRect = Rect.zero;
+            isRecentSavesOpen = false;
+
+            if (planet == null) planet = CubeSpherePlanet.Instance ?? FindAnyObjectByType<CubeSpherePlanet>();
+            if (mainCamera == null) mainCamera = Camera.main;
+
+            float latRad = region.centerLat * Mathf.Deg2Rad;
+            float lonRad = region.centerLon * Mathf.Deg2Rad;
+            float cosLat = Mathf.Cos(latRad);
+            Vector3 localNorm = new Vector3(
+                cosLat * Mathf.Sin(lonRad),
+                Mathf.Sin(latRad),
+                -cosLat * Mathf.Cos(lonRad)
+            ).normalized;
+            Vector3 targetWorld = planet != null ? planet.transform.TransformPoint(localNorm * (float)planet.PlanetRadius) : Vector3.zero;
+
+            OrbitCameraController orbitCam = mainCamera != null ? mainCamera.GetComponent<OrbitCameraController>() : null;
+            if (orbitCam != null && targetWorld != Vector3.zero)
+            {
+                orbitCam.DiveTowardsPoint(targetWorld, 1.8f, () =>
+                {
+                    if (LoadingScreenController.Instance != null)
+                    {
+                        LoadingScreenController.Instance.Show(region, save, () =>
+                        {
+                            UnityEngine.SceneManagement.SceneManager.LoadScene("RegionalSandboxScene");
+                        });
+                    }
+                    else
+                    {
+                        UnityEngine.SceneManagement.SceneManager.LoadScene("RegionalSandboxScene");
+                    }
+                });
+            }
+            else
+            {
+                if (LoadingScreenController.Instance != null)
+                {
+                    LoadingScreenController.Instance.Show(region, save, () =>
+                    {
+                        UnityEngine.SceneManagement.SceneManager.LoadScene("RegionalSandboxScene");
+                    });
+                }
+                else
+                {
+                    UnityEngine.SceneManagement.SceneManager.LoadScene("RegionalSandboxScene");
+                }
             }
         }
     }

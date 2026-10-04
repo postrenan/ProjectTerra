@@ -70,7 +70,11 @@ namespace ProjectTerra.Sandbox
             Random.InitState(seed);
 
             // 1. Árvores em torno das estradas e campos (amostragem em raio de 3km do centro de operações)
-            int treeCount = Mathf.Clamp((save != null ? save.forestPercent : 35) * 8, 80, 500);
+            bool isDesert = PlayerFollowGrass.CheckIfDesert(save, RegionalSandboxManager.Instance != null ? RegionalSandboxManager.Instance.activeRegionData : null);
+            int treeCount = isDesert 
+                ? Mathf.Clamp((save != null ? save.forestPercent : 0) * 2, 0, 10) 
+                : Mathf.Clamp((save != null ? save.forestPercent : 35) * 8, 80, 500);
+
             int treesSpawned = 0;
             for (int i = 0; i < treeCount; i++)
             {
@@ -92,9 +96,18 @@ namespace ProjectTerra.Sandbox
                     float w = baseS * Random.Range(0.82f, 1.18f);
                     float hgt = baseS * Random.Range(1.05f, 1.65f);
                     tree.transform.localScale = new Vector3(w, hgt, w);
-                    // Variacao de tom de folhagem e tronco.
-                    float g = Random.Range(0.34f, 0.56f);
-                    Color leaf = new Color(0.10f + Random.Range(0f, 0.12f), g, 0.10f + Random.Range(0f, 0.08f));
+                    // Variacao de tom de folhagem e tronco (seco em desertos, verde em biomas normais).
+                    Color leaf;
+                    if (isDesert)
+                    {
+                        float dTone = Random.Range(0.44f, 0.56f);
+                        leaf = new Color(dTone * 1.12f, dTone * 0.98f, dTone * 0.55f);
+                    }
+                    else
+                    {
+                        float g = Random.Range(0.34f, 0.56f);
+                        leaf = new Color(0.10f + Random.Range(0f, 0.12f), g, 0.10f + Random.Range(0f, 0.08f));
+                    }
                     Color bark = new Color(0.34f + Random.Range(0f, 0.12f), 0.23f + Random.Range(0f, 0.08f), 0.13f);
                     ApplyModelColors(tree, leaf, bark);
                 }
@@ -202,17 +215,22 @@ namespace ProjectTerra.Sandbox
                     obj.name = $"Animal_Vaca_{i + 1}";
                     ApplyModelColors(obj, new Color(0.55f, 0.35f, 0.22f), new Color(0.92f, 0.90f, 0.88f));
                     FitAnimalModel(obj, 2.4f, pos.y);
+                    var anim = obj.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Cow, terrain, "Models/Animals/Farm/Cow", pastureCenter, 35f);
                 }
                 else
                 {
-                    SpawnAnimalPrimitive(parent, pos, $"Animal_Vaca_{i + 1}", new Vector3(0.85f, 1.5f, 1.6f), new Color(0.55f, 0.35f, 0.22f));
+                    var prim = SpawnAnimalPrimitive(parent, pos, $"Animal_Vaca_{i + 1}", new Vector3(0.85f, 1.5f, 1.6f), new Color(0.55f, 0.35f, 0.22f));
+                    var anim = prim.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Cow, terrain, null, pastureCenter, 35f);
                 }
             }
 
             // Grupo de cavalos (4 animais, ~1.6m de altura)
+            Vector3 horseCenter = pastureCenter + new Vector3(80f, 0f, 0f);
             for (int i = 0; i < 4; i++)
             {
-                Vector3 pos = pastureCenter + new Vector3(Random.Range(50f, 110f), 0f, Random.Range(-25f, 25f));
+                Vector3 pos = horseCenter + new Vector3(Random.Range(-30f, 30f), 0f, Random.Range(-25f, 25f));
                 pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
                 if (horse != null)
                 {
@@ -220,17 +238,22 @@ namespace ProjectTerra.Sandbox
                     obj.name = $"Animal_Cavalo_{i + 1}";
                     ApplyModelColors(obj, new Color(0.32f, 0.20f, 0.12f), new Color(0.15f, 0.10f, 0.08f));
                     FitAnimalModel(obj, 2.5f, pos.y);
+                    var anim = obj.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Horse, terrain, "Models/Animals/Farm/Horse", horseCenter, 45f);
                 }
                 else
                 {
-                    SpawnAnimalPrimitive(parent, pos, $"Animal_Cavalo_{i + 1}", new Vector3(0.7f, 1.6f, 1.9f), new Color(0.25f, 0.18f, 0.12f));
+                    var prim = SpawnAnimalPrimitive(parent, pos, $"Animal_Cavalo_{i + 1}", new Vector3(0.7f, 1.6f, 1.9f), new Color(0.25f, 0.18f, 0.12f));
+                    var anim = prim.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Horse, terrain, null, horseCenter, 45f);
                 }
             }
 
             // Grupo de ovelhas (8 animais, ~0.7m de altura, branco-creme)
+            Vector3 sheepCenter = pastureCenter + new Vector3(-45f, 0f, 50f);
             for (int i = 0; i < 8; i++)
             {
-                Vector3 pos = pastureCenter + new Vector3(Random.Range(-70f, -20f), 0f, Random.Range(30f, 75f));
+                Vector3 pos = sheepCenter + new Vector3(Random.Range(-25f, 25f), 0f, Random.Range(-20f, 25f));
                 pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
                 if (sheep != null)
                 {
@@ -238,10 +261,14 @@ namespace ProjectTerra.Sandbox
                     obj.name = $"Animal_Ovelha_{i + 1}";
                     ApplyModelColors(obj, new Color(0.92f, 0.90f, 0.85f), new Color(0.20f, 0.18f, 0.18f));
                     FitAnimalModel(obj, 1.2f, pos.y);
+                    var anim = obj.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Sheep, terrain, "Models/Animals/Farm/Sheep", sheepCenter, 28f);
                 }
                 else
                 {
-                    SpawnAnimalPrimitive(parent, pos, $"Animal_Ovelha_{i + 1}", new Vector3(0.6f, 0.7f, 0.9f), new Color(0.92f, 0.90f, 0.88f));
+                    var prim = SpawnAnimalPrimitive(parent, pos, $"Animal_Ovelha_{i + 1}", new Vector3(0.6f, 0.7f, 0.9f), new Color(0.92f, 0.90f, 0.88f));
+                    var anim = prim.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Sheep, terrain, null, sheepCenter, 28f);
                 }
             }
         }
@@ -259,17 +286,22 @@ namespace ProjectTerra.Sandbox
                     obj.name = $"Animal_Raposa_{i + 1}";
                     ApplyModelColors(obj, new Color(0.85f, 0.42f, 0.12f), new Color(0.95f, 0.95f, 0.95f));
                     FitAnimalModel(obj, 0.9f, pos.y);
+                    var anim = obj.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Fox, terrain, "Models/Animals/Wild/Red Fox", forestPos, 50f);
                 }
                 else
                 {
-                    SpawnAnimalPrimitive(parent, pos, $"Animal_Raposa_{i + 1}", new Vector3(0.3f, 0.4f, 0.7f), new Color(0.80f, 0.42f, 0.10f));
+                    var prim = SpawnAnimalPrimitive(parent, pos, $"Animal_Raposa_{i + 1}", new Vector3(0.3f, 0.4f, 0.7f), new Color(0.80f, 0.42f, 0.10f));
+                    var anim = prim.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Fox, terrain, null, forestPos, 50f);
                 }
             }
 
             // Lobos (3 animais, ~0.8m, cinza escuro)
+            Vector3 wolfCenter = forestPos + new Vector3(150f, 0f, 0f);
             for (int i = 0; i < 3; i++)
             {
-                Vector3 pos = forestPos + new Vector3(Random.Range(100f, 200f), 0f, Random.Range(-40f, 40f));
+                Vector3 pos = wolfCenter + new Vector3(Random.Range(-35f, 35f), 0f, Random.Range(-35f, 35f));
                 pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
                 if (wolf != null)
                 {
@@ -277,10 +309,14 @@ namespace ProjectTerra.Sandbox
                     obj.name = $"Animal_Lobo_{i + 1}";
                     ApplyModelColors(obj, new Color(0.35f, 0.35f, 0.38f), new Color(0.20f, 0.20f, 0.22f));
                     FitAnimalModel(obj, 1.5f, pos.y);
+                    var anim = obj.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Wolf, terrain, "Models/Animals/Wild/Wolf", wolfCenter, 65f);
                 }
                 else
                 {
-                    SpawnAnimalPrimitive(parent, pos, $"Animal_Lobo_{i + 1}", new Vector3(0.45f, 0.8f, 1.1f), new Color(0.30f, 0.30f, 0.32f));
+                    var prim = SpawnAnimalPrimitive(parent, pos, $"Animal_Lobo_{i + 1}", new Vector3(0.45f, 0.8f, 1.1f), new Color(0.30f, 0.30f, 0.32f));
+                    var anim = prim.AddComponent<AnimalController>();
+                    anim.Initialize(AnimalSpecies.Wolf, terrain, null, wolfCenter, 65f);
                 }
             }
         }
@@ -289,7 +325,7 @@ namespace ProjectTerra.Sandbox
         /// Cria um primitivo Capsule representando um animal, com escala e cor realistas.
         /// bodySize = (width, height, length) em metros.
         /// </summary>
-        private static void SpawnAnimalPrimitive(Transform parent, Vector3 pos, string name, Vector3 bodySize, Color color)
+        private static GameObject SpawnAnimalPrimitive(Transform parent, Vector3 pos, string name, Vector3 bodySize, Color color)
         {
             var animal = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             animal.name = name;
@@ -299,7 +335,7 @@ namespace ProjectTerra.Sandbox
             // Capsule padrão tem raio 0.5 e altura 2 (em unidades), então scale x=width, y=half_length, z=width
             animal.transform.localScale = new Vector3(bodySize.x, bodySize.z * 0.5f, bodySize.x);
             SetPrimitiveColor(animal.GetComponent<Renderer>(), color);
-            // Mantém o CapsuleCollider do primitivo para que o animal tenha colisão sólida.
+            return animal;
         }
 
         /// <summary>
@@ -377,14 +413,7 @@ namespace ProjectTerra.Sandbox
         /// </summary>
         public static GameObject SpawnBuilding(Transform parent, Vector3 position, Vector3 scale, string resourcePath, string name)
         {
-            GameObject prefab = LoadModel(resourcePath);
-            if (prefab != null)
-            {
-                var obj = Object.Instantiate(prefab, position, Quaternion.identity, parent);
-                obj.name = name;
-                obj.transform.localScale = scale;
-                return obj;
-            }
+            // [removido] Assets de prédios/edifícios desativados do cenário
             return null;
         }
 

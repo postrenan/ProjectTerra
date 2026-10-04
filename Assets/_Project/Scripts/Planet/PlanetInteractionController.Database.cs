@@ -44,22 +44,8 @@ namespace ProjectTerra.Planet
                 Debug.LogWarning($"[PlanetInteraction] Arquivo de regiões não encontrado em {binDbPath} nem {jsonDbPath}");
             }
 
-            if (File.Exists(binPath))
-            {
-                try
-                {
-                    regionIdMap = File.ReadAllBytes(binPath);
-                    Debug.Log($"[PlanetInteraction] Mapa binário de IDs geográficos carregado ({regionIdMap.Length} bytes).");
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning($"[PlanetInteraction] Erro ao carregar region_id_map.bin: {ex.Message}");
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"[PlanetInteraction] Arquivo region_id_map.bin não encontrado em {binPath}");
-            }
+            RegionBoundaryService.EnsureLoaded();
+            regionIdMap = RegionBoundaryService.Data;
 
             // Inicializa a base de dados de infraestrutura e viabilidade geográfica
             RegionInfrastructureDatabase.EnsureLoaded();

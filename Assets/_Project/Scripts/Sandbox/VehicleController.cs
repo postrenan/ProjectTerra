@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -26,6 +28,7 @@ namespace ProjectTerra.Sandbox
         public Transform driverSeatPoint;
         public Transform exitPoint;
         public Transform cockpitCameraPoint;
+        public Transform rearHitchPoint; // Ponto de engate traseiro para implementos (arado, carretas)
 
         [Header("Faróis Dianteiros")]
         public Light[] headLights;
@@ -55,6 +58,8 @@ namespace ProjectTerra.Sandbox
         public float yawRate = 30f;
         public Transform propellerTransform;
         public float propellerMaxRpm = 1800f;
+        [Range(0f, 1f)] public float aircraftThrottle = 0f;
+        public float currentAltitudeMeters { get; private set; }
 
         [Header("Específico para Barco")]
         public float waterLevelY = 0.5f;
@@ -74,6 +79,9 @@ namespace ProjectTerra.Sandbox
         public float currentSpeedKmh { get; private set; }
         public float currentThrottle { get; private set; }
         public float currentSteer { get; private set; }
+        public bool isInWater { get; private set; } = false;
+        public bool isEngineFlooded { get; private set; } = false;
+        public float currentSubmersion { get; private set; } = 0f;
 
         private Rigidbody rb;
         private float currentSteerAngle = 0f;
@@ -135,6 +143,13 @@ namespace ProjectTerra.Sandbox
         {
             currentSpeedKmh = rb.linearVelocity.magnitude * 3.6f;
 
+            if (category == VehicleCategory.Plane)
+            {
+                float groundY = RegionalSandboxManager.Instance != null ?
+                    RegionalSandboxManager.Instance.GetTerrainHeight(transform.position) : 0f;
+                currentAltitudeMeters = Mathf.Max(0f, transform.position.y - groundY);
+            }
+
             if (isPlayerDriven)
             {
                 ReadInputs();
@@ -143,6 +158,10 @@ namespace ProjectTerra.Sandbox
             {
                 currentThrottle = 0f;
                 currentSteer = 0f;
+                if (category == VehicleCategory.Plane)
+                {
+                    aircraftThrottle = Mathf.MoveTowards(aircraftThrottle, 0f, Time.deltaTime * 0.5f);
+                }
             }
 
             UpdateVisuals();
@@ -151,7 +170,7 @@ namespace ProjectTerra.Sandbox
         private void ReadInputs()
         {
             // Ignora entrada de direção se o console de comandos ou mapa estiver aberto
-            if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpen)
+            if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpenOrJustClosed)
             {
                 currentThrottle = 0f;
                 currentSteer = 0f;
@@ -165,8 +184,35 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            float vertical = Input.GetAxis("Vertical");   // W/S ou Seta Cima/Baixo
-            float horizontal = Input.GetAxis("Horizontal"); // A/D ou Seta Esq/Dir
+            // Tratamento especializado para Avião:
+            if (category == VehicleCategory.Plane)
+            {
+                bool throttleUp = TerraInput.GetKey(Key.LeftShift) || TerraInput.GetKey(Key.RightShift);
+                bool throttleDown = TerraInput.GetKey(Key.LeftCtrl) || TerraInput.GetKey(Key.RightCtrl) || TerraInput.GetKey(Key.C);
+                float vert = TerraInput.GetAxis("Vertical");
+
+                // Shift ou W acelera potência do motor (potência de cruzeiro persistente)
+                if (throttleUp || (vert > 0.1f && aircraftThrottle < 0.99f))
+                {
+                    aircraftThrottle = Mathf.MoveTowards(aircraftThrottle, 1.0f, Time.deltaTime * 0.9f);
+                }
+                else if (throttleDown)
+                {
+                    aircraftThrottle = Mathf.MoveTowards(aircraftThrottle, 0.0f, Time.deltaTime * 0.85f);
+                }
+
+                currentThrottle = aircraftThrottle;
+                currentSteer = TerraInput.GetAxis("Horizontal");
+
+                if (!infiniteFuel && aircraftThrottle > 0.05f && fuelPercent > 0f)
+                {
+                    fuelPercent = Mathf.Max(0f, fuelPercent - fuelConsumptionRate * aircraftThrottle * Time.deltaTime);
+                }
+                return;
+            }
+
+            float vertical = TerraInput.GetAxis("Vertical");   // W/S ou Seta Cima/Baixo
+            float horizontal = TerraInput.GetAxis("Horizontal"); // A/D ou Seta Esq/Dir
 
             currentThrottle = vertical;
             currentSteer = horizontal;

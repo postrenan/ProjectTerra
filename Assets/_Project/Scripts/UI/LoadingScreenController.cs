@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.IO;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using ProjectTerra.Core;
 using ProjectTerra.Planet;
 using ProjectTerra.Gameplay;
 using ProjectTerra.Planet.TerrainStreaming;
@@ -223,7 +225,7 @@ namespace ProjectTerra.UI
             if (isFinishedLoading && !isFadingOut)
             {
                 // Tecla Enter ou Espaço para entrar imediatamente
-                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space))
+                if (TerraInput.GetKeyDown(Key.Enter) || TerraInput.GetKeyDown(Key.NumpadEnter) || TerraInput.GetKeyDown(Key.Space))
                 {
                     StartFadeOut();
                 }

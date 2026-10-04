@@ -71,10 +71,12 @@ namespace ProjectTerra.Sandbox
             float padLon = (region.maxLon - region.minLon) * 0.02f;
 
             var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
             var tris = new List<int>();
             var labelsDone = new HashSet<string>();
             var labelRoot = new GameObject("River_Labels").transform;
             int riversHit = 0;
+            var waterSys = WaterSystem.EnsureInstance();
 
             try
             {
@@ -96,6 +98,8 @@ namespace ProjectTerra.Sandbox
 
                         bool any = false;
                         Vector3 labelPos = Vector3.zero;
+                        float vCoord = 0f;
+
                         for (int i = 0; i < ptCount - 1; i++)
                         {
                             bool in0 = InRegion(lats[i], lons[i], padLat, padLon);
@@ -104,7 +108,8 @@ namespace ProjectTerra.Sandbox
 
                             Vector3 a = WorldPos(lats[i], lons[i], size, tp);
                             Vector3 b = WorldPos(lats[i + 1], lons[i + 1], size, tp);
-                            AddQuad(verts, tris, a, b);
+                            AddQuad(verts, uvs, tris, a, b, ref vCoord);
+                            waterSys.RegisterRiverSegment(a, b, RiverWidth, 2.2f, name);
                             any = true;
                             if (labelPos == Vector3.zero) labelPos = a;
                         }
@@ -127,18 +132,15 @@ namespace ProjectTerra.Sandbox
                 var mr = go.AddComponent<MeshRenderer>();
                 var mesh = new Mesh { name = "Rivers", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
                 mesh.SetVertices(verts);
+                mesh.SetUVs(0, uvs);
                 mesh.SetTriangles(tris, 0);
                 mesh.RecalculateNormals();
                 mesh.RecalculateBounds();
                 mf.sharedMesh = mesh;
-                var s = Shader.Find("Standard") ?? Shader.Find("Diffuse");
-                var mat = s != null ? new Material(s) : new Material(Shader.Find("Sprites/Default"));
-                mat.color = new Color(0.16f, 0.42f, 0.62f);
-                if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.75f);
-                mr.sharedMaterial = mat;
+                mr.sharedMaterial = WaterSystem.CreateWaterMaterial(isRiver: true, flowSpeed: 1.0f);
             }
 
-            Debug.Log($"[Rivers] {riversHit} trechos de rio desenhados em {region.name} (fita contínua sobre o relevo).");
+            Debug.Log($"[Rivers] {riversHit} trechos de rio dinâmicos construídos em {region.name} com correnteza e ondas.");
         }
 
         private bool InRegion(float lat, float lon, float padLat, float padLon)
@@ -157,15 +159,27 @@ namespace ProjectTerra.Sandbox
             return new Vector3(x, y, z);
         }
 
-        private static void AddQuad(List<Vector3> verts, List<int> tris, Vector3 a, Vector3 b)
+        private static void AddQuad(List<Vector3> verts, List<Vector2> uvs, List<int> tris, Vector3 a, Vector3 b, ref float vAcc)
         {
             Vector3 dir = b - a; dir.y = 0f;
             if (dir.sqrMagnitude < 0.01f) return;
+            float len = dir.magnitude;
             dir.Normalize();
             Vector3 perp = Vector3.Cross(Vector3.up, dir) * (RiverWidth * 0.5f);
 
             int baseIdx = verts.Count;
-            verts.Add(a - perp); verts.Add(a + perp); verts.Add(b + perp); verts.Add(b - perp);
+            verts.Add(a - perp);
+            verts.Add(a + perp);
+            verts.Add(b + perp);
+            verts.Add(b - perp);
+
+            float nextV = vAcc + (len / RiverWidth);
+            uvs.Add(new Vector2(0f, vAcc));
+            uvs.Add(new Vector2(1f, vAcc));
+            uvs.Add(new Vector2(1f, nextV));
+            uvs.Add(new Vector2(0f, nextV));
+            vAcc = nextV;
+
             tris.Add(baseIdx); tris.Add(baseIdx + 2); tris.Add(baseIdx + 1);
             tris.Add(baseIdx); tris.Add(baseIdx + 3); tris.Add(baseIdx + 2);
         }

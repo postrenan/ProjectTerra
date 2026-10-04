@@ -264,6 +264,81 @@ namespace ProjectTerra.Sandbox
             }
         }
 
+        private void CmdAnimals(string[] args)
+        {
+            var animals = FindObjectsByType<AnimalController>();
+            if (animals == null || animals.Length == 0)
+            {
+                LogMessage("ℹ️ Nenhum animal ativo encontrado no cenário no momento.", Color.yellow);
+                return;
+            }
+
+            if (args.Length > 0)
+            {
+                string sub = args[0].ToLower();
+                if (sub == "tp" || sub == "teleport")
+                {
+                    string target = args.Length > 1 ? args[1].ToLower() : "pasture";
+                    AnimalController targetAnimal = null;
+                    foreach (var a in animals)
+                    {
+                        if (target == "wild" || target == "lobo" || target == "raposa")
+                        {
+                            if (a.species == AnimalSpecies.Wolf || a.species == AnimalSpecies.Fox)
+                            {
+                                targetAnimal = a;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            if (a.species == AnimalSpecies.Cow || a.species == AnimalSpecies.Horse || a.species == AnimalSpecies.Sheep)
+                            {
+                                targetAnimal = a;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (targetAnimal != null && PlayerCharacterController.Instance != null)
+                    {
+                        PlayerCharacterController.Instance.TeleportTo(targetAnimal.transform.position + Vector3.back * 4f + Vector3.up * 1f);
+                        LogMessage($"📍 Teleportado para perto de {targetAnimal.name} ({targetAnimal.species})!", Color.green);
+                        return;
+                    }
+                }
+            }
+
+            // Estatísticas gerais dos animais
+            int cows = 0, horses = 0, sheep = 0, foxes = 0, wolves = 0;
+            int idleCount = 0, grazeCount = 0, walkCount = 0, runCount = 0;
+
+            foreach (var a in animals)
+            {
+                switch (a.species)
+                {
+                    case AnimalSpecies.Cow: cows++; break;
+                    case AnimalSpecies.Horse: horses++; break;
+                    case AnimalSpecies.Sheep: sheep++; break;
+                    case AnimalSpecies.Fox: foxes++; break;
+                    case AnimalSpecies.Wolf: wolves++; break;
+                }
+
+                switch (a.currentState)
+                {
+                    case AnimalState.Idle:
+                    case AnimalState.LookAround: idleCount++; break;
+                    case AnimalState.Graze: grazeCount++; break;
+                    case AnimalState.Walk: walkCount++; break;
+                    case AnimalState.Run: runCount++; break;
+                }
+            }
+
+            LogMessage($"🐾 Fauna Ativa ({animals.Length} animais): {cows} Vacas, {horses} Cavalos, {sheep} Ovelhas, {foxes} Raposas, {wolves} Lobos.", Color.cyan);
+            LogMessage($"📊 Animações Atuais: {grazeCount} Pastando, {walkCount} Caminhando, {idleCount} Em Repouso/Observando, {runCount} Correndo.", Color.white);
+            LogMessage("💡 Dica: use '/animals tp pasture' ou '/animals tp wild' para ir até os animais.", Color.gray);
+        }
+
         #endregion
     }
 }

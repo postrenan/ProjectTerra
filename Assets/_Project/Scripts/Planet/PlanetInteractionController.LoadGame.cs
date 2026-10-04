@@ -63,41 +63,7 @@ namespace ProjectTerra.Planet
                     GUILayout.BeginHorizontal();
                     if (GUILayout.Button("▶ Carregar & Entrar", primaryButtonStyle, GUILayout.Height(22)))
                     {
-                        if (SaveManager.Instance != null)
-                        {
-                            SaveManager.Instance.ActiveSave = save;
-                        }
-                        notificationMessage = $"Partida '{save.saveName}' carregada! Verba: {save.GetFormattedMoney()}";
-                        notificationTimer = 4.0f;
-                        currentCardMode = CardMode.RegionDetails;
-                        hasSelection = false;
-                        lastCardRect = Rect.zero;
-
-                        // Mergulho e transição
-                        OrbitCameraController orbitCam = mainCamera != null ? mainCamera.GetComponent<OrbitCameraController>() : null;
-                        if (orbitCam != null && selectedWorldPoint != Vector3.zero)
-                        {
-                            orbitCam.DiveTowardsPoint(selectedWorldPoint, 1.8f, () =>
-                            {
-                                if (LoadingScreenController.Instance != null)
-                                {
-                                    LoadingScreenController.Instance.Show(selectedRegion, save, () =>
-                                    {
-                                        SceneManager.LoadScene("RegionalSandboxScene");
-                                    });
-                                }
-                            });
-                        }
-                        else
-                        {
-                            if (LoadingScreenController.Instance != null)
-                            {
-                                LoadingScreenController.Instance.Show(selectedRegion, save, () =>
-                                {
-                                    SceneManager.LoadScene("RegionalSandboxScene");
-                                });
-                            }
-                        }
+                        LoadSaveGame(save);
                     }
                     if (GUILayout.Button("🗑 Excluir", dangerButtonStyle, GUILayout.Width(70), GUILayout.Height(22)))
                     {

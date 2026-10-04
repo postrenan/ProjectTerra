@@ -60,6 +60,14 @@ namespace ProjectTerra.Sandbox
 
             if (!IsOpen) return;
 
+            // Se pressionar ESC, consome o evento e fecha o console com segurança
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            {
+                CloseConsole();
+                Event.current.Use();
+                return;
+            }
+
             InitStyles();
 
             float w = Mathf.Min(680f, Screen.width * 0.9f);
@@ -68,10 +76,10 @@ namespace ProjectTerra.Sandbox
             float y = Screen.height - h - 45f;
             Rect consoleRect = new Rect(x, y, w, h);
 
-            // Fundo escuro aerodinâmico com borda ciano
-            GUI.color = new Color(0.03f, 0.06f, 0.10f, 0.94f);
+            // Fundo escuro aerodinâmico com borda ciano (translúcido estilo vidro/HUD)
+            GUI.color = new Color(0.02f, 0.05f, 0.09f, 0.50f);
             GUI.DrawTexture(consoleRect, whiteTex);
-            GUI.color = new Color(0.2f, 0.75f, 1.0f, 0.9f);
+            GUI.color = new Color(0.2f, 0.75f, 1.0f, 0.75f);
             GUI.DrawTexture(new Rect(consoleRect.x, consoleRect.y, consoleRect.width, 2), whiteTex);
             GUI.DrawTexture(new Rect(consoleRect.x, consoleRect.y + 28f, consoleRect.width, 1), whiteTex);
             GUI.color = Color.white;
@@ -84,9 +92,9 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            // Histórico de Mensagens / Logs
+            // Histórico de Mensagens / Logs (área translúcida)
             Rect logAreaRect = new Rect(x + 10f, y + 32f, w - 20f, h - 85f);
-            GUI.color = new Color(0.06f, 0.09f, 0.14f, 0.85f);
+            GUI.color = new Color(0.04f, 0.08f, 0.14f, 0.30f);
             GUI.DrawTexture(logAreaRect, whiteTex);
             GUI.color = Color.white;
 
@@ -107,39 +115,15 @@ namespace ProjectTerra.Sandbox
                 GUI.Label(new Rect(x + 12f, y + h - 50f, w - 24f, 18f), $"💡 Sugestão: {hint}  <color=#888888>(Pressione TAB para completar)</color>", hintStyle);
             }
 
-            // Barra de Entrada de Texto
-            Rect inputRect = new Rect(x + 10f, y + h - 30f, w - 100f, 24f);
-            GUI.SetNextControlName(InputControlName);
-            inputCommand = GUI.TextField(inputRect, inputCommand, inputStyle);
-
-            if (focusPending)
-            {
-                GUI.FocusControl(InputControlName);
-                // Move o cursor de edição para o fim da string
-                var te = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
-                if (te != null)
-                {
-                    te.cursorIndex = inputCommand.Length;
-                    te.selectIndex = inputCommand.Length;
-                }
-                focusPending = false;
-            }
-
-            // Botão Executar
-            Rect submitRect = new Rect(x + w - 85f, y + h - 30f, 75f, 24f);
-            if (GUI.Button(submitRect, "Executar", btnStyle))
-            {
-                SubmitCommand();
-            }
-
-            // Tratamento de Teclas Especiais no Console
+            // Tratamento de Teclas Especiais no Console (Enter executa, Tab autocompleta, Setas navegam histórico)
             Event e = Event.current;
             if (e.type == EventType.KeyDown)
             {
-                if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
+                if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter || e.character == '\n' || e.character == '\r')
                 {
                     SubmitCommand();
                     e.Use();
+                    return;
                 }
                 else if (e.keyCode == KeyCode.Tab)
                 {
@@ -156,6 +140,24 @@ namespace ProjectTerra.Sandbox
                     NavigateHistory(-1);
                     e.Use();
                 }
+            }
+
+            // Barra de Entrada de Texto (largura completa, sem botão Executar)
+            Rect inputRect = new Rect(x + 10f, y + h - 30f, w - 20f, 24f);
+            GUI.SetNextControlName(InputControlName);
+            inputCommand = GUI.TextField(inputRect, inputCommand, inputStyle);
+
+            if (focusPending)
+            {
+                GUI.FocusControl(InputControlName);
+                // Move o cursor de edição para o fim da string
+                var te = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
+                if (te != null)
+                {
+                    te.cursorIndex = inputCommand.Length;
+                    te.selectIndex = inputCommand.Length;
+                }
+                focusPending = false;
             }
         }
 

@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectTerra.Planet;
 
 namespace ProjectTerra.Sandbox
 {
@@ -70,98 +71,61 @@ namespace ProjectTerra.Sandbox
 
         private void CreateRoad(Transform parent, Vector3 pos, Vector3 size, string name)
         {
-            var road = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            road.name = name;
-            road.transform.SetParent(parent);
-            float h = GetTerrainHeight(pos);
-            road.transform.position = new Vector3(pos.x, h + 0.1f, pos.z);
-            road.transform.localScale = size;
+            // Detecta a orientação e extensão longitudinal da via
+            Vector3 startPos;
+            Vector3 endPos;
+            float roadWidth;
 
-            // Material de Asfalto com textura PBR
-            Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse");
-            var roadMat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-            roadMat.name = "Road_Asphalt_Mat";
-            roadMat.color = new Color(0.28f, 0.28f, 0.30f);
-            if (roadMat.HasProperty("_Glossiness")) roadMat.SetFloat("_Glossiness", 0.12f);
-            if (roadMat.HasProperty("_Metallic")) roadMat.SetFloat("_Metallic", 0.0f);
-
-            Texture2D asphaltTex = GetAsphaltTexture();
-            if (asphaltTex != null)
-            {
-                roadMat.mainTexture = asphaltTex;
-                roadMat.mainTextureScale = new Vector2(Mathf.Max(1f, size.x / 6f), Mathf.Max(1f, size.z / 6f));
-            }
-            road.GetComponent<Renderer>().sharedMaterial = roadMat;
-
-            // Faixa central amarela de sinalização viária
-            var divider = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            divider.name = $"{name}_Divider";
-            divider.transform.SetParent(road.transform);
-            divider.transform.localPosition = new Vector3(0f, 0.52f, 0f);
             if (size.z >= size.x)
             {
-                divider.transform.localScale = new Vector3(0.5f / size.x, 0.05f, 0.99f);
+                startPos = new Vector3(pos.x, 0f, pos.z - size.z * 0.5f);
+                endPos = new Vector3(pos.x, 0f, pos.z + size.z * 0.5f);
+                roadWidth = size.x;
             }
             else
             {
-                divider.transform.localScale = new Vector3(0.99f, 0.05f, 0.5f / size.z);
+                startPos = new Vector3(pos.x - size.x * 0.5f, 0f, pos.z);
+                endPos = new Vector3(pos.x + size.x * 0.5f, 0f, pos.z);
+                roadWidth = size.z;
             }
-            var lineMat = CreatePrimitiveMaterial(new Color(0.96f, 0.78f, 0.08f));
-            if (lineMat.HasProperty("_Glossiness")) lineMat.SetFloat("_Glossiness", 0.1f);
-            divider.GetComponent<Renderer>().sharedMaterial = lineMat;
-            Destroy(divider.GetComponent<Collider>());
+
+            // Identificar tipo de pavimento pelo contexto do nome da via
+            RoadSurfaceType surface = RoadSurfaceType.Asphalt;
+            string lowerName = name.ToLower();
+            if (lowerName.Contains("rural") || lowerName.Contains("terra"))
+            {
+                surface = RoadSurfaceType.Dirt;
+            }
+            else if (lowerName.Contains("brita") || lowerName.Contains("cascalho"))
+            {
+                surface = RoadSurfaceType.Gravel;
+            }
+            else if (lowerName.Contains("concreto"))
+            {
+                surface = RoadSurfaceType.Concrete;
+            }
+
+            // Identificar quantidade de faixas pela largura métrica especificada
+            RoadLaneCount lanes;
+            if (roadWidth <= 12f) lanes = RoadLaneCount.TwoLanes;
+            else if (roadWidth <= 22f) lanes = RoadLaneCount.FourLanes;
+            else if (roadWidth <= 32f) lanes = RoadLaneCount.SixLanes;
+            else lanes = RoadLaneCount.EightLanes;
+
+            var roadObj = RoadMeshBuilder.BuildStraightRoad(parent, startPos, endPos, surface, lanes, GetTerrainHeight, name);
+
+            // Registrar máscara de grama para evitar que vegetação nasça na pista
+            var cfg = RoadProfileConfig.GetDefault(surface, lanes);
+            float clearance = cfg.TotalShoulderWidth * 0.5f + 2.0f;
+            Vector2 a2 = new Vector2(startPos.x, startPos.z);
+            Vector2 b2 = new Vector2(endPos.x, endPos.z);
+            RoadMaskSegments.Add(new RoadMaskSegment { a = a2, b = b2, clearance = clearance });
         }
 
         private void CreateBuilding(Transform parent, Vector3 pos, Vector3 size, Color color, string name)
         {
-            float h = GetTerrainHeight(pos);
-            Vector3 worldPos = new Vector3(pos.x, h, pos.z);
-
-            // Tenta instanciar modelo 3D importado
-            string[] modelCandidates = new string[] {
-                "Models/Structures/building-a",
-                "Models/Structures/building-c",
-                "Models/Structures/building-skyscraper-a",
-                "Models/Structures/building-type-a",
-                "Models/Structures/building-type-b"
-            };
-
-            int pick = Mathf.Abs(name.GetHashCode()) % modelCandidates.Length;
-            GameObject prefab = SceneObjectSpawner.LoadModel(modelCandidates[pick]);
-
-            if (prefab != null)
-            {
-                var building = Instantiate(prefab, worldPos, Quaternion.identity, parent);
-                building.name = name;
-                float scaleY = size.y / 8f;
-                building.transform.localScale = new Vector3(scaleY, scaleY, scaleY);
-
-                // Aplica a textura de paleta colormap correspondente ao tipo de edifício
-                bool isSuburban = modelCandidates[pick].Contains("type-");
-                var mat = GetBuildingMaterial(isSuburban);
-                foreach (var rend in building.GetComponentsInChildren<Renderer>(true))
-                {
-                    rend.sharedMaterial = mat;
-                }
-                return;
-            }
-
-            // Fallback para geometria primitiva estruturada — paredes, telhado e porta de vidro
-            var primitiveBuilding = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            primitiveBuilding.name = name;
-            primitiveBuilding.transform.SetParent(parent);
-            primitiveBuilding.transform.position = new Vector3(pos.x, h + (size.y * 0.5f), pos.z);
-            primitiveBuilding.transform.localScale = size;
-            primitiveBuilding.GetComponent<Renderer>().sharedMaterial = CreatePrimitiveMaterial(color);
-
-            // Telhado contrastado
-            var roof = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            roof.name = $"{name}_Roof";
-            roof.transform.SetParent(primitiveBuilding.transform);
-            roof.transform.localPosition = new Vector3(0f, 0.52f, 0f);
-            roof.transform.localScale = new Vector3(1.04f, 0.08f, 1.04f);
-            roof.GetComponent<Renderer>().sharedMaterial = CreatePrimitiveMaterial(color * 0.65f);
-            Destroy(roof.GetComponent<Collider>());
+            // [removido] Assets de prédios/edifícios desativados do cenário
+            return;
         }
 
         private static Material cachedCommercialMat;

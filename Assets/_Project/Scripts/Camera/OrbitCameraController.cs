@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Cameras
 {
@@ -27,6 +29,7 @@ namespace ProjectTerra.Cameras
         private float currentPitch = 20.0f;
         private float targetYaw = 0.0f;
         private float targetPitch = 20.0f;
+        private double targetDistance = 18000000.0;
 
         private Vector3 rotationVelocity;
         private Vector2 leftMouseDownPos;
@@ -47,6 +50,7 @@ namespace ProjectTerra.Cameras
             Vector3 angles = transform.eulerAngles;
             currentYaw = targetYaw = angles.y;
             currentPitch = targetPitch = angles.x;
+            targetDistance = currentDistance;
         }
 
         private void LateUpdate()
@@ -71,21 +75,21 @@ namespace ProjectTerra.Cameras
                             ProjectTerra.Planet.PlanetInteractionController.Instance.IsPointerOverUI();
 
             // Gerenciar arrasto com botão esquerdo (para não conflitar com clique de seleção)
-            if (Input.GetMouseButtonDown(0))
+            if (TerraInput.GetMouseButtonDown(0))
             {
-                leftMouseDownPos = Input.mousePosition;
+                leftMouseDownPos = TerraInput.MousePosition;
                 isLeftDragging = false;
             }
 
-            if (Input.GetMouseButton(0) && !isOverUI)
+            if (TerraInput.GetMouseButton(0) && !isOverUI)
             {
-                if (!isLeftDragging && Vector2.Distance(leftMouseDownPos, (Vector2)Input.mousePosition) > DragThreshold)
+                if (!isLeftDragging && Vector2.Distance(leftMouseDownPos, TerraInput.MousePosition) > DragThreshold)
                 {
                     isLeftDragging = true;
                 }
             }
 
-            if (Input.GetMouseButtonUp(0))
+            if (TerraInput.GetMouseButtonUp(0))
             {
                 isLeftDragging = false;
             }
@@ -93,12 +97,12 @@ namespace ProjectTerra.Cameras
             // Rotação orbital:
             // - Botão direito (1) ou meio (2) sempre orbitam livremente
             // - Botão esquerdo (0) só orbita se for explicitamente arrastado além de 8 pixels
-            bool shouldOrbit = !isOverUI && (Input.GetMouseButton(1) || Input.GetMouseButton(2) || isLeftDragging);
+            bool shouldOrbit = !isOverUI && (TerraInput.GetMouseButton(1) || TerraInput.GetMouseButton(2) || isLeftDragging);
 
             if (shouldOrbit)
             {
-                float mouseX = Input.GetAxis("Mouse X");
-                float mouseY = Input.GetAxis("Mouse Y");
+                float mouseX = TerraInput.GetAxis("Mouse X");
+                float mouseY = TerraInput.GetAxis("Mouse Y");
 
                 targetYaw += mouseX * activeRotationSpeed * Time.deltaTime * 50f;
                 targetPitch -= mouseY * activeRotationSpeed * Time.deltaTime * 50f;
@@ -106,19 +110,28 @@ namespace ProjectTerra.Cameras
             }
 
             // Zoom exponencial com a roda de scroll do mouse (Google Earth style)
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (Mathf.Abs(scroll) > 0.0001f)
-            {
-                // Velocidade de zoom proporcional à altitude atual (passo mínimo de 5m a 50m de altitude)
-                double zoomStep = Mathf.Max((float)(altitude * zoomSensitivity), 5.0f);
-                currentDistance -= scroll * zoomStep;
+            float scroll = TerraInput.GetAxis("Mouse ScrollWheel");
 
+            // Suporte adicional a teclas para zoom (+ / -, Numpad+, Numpad-, PageUp / PageDown)
+            var kb = Keyboard.current;
+            if (kb != null)
+            {
+                if (kb.equalsKey.isPressed || kb.numpadPlusKey.isPressed || kb.pageUpKey.isPressed)
+                    scroll += 2.5f * Time.deltaTime;
+                if (kb.minusKey.isPressed || kb.numpadMinusKey.isPressed || kb.pageDownKey.isPressed)
+                    scroll -= 2.5f * Time.deltaTime;
+            }
+
+            if (Mathf.Abs(scroll) > 0.0001f && !isOverUI)
+            {
+                double currentAlt = System.Math.Max(targetDistance - planetRadius, minAltitude);
+                // Zoom multiplicativo exponencial:
+                // exp(-scroll * zoomSensitivity) garante zoom perfeitamente simétrico, suave e proporcional à altitude
+                double newAlt = currentAlt * System.Math.Exp(-scroll * zoomSensitivity);
                 double minDistance = planetRadius + minAltitude;
                 double maxDistance = planetRadius * 6.0; // ~38.000 km no espaço profundo
-                if (currentDistance < minDistance)
-                    currentDistance = minDistance;
-                else if (currentDistance > maxDistance)
-                    currentDistance = maxDistance;
+
+                targetDistance = System.Math.Clamp(planetRadius + newAlt, minDistance, maxDistance);
             }
         }
 
@@ -126,6 +139,13 @@ namespace ProjectTerra.Cameras
         {
             currentYaw = Mathf.SmoothDampAngle(currentYaw, targetYaw, ref rotationVelocity.y, smoothTime);
             currentPitch = Mathf.SmoothDampAngle(currentPitch, targetPitch, ref rotationVelocity.x, smoothTime);
+
+            // Suavização contínua de distância em double (sem perda de precisão astronômica nem no solo)
+            if (!isDiving)
+            {
+                double t = 1.0 - System.Math.Exp(-14.0 * Time.deltaTime);
+                currentDistance += (targetDistance - currentDistance) * t;
+            }
 
             Quaternion rotation = Quaternion.Euler(currentPitch, currentYaw, 0f);
             Vector3 targetPosition = target != null ? target.position : Vector3.zero;
@@ -140,6 +160,30 @@ namespace ProjectTerra.Cameras
             target = newTarget;
             planetRadius = radius;
             currentDistance = radius * 2.5;
+            targetDistance = currentDistance;
+        }
+
+        public void FocusOnPoint(Vector3 worldPoint, double desiredAltitude = -1)
+        {
+            if (isDiving) return;
+
+            Vector3 center = target != null ? target.position : Vector3.zero;
+            Vector3 dir = (worldPoint - center).normalized;
+            if (dir.sqrMagnitude < 0.001f) return;
+
+            // Alinha a câmera para olhar diretamente para o ponto centralizando a região na tela
+            Quaternion rot = Quaternion.LookRotation(-dir, Vector3.up);
+            Vector3 euler = rot.eulerAngles;
+
+            float pitch = euler.x;
+            if (pitch > 180f) pitch -= 360f;
+            targetPitch = Mathf.Clamp(pitch, -89f, 89f);
+            targetYaw = euler.y;
+
+            if (desiredAltitude > 0)
+            {
+                targetDistance = System.Math.Clamp(planetRadius + desiredAltitude, planetRadius + minAltitude, planetRadius * 6.0);
+            }
         }
 
         public void DiveTowardsPoint(Vector3 worldPoint, float duration, System.Action onComplete = null)
@@ -154,9 +198,12 @@ namespace ProjectTerra.Cameras
             Vector3 center = target != null ? target.position : Vector3.zero;
             Vector3 dir = (worldPoint - center).normalized;
 
-            // Converter direção normalizada em Pitch e Yaw
-            float targetPitchDeg = -Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg;
-            float targetYawDeg = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
+            Quaternion rot = Quaternion.LookRotation(-dir, Vector3.up);
+            Vector3 euler = rot.eulerAngles;
+            float pitch = euler.x;
+            if (pitch > 180f) pitch -= 360f;
+            float targetPitchDeg = Mathf.Clamp(pitch, -89f, 89f);
+            float targetYawDeg = euler.y;
 
             double startDist = currentDistance;
             double endDist = planetRadius + 15000.0; // 15km acima da superfície
@@ -173,6 +220,7 @@ namespace ProjectTerra.Cameras
                 targetPitch = Mathf.LerpAngle(startPitch, targetPitchDeg, t);
                 targetYaw = Mathf.LerpAngle(startYaw, targetYawDeg, t);
                 currentDistance = System.Math.Max(planetRadius + 1000.0, startDist + (endDist - startDist) * t);
+                targetDistance = currentDistance;
 
                 yield return null;
             }

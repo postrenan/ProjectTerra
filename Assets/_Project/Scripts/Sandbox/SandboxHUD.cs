@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using ProjectTerra.Core;
 using ProjectTerra.Gameplay;
 
 namespace ProjectTerra.Sandbox
@@ -105,14 +107,14 @@ namespace ProjectTerra.Sandbox
 
         private void HandleKeyInputs()
         {
-            // Não processa atalhos do HUD se o console de comandos estiver aberto digitando
-            if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpen)
+            // Não processa atalhos do HUD se o console de comandos estiver aberto ou tiver fechado neste frame
+            if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpenOrJustClosed)
             {
                 return;
             }
 
             // Atalho [M]: Abre/Fecha o Mapa Regional Tático
-            if (Input.GetKeyDown(KeyCode.M))
+            if (TerraInput.GetKeyDown(Key.M))
             {
                 if (IsOptionsMenuOpen)
                 {
@@ -122,17 +124,17 @@ namespace ProjectTerra.Sandbox
             }
 
             // Atalho [Alt Esquerdo]: Abre/Fecha o Menu de Opções do Jogo
-            if (Input.GetKeyDown(KeyCode.LeftAlt) || (Input.GetKeyDown(KeyCode.Escape) && !IsRegionalMapOpen))
+            if (TerraInput.GetKeyDown(Key.LeftAlt) || (TerraInput.GetKeyDown(Key.Escape) && !IsRegionalMapOpen))
             {
                 ToggleOptionsMenu();
             }
-            else if (Input.GetKeyDown(KeyCode.Escape) && IsRegionalMapOpen)
+            else if (TerraInput.GetKeyDown(Key.Escape) && IsRegionalMapOpen)
             {
                 CloseRegionalMap();
             }
 
             // Atalho [H]: Alterna visibilidade do HUD
-            if (Input.GetKeyDown(KeyCode.H))
+            if (TerraInput.GetKeyDown(Key.H))
             {
                 IsHudVisible = !IsHudVisible;
             }
@@ -140,11 +142,11 @@ namespace ProjectTerra.Sandbox
             // Time Warp via [ e ] ou , e . (Apenas se não estiver no menu de pausa)
             if (!IsOptionsMenuOpen)
             {
-                if (Input.GetKeyDown(KeyCode.RightBracket) || Input.GetKeyDown(KeyCode.Period))
+                if (TerraInput.GetKeyDown(Key.RightBracket) || TerraInput.GetKeyDown(Key.Period))
                 {
                     SetTimeWarp(currentTimeWarpIdx + 1);
                 }
-                else if (Input.GetKeyDown(KeyCode.LeftBracket) || Input.GetKeyDown(KeyCode.Comma))
+                else if (TerraInput.GetKeyDown(Key.LeftBracket) || TerraInput.GetKeyDown(Key.Comma))
                 {
                     SetTimeWarp(currentTimeWarpIdx - 1);
                 }

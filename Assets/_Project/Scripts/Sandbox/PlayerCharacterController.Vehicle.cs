@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -6,14 +8,16 @@ namespace ProjectTerra.Sandbox
     {
         private void UpdateInVehicle()
         {
+            if (IsInputBlocked()) return;
+
             // Alternar modos de câmera veicular com [C] ou [V]
-            if (Input.GetKeyDown(KeyCode.C) || Input.GetKeyDown(KeyCode.V))
+            if (TerraInput.GetKeyDown(Key.C) || TerraInput.GetKeyDown(Key.V))
             {
                 CycleVehicleCameraMode();
             }
 
-            float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-            float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+            float mouseX = TerraInput.GetAxis("Mouse X") * mouseSensitivity;
+            float mouseY = TerraInput.GetAxis("Mouse Y") * mouseSensitivity;
 
             if (vehicleCameraMode == VehicleCameraMode.FirstPersonCockpit)
             {
@@ -36,25 +40,29 @@ namespace ProjectTerra.Sandbox
                 // Câmera orbital externa (3ª pessoa perto ou panorâmica)
                 thirdPersonYaw += mouseX;
                 thirdPersonPitch -= mouseY;
-                thirdPersonPitch = Mathf.Clamp(thirdPersonPitch, -15f, 65f);
+                thirdPersonPitch = Mathf.Clamp(thirdPersonPitch, 0f, 65f);
 
                 // Auto-alinhar suavemente atrás do veículo em movimento caso o jogador não esteja movendo o mouse
                 if (Mathf.Abs(mouseX) < 0.02f && currentVehicle.currentSpeedKmh > 2.0f)
                 {
-                    float targetYaw = currentVehicle.transform.eulerAngles.y;
-                    thirdPersonYaw = Mathf.LerpAngle(thirdPersonYaw, targetYaw, Time.deltaTime * 3.5f);
+                    Vector3 flatFwd = Vector3.ProjectOnPlane(currentVehicle.transform.forward, Vector3.up);
+                    if (flatFwd.sqrMagnitude > 0.001f)
+                    {
+                        float targetYaw = Quaternion.LookRotation(flatFwd.normalized, Vector3.up).eulerAngles.y;
+                        thirdPersonYaw = Mathf.LerpAngle(thirdPersonYaw, targetYaw, Time.deltaTime * 3.5f);
+                    }
                 }
 
                 // Ajuste fino de distância na 3ª pessoa com roda de scroll
-                float scroll = Input.GetAxis("Mouse ScrollWheel");
+                float scroll = TerraInput.GetAxis("Mouse ScrollWheel");
                 if (Mathf.Abs(scroll) > 0.01f)
                 {
-                    vehicleThirdPersonDistance = Mathf.Clamp(vehicleThirdPersonDistance - scroll * 4f, 3.0f, 35f);
+                    vehicleThirdPersonDistance = Mathf.Clamp(vehicleThirdPersonDistance - scroll * 1.5f, 3.0f, 35f);
                 }
             }
 
             // Tecla E para desembarcar
-            if (Input.GetKeyDown(KeyCode.E))
+            if (TerraInput.GetKeyDown(Key.E))
             {
                 ExitVehicle();
             }
@@ -130,6 +138,11 @@ namespace ProjectTerra.Sandbox
             {
                 // 1ª PESSOA A PÉ
                 Vector3 eyePos = cameraFollowPoint != null ? cameraFollowPoint.position : transform.position + Vector3.up * 1.65f;
+                if (RegionalSandboxManager.Instance != null)
+                {
+                    float minFootY = RegionalSandboxManager.Instance.GetTerrainHeight(eyePos) + 0.35f;
+                    if (eyePos.y < minFootY) eyePos.y = minFootY;
+                }
                 activeCamera.transform.position = eyePos;
                 activeCamera.transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
             }
@@ -158,13 +171,59 @@ namespace ProjectTerra.Sandbox
                 }
                 else
                 {
-                    Vector3 focusPoint = currentVehicle.transform.position + Vector3.up * (currentVehicle.category == VehicleCategory.Plane ? 1.0f : 1.5f);
+                    Vector3 focusPoint = currentVehicle.transform.position + Vector3.up * (currentVehicle.category == VehicleCategory.Plane ? 1.2f : 1.6f);
                     Quaternion camRot = Quaternion.Euler(thirdPersonPitch, thirdPersonYaw, 0f);
-                    Vector3 desiredCamPos = focusPoint - (camRot * Vector3.forward * vehicleThirdPersonDistance);
+                    Vector3 camBackDir = -(camRot * Vector3.forward);
+                    float targetDist = vehicleThirdPersonDistance;
+
+                    // Detecção de colisão do terreno e obstáculos externos
+                    // Em avião voando alto (>3m do solo), ignorar SphereCast para evitar solavancos da câmera ao passar perto de copas ou folhagens
+                    bool isFlyingHigh = currentVehicle.category == VehicleCategory.Plane && currentVehicle.currentAltitudeMeters > 3.0f;
+                    float closestHitDist = targetDist;
+
+                    if (!isFlyingHigh)
+                    {
+                        RaycastHit[] hits = Physics.SphereCastAll(focusPoint, 0.35f, camBackDir, targetDist, ~0, QueryTriggerInteraction.Ignore);
+                        for (int i = 0; i < hits.Length; i++)
+                        {
+                            var hit = hits[i];
+                            if (hit.collider.transform.IsChildOf(currentVehicle.transform) || hit.collider.transform.IsChildOf(transform))
+                                continue;
+
+                            if (hit.distance < closestHitDist)
+                            {
+                                closestHitDist = Mathf.Max(1.6f, hit.distance - 0.25f);
+                            }
+                        }
+                    }
+
+                    Vector3 desiredCamPos = focusPoint + camBackDir * closestHitDist;
+
+                    // Proteção de corte absoluto: a câmera nunca pode descer abaixo da superfície do terreno
+                    if (RegionalSandboxManager.Instance != null)
+                    {
+                        float terrainHeight = RegionalSandboxManager.Instance.GetTerrainHeight(desiredCamPos);
+                        float minGroundY = terrainHeight + 0.65f;
+                        if (desiredCamPos.y < minGroundY)
+                        {
+                            desiredCamPos.y = minGroundY;
+                        }
+                    }
 
                     // Amortecimento suave da câmera externa
                     activeCamera.transform.position = Vector3.Lerp(activeCamera.transform.position, desiredCamPos, Time.deltaTime * 18f);
-                    activeCamera.transform.LookAt(focusPoint);
+
+                    Vector3 lookDir = focusPoint - activeCamera.transform.position;
+                    if (lookDir.sqrMagnitude > 0.001f)
+                    {
+                        Vector3 upVec = Vector3.up;
+                        // Evita singularidade de LookAt se a câmera estiver olhando diretamente de cima para baixo
+                        if (Mathf.Abs(Vector3.Dot(lookDir.normalized, Vector3.up)) > 0.98f)
+                        {
+                            upVec = currentVehicle.transform.up;
+                        }
+                        activeCamera.transform.rotation = Quaternion.LookRotation(lookDir, upVec);
+                    }
                 }
             }
         }

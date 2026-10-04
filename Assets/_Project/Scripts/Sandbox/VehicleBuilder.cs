@@ -18,14 +18,22 @@ namespace ProjectTerra.Sandbox
 
             var rb = root.GetComponent<Rigidbody>();
             var col = root.AddComponent<BoxCollider>();
-            col.size = new Vector3(2.4f, 2.6f, 3.8f);
-            col.center = new Vector3(0f, 1.3f, 0f);
+            // Collider do chassi elevado do chão para evitar fricção/engaste na malha do terreno
+            col.size = new Vector3(2.0f, 2.0f, 3.4f);
+            col.center = new Vector3(0f, 1.45f, 0f);
+
+            // Esferas de contato de baixo atrito nas 4 rodas para rolagem fluida e tração contínua
+            var wMat = GetWheelPhysicsMaterial();
+            AddWheelSphere(root, new Vector3(-1.05f, 0.85f, -0.8f), 0.85f, wMat);
+            AddWheelSphere(root, new Vector3(1.05f, 0.85f, -0.8f), 0.85f, wMat);
+            AddWheelSphere(root, new Vector3(-0.95f, 0.5f, 1.1f), 0.5f, wMat);
+            AddWheelSphere(root, new Vector3(0.95f, 0.5f, 1.1f), 0.5f, wMat);
 
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Tractor;
             vehicle.vehicleName = "Trator Agrícola TerraMaster 110";
-            vehicle.maxSpeedKmh = 38f;
-            vehicle.enginePower = 3200f;
+            vehicle.maxSpeedKmh = 42f;
+            vehicle.enginePower = 3400f;
             vehicle.maxCargoCapacityKg = 2000f;
 
             // Modelo 3D Importado ou Procedural
@@ -35,10 +43,15 @@ namespace ProjectTerra.Sandbox
                 var visual = Object.Instantiate(meshPrefab, root.transform);
                 visual.name = "Visual_Trator3D";
                 visual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
-                visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                visual.transform.localRotation = Quaternion.identity;
                 visual.transform.localScale = Vector3.one * 1.6f;
                 ApplyVehicleColormap(visual);
-                // O modelo FBX já possui rodas próprias — NÃO criar cilindros procedurais por cima.
+
+                // Mapeia as rodas do FBX para esterçamento e animação visual
+                vehicle.frontLeftWheel = FindDeepChild(visual.transform, "wheel-front-left");
+                vehicle.frontRightWheel = FindDeepChild(visual.transform, "wheel-front-right");
+                vehicle.rearLeftWheel = FindDeepChild(visual.transform, "wheel-back-left");
+                vehicle.rearRightWheel = FindDeepChild(visual.transform, "wheel-back-right");
             }
             else
             {
@@ -67,6 +80,8 @@ namespace ProjectTerra.Sandbox
             vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(0f, 1.8f, -0.6f), "DriverSeat");
             vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(0f, 2.1f, -0.35f), "CockpitCam");
             vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-1.8f, 0.2f, -0.6f), "ExitPoint");
+            vehicle.rearHitchPoint = CreatePoint(root.transform, new Vector3(0f, 0.5f, -1.9f), "RearHitchPoint");
+            CreatePart(root.transform, new Vector3(0f, 0.45f, -1.85f), new Vector3(0.3f, 0.15f, 0.35f), new Color(0.2f, 0.2f, 0.22f), "Engate_Traseiro_Trator");
             vehicle.CreateDefaultHeadlights();
 
             return vehicle;
@@ -79,8 +94,14 @@ namespace ProjectTerra.Sandbox
 
             var rb = root.GetComponent<Rigidbody>();
             var col = root.AddComponent<BoxCollider>();
-            col.size = new Vector3(2.6f, 3.0f, 7.5f);
-            col.center = new Vector3(0f, 1.5f, 0f);
+            col.size = new Vector3(2.4f, 2.2f, 7.0f);
+            col.center = new Vector3(0f, 1.6f, 0f);
+
+            var wMat = GetWheelPhysicsMaterial();
+            AddWheelSphere(root, new Vector3(-1.25f, 0.55f, 2.2f), 0.55f, wMat);
+            AddWheelSphere(root, new Vector3(1.25f, 0.55f, 2.2f), 0.55f, wMat);
+            AddWheelSphere(root, new Vector3(-1.25f, 0.55f, -2.2f), 0.55f, wMat);
+            AddWheelSphere(root, new Vector3(1.25f, 0.55f, -2.2f), 0.55f, wMat);
 
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Truck;
@@ -96,10 +117,14 @@ namespace ProjectTerra.Sandbox
                 var visual = Object.Instantiate(meshPrefab, root.transform);
                 visual.name = "Visual_Caminhao3D";
                 visual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
-                visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                visual.transform.localRotation = Quaternion.identity;
                 visual.transform.localScale = Vector3.one * 1.8f;
                 ApplyVehicleColormap(visual);
-                // O modelo FBX já possui rodas próprias — NÃO criar cilindros procedurais por cima.
+
+                vehicle.frontLeftWheel = FindDeepChild(visual.transform, "wheel-front-left");
+                vehicle.frontRightWheel = FindDeepChild(visual.transform, "wheel-front-right");
+                vehicle.rearLeftWheel = FindDeepChild(visual.transform, "wheel-back-left");
+                vehicle.rearRightWheel = FindDeepChild(visual.transform, "wheel-back-right");
             }
             else
             {
@@ -142,43 +167,141 @@ namespace ProjectTerra.Sandbox
 
             var rb = root.GetComponent<Rigidbody>();
             var col = root.AddComponent<BoxCollider>();
-            col.size = new Vector3(10.5f, 2.4f, 8.5f);
-            col.center = new Vector3(0f, 1.2f, 0f);
+            // Collider principal na cabine central (elevado para permitir rotação de decolagem sem tail-strike)
+            col.size = new Vector3(1.4f, 1.3f, 4.4f);
+            col.center = new Vector3(0f, 1.6f, 0.2f);
 
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Plane;
             vehicle.vehicleName = "Aeronave Utilitária Skylark 180";
-            vehicle.maxSpeedKmh = 190f;
-            vehicle.enginePower = 5200f;
+            vehicle.maxSpeedKmh = 210f;
+            vehicle.enginePower = 5400f;
+            vehicle.takeOffSpeedKmh = 45f;
             vehicle.maxCargoCapacityKg = 650f;
 
-            // Fuselagem Central
-            var fuselage = CreatePart(root.transform, new Vector3(0f, 1.2f, 0f), new Vector3(1.5f, 1.6f, 7.5f), new Color(0.92f, 0.92f, 0.95f), "Fuselagem");
+            // --- 1. FUSELAGEM & CABINE AERODINÂMICA ---
+            // Cabine Principal (branco aviação com linhas limpas)
+            var cabin = CreatePart(root.transform, new Vector3(0f, 1.45f, 0.2f), new Vector3(1.35f, 1.35f, 3.2f), new Color(0.95f, 0.95f, 0.97f), "Cabine_Principal");
+            // Faixa esportiva lateral vermelha
+            CreatePart(root.transform, new Vector3(0f, 1.35f, 0.2f), new Vector3(1.38f, 0.16f, 3.2f), new Color(0.85f, 0.15f, 0.15f), "Faixa_Esportiva");
 
-            // Asas (Envergadura 10.5m)
-            var wings = CreatePart(root.transform, new Vector3(0f, 1.7f, 0.4f), new Vector3(10.5f, 0.15f, 1.8f), new Color(0.85f, 0.2f, 0.18f), "Asas");
+            // Capô do Motor afunilado
+            var cowl = CreatePart(root.transform, new Vector3(0f, 1.32f, 2.3f), new Vector3(1.15f, 1.1f, 1.6f), new Color(0.92f, 0.92f, 0.94f), "Capo_Motor");
+            // Grade frontal de arrefecimento / admissão de ar
+            CreatePart(root.transform, new Vector3(0f, 1.25f, 3.12f), new Vector3(0.9f, 0.85f, 0.15f), new Color(0.12f, 0.12f, 0.14f), "Grade_Radiador");
 
-            // Estabilizador Horizontal (Cauda)
-            var tailH = CreatePart(root.transform, new Vector3(0f, 1.8f, -3.4f), new Vector3(3.2f, 0.12f, 0.9f), new Color(0.85f, 0.2f, 0.18f), "CaudaHorizontal");
+            // Para-brisa panorâmico aerodinâmico inclinado
+            var windshield = CreatePart(root.transform, new Vector3(0f, 1.85f, 1.15f), new Vector3(1.22f, 0.75f, 1.1f), new Color(0.12f, 0.18f, 0.26f), "Parabrisa_Panoramico");
+            windshield.transform.localRotation = Quaternion.Euler(30f, 0f, 0f);
 
-            // Leme Vertical
-            var tailV = CreatePart(root.transform, new Vector3(0f, 2.4f, -3.4f), new Vector3(0.15f, 1.4f, 1.2f), new Color(0.85f, 0.2f, 0.18f), "LemeVertical");
+            // Janelas laterais de observação
+            CreatePart(root.transform, new Vector3(0f, 1.65f, 0.1f), new Vector3(1.38f, 0.45f, 1.8f), new Color(0.12f, 0.18f, 0.26f), "Janelas_Laterais");
 
-            // Trem de Pouso Triciclo
-            CreateWheel(root.transform, new Vector3(0f, 0.35f, 2.6f), new Vector3(0.25f, 0.7f, 0.7f), "TremPousoDianteiro");
-            CreateWheel(root.transform, new Vector3(-1.3f, 0.35f, -0.2f), new Vector3(0.25f, 0.7f, 0.7f), "TremPousoEsq");
-            CreateWheel(root.transform, new Vector3(1.3f, 0.35f, -0.2f), new Vector3(0.25f, 0.7f, 0.7f), "TremPousoDir");
+            // Cone de Cauda esguio com diedro para cima (garante >25° de rotação sem colidir na pista)
+            var tailBoom = CreatePart(root.transform, new Vector3(0f, 1.65f, -2.6f), new Vector3(0.75f, 0.8f, 3.2f), new Color(0.95f, 0.95f, 0.97f), "Cone_Cauda");
+            tailBoom.transform.localRotation = Quaternion.Euler(-5f, 0f, 0f);
 
-            // Hélice Frontal
+            // --- 2. ASAS ALTAS & ESTRUTURA AERODINÂMICA ---
+            // Asa Superior (Envergadura 11.8m para excelente sustentação STOL)
+            var wings = CreatePart(root.transform, new Vector3(0f, 2.22f, 0.35f), new Vector3(11.8f, 0.16f, 1.9f), new Color(0.95f, 0.95f, 0.97f), "Asa_Principal");
+            // Faixa vermelha no bordo de ataque da asa
+            CreatePart(root.transform, new Vector3(0f, 2.22f, 1.25f), new Vector3(11.82f, 0.14f, 0.25f), new Color(0.85f, 0.15f, 0.15f), "Bordo_Ataque_Vermelho");
+
+            // Montantes de Asa (Struts diagonais aerodinâmicos conectando fuselagem e asa)
+            var strutL = CreatePart(root.transform, new Vector3(-1.8f, 1.55f, 0.4f), new Vector3(0.08f, 0.08f, 2.8f), new Color(0.3f, 0.3f, 0.35f), "Montante_Asa_Esq");
+            strutL.transform.localRotation = Quaternion.Euler(0f, 0f, 32f);
+            var strutR = CreatePart(root.transform, new Vector3(1.8f, 1.55f, 0.4f), new Vector3(0.08f, 0.08f, 2.8f), new Color(0.3f, 0.3f, 0.35f), "Montante_Asa_Dir");
+            strutR.transform.localRotation = Quaternion.Euler(0f, 0f, -32f);
+
+            // Luzes de Navegação FAA nos bordos da asa e na cauda
+            var navL = CreatePart(root.transform, new Vector3(-5.95f, 2.22f, 0.35f), new Vector3(0.2f, 0.22f, 0.5f), new Color(1.0f, 0.05f, 0.05f), "Luz_Bombordo_Vermelha");
+            var lightL = navL.AddComponent<Light>();
+            lightL.color = Color.red; lightL.range = 8f; lightL.intensity = 1.2f;
+
+            var navR = CreatePart(root.transform, new Vector3(5.95f, 2.22f, 0.35f), new Vector3(0.2f, 0.22f, 0.5f), new Color(0.05f, 1.0f, 0.15f), "Luz_Boreste_Verde");
+            var lightR = navR.AddComponent<Light>();
+            lightR.color = Color.green; lightR.range = 8f; lightR.intensity = 1.2f;
+
+            var navTail = CreatePart(root.transform, new Vector3(0f, 3.4f, -4.4f), new Vector3(0.15f, 0.25f, 0.15f), new Color(1.0f, 1.0f, 1.0f), "Luz_Estrobo_Cauda");
+            var lightTail = navTail.AddComponent<Light>();
+            lightTail.color = Color.white; lightTail.range = 10f; lightTail.intensity = 1.8f;
+
+            // --- 3. EMPENAGEM (CAUDA & PROFUNDOR) ---
+            // Estabilizador Vertical elegante com leme vermelho
+            var tailV = CreatePart(root.transform, new Vector3(0f, 2.7f, -4.2f), new Vector3(0.14f, 1.6f, 1.4f), new Color(0.85f, 0.15f, 0.15f), "EstabilizadorVertical");
+            tailV.transform.localRotation = Quaternion.Euler(14f, 0f, 0f);
+
+            // Estabilizador Horizontal (Envergadura 3.6m) com profundores
+            var tailH = CreatePart(root.transform, new Vector3(0f, 2.05f, -4.2f), new Vector3(3.6f, 0.12f, 1.1f), new Color(0.95f, 0.95f, 0.97f), "EstabilizadorHorizontal");
+            CreatePart(root.transform, new Vector3(0f, 2.05f, -4.65f), new Vector3(3.62f, 0.10f, 0.3f), new Color(0.85f, 0.15f, 0.15f), "Profundor_Elevator");
+
+            // --- 4. TREM DE POUSO BUSH PLANE & FÍSICA DE ROLAGEM ---
+            var gearMat = new PhysicsMaterial("AeroGearPhysMat")
+            {
+                dynamicFriction = 0.02f,
+                staticFriction = 0.02f,
+                frictionCombine = PhysicsMaterialCombine.Minimum,
+                bounciness = 0.05f
+            };
+
+            // Pernas em lâmina de aço para trem de pouso principal
+            var legL = CreatePart(root.transform, new Vector3(-0.85f, 0.65f, 0.1f), new Vector3(0.12f, 0.85f, 0.14f), new Color(0.2f, 0.2f, 0.25f), "Perna_TremPouso_Esq");
+            legL.transform.localRotation = Quaternion.Euler(0f, 0f, -25f);
+            var legR = CreatePart(root.transform, new Vector3(0.85f, 0.65f, 0.1f), new Vector3(0.12f, 0.85f, 0.14f), new Color(0.2f, 0.2f, 0.25f), "Perna_TremPouso_Dir");
+            legR.transform.localRotation = Quaternion.Euler(0f, 0f, 25f);
+
+            // Rodas Tundra / Bush (raio 0.42m para absorver irregularidades)
+            var lWheel = CreateWheel(root.transform, new Vector3(-1.35f, 0.42f, 0.05f), new Vector3(0.35f, 0.84f, 0.84f), "TremPousoEsq");
+            var lCol = lWheel.AddComponent<SphereCollider>();
+            lCol.radius = 0.42f;
+            lCol.sharedMaterial = gearMat;
+
+            var rWheel = CreateWheel(root.transform, new Vector3(1.35f, 0.42f, 0.05f), new Vector3(0.35f, 0.84f, 0.84f), "TremPousoDir");
+            var rCol = rWheel.AddComponent<SphereCollider>();
+            rCol.radius = 0.42f;
+            rCol.sharedMaterial = gearMat;
+
+            // Bequilha dianteira direcional com amortecedor
+            CreatePart(root.transform, new Vector3(0f, 0.7f, 2.5f), new Vector3(0.1f, 0.75f, 0.1f), new Color(0.2f, 0.2f, 0.25f), "Perna_Bequilha");
+            var fWheel = CreateWheel(root.transform, new Vector3(0f, 0.35f, 2.5f), new Vector3(0.25f, 0.70f, 0.70f), "TremPousoDianteiro");
+            var fCol = fWheel.AddComponent<SphereCollider>();
+            fCol.radius = 0.35f;
+            fCol.sharedMaterial = gearMat;
+
+            // --- 5. HÉLICE TRIPÁ COM SPINNER CROMADO ---
             var propHub = new GameObject("Helice_Hub");
             propHub.transform.SetParent(root.transform);
-            propHub.transform.localPosition = new Vector3(0f, 1.2f, 3.85f);
-            var blade = CreatePart(propHub.transform, Vector3.zero, new Vector3(2.2f, 0.2f, 0.05f), new Color(0.1f, 0.1f, 0.1f), "Pas_Helice");
+            propHub.transform.localPosition = new Vector3(0f, 1.28f, 3.22f);
+
+            // Spinner ogival polido
+            var spinner = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            spinner.name = "Spinner_Ogiva";
+            spinner.transform.SetParent(propHub.transform);
+            spinner.transform.localPosition = Vector3.zero;
+            spinner.transform.localScale = new Vector3(0.42f, 0.42f, 0.65f);
+            Object.Destroy(spinner.GetComponent<Collider>());
+            var spinMat = new Material(Shader.Find("Standard") ?? Shader.Find("Diffuse"));
+            spinMat.color = new Color(0.85f, 0.87f, 0.90f);
+            if (spinMat.HasProperty("_Metallic")) spinMat.SetFloat("_Metallic", 0.9f);
+            if (spinMat.HasProperty("_Glossiness")) spinMat.SetFloat("_Glossiness", 0.85f);
+            spinner.GetComponent<Renderer>().sharedMaterial = spinMat;
+
+            // 3 Pás em compósito de carbono com pontas amarelas de aviso
+            for (int b = 0; b < 3; b++)
+            {
+                float bladeAngle = b * 120f;
+                var blade = CreatePart(propHub.transform, Vector3.zero, new Vector3(0.18f, 2.1f, 0.04f), new Color(0.12f, 0.12f, 0.13f), $"Pa_Helice_{b}");
+                blade.transform.localRotation = Quaternion.Euler(0f, 0f, bladeAngle);
+
+                // Faixa amarela de segurança na ponta da hélice
+                var tip = CreatePart(blade.transform, new Vector3(0f, 0.92f, 0f), new Vector3(0.19f, 0.24f, 0.05f), new Color(0.95f, 0.82f, 0.05f), $"Ponta_Amarela_{b}");
+            }
             vehicle.propellerTransform = propHub.transform;
 
-            vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(0f, 1.3f, 0.3f), "DriverSeat");
-            vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(0f, 1.6f, 0.5f), "CockpitCam");
-            vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-1.8f, 0.2f, 0.3f), "ExitPoint");
+            // Pontos de Referência (Assento, Câmera e Saída)
+            vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(0f, 1.4f, 0.3f), "DriverSeat");
+            vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(0f, 1.75f, 0.6f), "CockpitCam");
+            vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-1.8f, 0.3f, 0.3f), "ExitPoint");
             vehicle.CreateDefaultHeadlights();
 
             return vehicle;
@@ -231,8 +354,14 @@ namespace ProjectTerra.Sandbox
 
             var rb = root.GetComponent<Rigidbody>();
             var col = root.AddComponent<BoxCollider>();
-            col.size = new Vector3(2.1f, 1.7f, 4.6f);
-            col.center = new Vector3(0f, 0.85f, 0f);
+            col.size = new Vector3(1.9f, 1.3f, 4.2f);
+            col.center = new Vector3(0f, 1.05f, 0f);
+
+            var wMat = GetWheelPhysicsMaterial();
+            AddWheelSphere(root, new Vector3(-0.9f, 0.45f, 1.3f), 0.45f, wMat);
+            AddWheelSphere(root, new Vector3(0.9f, 0.45f, 1.3f), 0.45f, wMat);
+            AddWheelSphere(root, new Vector3(-0.9f, 0.45f, -1.3f), 0.45f, wMat);
+            AddWheelSphere(root, new Vector3(0.9f, 0.45f, -1.3f), 0.45f, wMat);
 
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = category;
@@ -247,10 +376,14 @@ namespace ProjectTerra.Sandbox
                 var visual = Object.Instantiate(meshPrefab, root.transform);
                 visual.name = $"Visual_{modelName}3D";
                 visual.transform.localPosition = new Vector3(0f, 0.1f, 0f);
-                visual.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                visual.transform.localRotation = Quaternion.identity;
                 visual.transform.localScale = Vector3.one * 1.55f;
                 ApplyVehicleColormap(visual);
-                // O modelo FBX já possui rodas próprias — NÃO criar cilindros procedurais por cima.
+
+                vehicle.frontLeftWheel = FindDeepChild(visual.transform, "wheel-front-left");
+                vehicle.frontRightWheel = FindDeepChild(visual.transform, "wheel-front-right");
+                vehicle.rearLeftWheel = FindDeepChild(visual.transform, "wheel-back-left");
+                vehicle.rearRightWheel = FindDeepChild(visual.transform, "wheel-back-right");
             }
             else
             {
@@ -365,6 +498,42 @@ namespace ProjectTerra.Sandbox
             pt.transform.SetParent(parent);
             pt.transform.localPosition = localPos;
             return pt.transform;
+        }
+
+        private static PhysicsMaterial wheelPhysMat;
+        public static PhysicsMaterial GetWheelPhysicsMaterial()
+        {
+            if (wheelPhysMat == null)
+            {
+                wheelPhysMat = new PhysicsMaterial("VehicleWheelPhysMat")
+                {
+                    dynamicFriction = 0.03f,
+                    staticFriction = 0.03f,
+                    frictionCombine = PhysicsMaterialCombine.Minimum,
+                    bounciness = 0.04f
+                };
+            }
+            return wheelPhysMat;
+        }
+
+        private static SphereCollider AddWheelSphere(GameObject target, Vector3 center, float radius, PhysicsMaterial mat)
+        {
+            var col = target.AddComponent<SphereCollider>();
+            col.center = center;
+            col.radius = radius;
+            col.sharedMaterial = mat;
+            return col;
+        }
+
+        private static Transform FindDeepChild(Transform parent, string name)
+        {
+            if (parent == null) return null;
+            foreach (Transform child in parent.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                    return child;
+            }
+            return null;
         }
     }
 }

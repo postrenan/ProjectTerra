@@ -36,6 +36,20 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
+            if (type == "arado" || type == "plow")
+            {
+                var player = PlayerCharacterController.Instance;
+                Vector3 fwd = player != null ? (player.isDriving && player.currentVehicle != null ? player.currentVehicle.transform.forward : player.transform.forward) : Vector3.forward;
+                Vector3 basePos = player != null ? (player.isDriving && player.currentVehicle != null ? player.currentVehicle.transform.position : player.transform.position) : Vector3.zero;
+                Vector3 spawnPos = basePos + fwd * 7.0f;
+                if (RegionalSandboxManager.Instance != null) spawnPos.y = RegionalSandboxManager.Instance.GetTerrainHeight(spawnPos) + 0.35f;
+
+                PlowBuilder.CreatePlow(spawnPos, Quaternion.LookRotation(fwd, Vector3.up));
+                LogMessage("✅ Implemento agrícola 'Arado Subsolador TerraMaster' instanciado à sua frente!", Color.green);
+                SandboxHUD.Instance?.ShowToast("🚜 Arado Agrícola criado!");
+                return;
+            }
+
             var spawned = VehicleManager.Instance?.SpawnVehicle(type);
             if (spawned != null)
             {
