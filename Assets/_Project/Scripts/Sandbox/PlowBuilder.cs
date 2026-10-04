@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -237,13 +238,7 @@ namespace ProjectTerra.Sandbox
 
         private static Material CreatePbrMaterial(string name, Color color, float metallic, float smoothness)
         {
-            Shader shader = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Color");
-            var mat = shader != null ? new Material(shader) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-            mat.name = name;
-            mat.color = color;
-            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", metallic);
-            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", smoothness);
-            return mat;
+            return URPMaterialHelper.CreateURPLitMaterial(name, color, smoothness, metallic);
         }
     }
 }

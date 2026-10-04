@@ -117,28 +117,28 @@ namespace ProjectTerra.Sandbox
         }
 
         /// <summary>
-        /// Configura o material do terreno para o Built-in (HDRP removido do projeto).
-        /// No Unity 6, materialTemplate = null deixa o terreno SEM material (renderiza magenta/rosa),
-        /// então criamos explicitamente um material com o shader de terreno Built-in
-        /// "Nature/Terrain/Standard". Sem o HDRP interferindo, o Unity injeta automaticamente as
-        /// texturas de controle/splat das TerrainLayers neste material → biomas coloridos e nítidos.
+        /// Configura o material do terreno para URP.
+        /// No URP, usamos o shader "Universal Render Pipeline/Terrain/Lit" que suporta
+        /// TerrainLayers com splat mapping e normal maps.
         /// </summary>
         private void EnsureTerrainMaterial(Terrain terrain)
         {
-            Shader s = Shader.Find("Nature/Terrain/Standard")
-                    ?? Shader.Find("Nature/Terrain/Diffuse")
-                    ?? Shader.Find("Nature/Terrain/Standard-Base");
+            // URP Terrain Lit shader
+            Shader s = Shader.Find("Universal Render Pipeline/Terrain/Lit")
+                    ?? Shader.Find("Universal Render Pipeline/Terrain/SimpleLit")
+                    ?? Shader.Find("Nature/Terrain/Standard") // Fallback Built-in
+                    ?? Shader.Find("Nature/Terrain/Diffuse");
 
             if (s != null)
             {
                 var mat = new Material(s);
-                mat.name = "Terrain_Builtin_Standard";
+                mat.name = "Terrain_URP_Lit";
                 terrain.materialTemplate = mat;
-                Debug.Log($"[RegionalSandbox] Terreno Built-in: material '{s.name}' (splat das TerrainLayers injetado pelo Unity).");
+                Debug.Log($"[RegionalSandbox] Terreno URP: material '{s.name}' (splat das TerrainLayers injetado pelo Unity).");
             }
             else
             {
-                Debug.LogError("[RegionalSandbox] Shader de terreno Built-in 'Nature/Terrain/Standard' não encontrado.");
+                Debug.LogError("[RegionalSandbox] Shader de terreno URP 'Universal Render Pipeline/Terrain/Lit' não encontrado.");
             }
 
             // Renderiza as camadas PBR reais em todo o setor ativo (até 60 km), sem cair no basemap de baixa-res.

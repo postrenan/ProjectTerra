@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectTerra.Planet;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -166,8 +167,7 @@ namespace ProjectTerra.Sandbox
         private Material GetDirtMaterial()
         {
             if (cachedDirtMat != null) return cachedDirtMat;
-            cachedDirtMat = CreateSolidMaterial(new Color(0.34f, 0.27f, 0.19f));
-            if (cachedDirtMat.HasProperty("_Glossiness")) cachedDirtMat.SetFloat("_Glossiness", 0.06f);
+            cachedDirtMat = URPMaterialHelper.CreateURPLitMaterial("Dirt_Material", new Color(0.34f, 0.27f, 0.19f), 0.06f, 0.0f);
             return cachedDirtMat;
         }
 
@@ -175,23 +175,8 @@ namespace ProjectTerra.Sandbox
         private Material GetWaterMaterial()
         {
             if (cachedWaterMat != null) return cachedWaterMat;
-            Shader s = Shader.Find("Standard");
-            var m = s != null ? new Material(s) : CreateSolidMaterial(new Color(0.12f, 0.4f, 0.6f));
-            m.name = "River_Water";
-            if (s != null)
-            {
-                m.SetFloat("_Mode", 3f);
-                m.SetOverrideTag("RenderType", "Transparent");
-                m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                m.SetInt("_ZWrite", 0);
-                m.DisableKeyword("_ALPHATEST_ON");
-                m.EnableKeyword("_ALPHABLEND_ON");
-                m.renderQueue = 3000;
-                if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", 0.9f);
-                if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0.1f);
-            }
-            m.color = new Color(0.12f, 0.42f, 0.62f, 0.72f);
+            var m = URPMaterialHelper.CreateURPParticlesLitMaterial("River_Water", new Color(0.12f, 0.42f, 0.62f, 0.72f), 0.9f, 0.1f);
+            URPMaterialHelper.SetupTransparentBlend(m, 3000);
             cachedWaterMat = m;
             return m;
         }

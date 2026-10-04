@@ -509,38 +509,39 @@ namespace ProjectTerra.Sandbox
             return m;
         }
 
-        /// <summary>Material cutout do Built-in RP (Standard em modo Cutout), com GPU instancing.</summary>
+        /// <summary>Material cutout URP (Particles/Lit com Alpha Clip), com GPU instancing.</summary>
         private Material BuildGrassMaterial(Color color, string nameSuffix, Color emission)
         {
-            Shader shader = Shader.Find("Standard");
+            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Lit") ?? Shader.Find("Universal Render Pipeline/Lit");
             Material mat;
             if (shader != null)
             {
                 mat = new Material(shader) { name = $"PlayerGrass_{nameSuffix}" };
-                mat.SetFloat("_Mode", 1f); // Cutout
-                mat.SetOverrideTag("RenderType", "TransparentCutout");
-                mat.SetInt("_SrcBlend", (int)BlendMode.One);
-                mat.SetInt("_DstBlend", (int)BlendMode.Zero);
-                mat.SetInt("_ZWrite", 1);
-                mat.EnableKeyword("_ALPHATEST_ON");
-                mat.DisableKeyword("_ALPHABLEND_ON");
-                mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                mat.renderQueue = (int)RenderQueue.AlphaTest;
+                // URP Alpha Clip (Cutout)
+                if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 1f);
                 if (mat.HasProperty("_Cutoff")) mat.SetFloat("_Cutoff", 0.4f);
-                if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.05f);
+                if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 0f); // Opaque
+                if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.05f);
                 if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0f);
-                mat.mainTexture = sharedBladeTexture;
-                mat.SetColor("_Color", color);
-                // Leve emissão adaptada à tonalidade para garantir boa visibilidade sob sombra
-                if (mat.HasProperty("_EmissionColor"))
+                if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", sharedBladeTexture);
+                else if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", sharedBladeTexture);
+                mat.SetColor("_BaseColor", color);
+                // Emissão
+                if (mat.HasProperty("_EmissiveColor"))
+                {
+                    mat.EnableKeyword("_EMISSION");
+                    mat.SetColor("_EmissiveColor", emission);
+                }
+                else if (mat.HasProperty("_EmissionColor"))
                 {
                     mat.EnableKeyword("_EMISSION");
                     mat.SetColor("_EmissionColor", emission);
                 }
+                mat.renderQueue = 2450; // AlphaTest queue
             }
             else
             {
-                mat = new Material(Shader.Find("Sprites/Default")) { mainTexture = sharedBladeTexture };
+                mat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color")) { mainTexture = sharedBladeTexture };
             }
             mat.enableInstancing = true;
             return mat;

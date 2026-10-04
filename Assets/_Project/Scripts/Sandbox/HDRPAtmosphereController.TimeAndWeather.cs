@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace ProjectTerra.Sandbox
 {
@@ -40,6 +42,9 @@ namespace ProjectTerra.Sandbox
                 float factor = Mathf.Clamp01(elevationFactor * 1.5f);
                 sunLight.intensity = Mathf.Lerp(0.35f, 1.0f, factor);
                 sunLight.color = isGoldenHour ? new Color(1.0f, 0.72f, 0.42f) : new Color(1.0f, 0.96f, 0.90f);
+                
+                // URP: atualizar ambient intensity via RenderSettings (ainda funciona)
+                // Para controle total, usar VisualEnvironment volume
                 RenderSettings.ambientIntensity = Mathf.Lerp(0.55f, 1.0f, factor);
             }
             else
@@ -97,10 +102,16 @@ namespace ProjectTerra.Sandbox
         private void SetFogDistance(float distance)
         {
             fogDistance = distance;
+            
+            // Atualizar RenderSettings (compatibilidade básica)
             RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogMode = fogMode;
             RenderSettings.fogStartDistance = Mathf.Min(distance * 0.1f, 3000f);
             RenderSettings.fogEndDistance = distance;
+            RenderSettings.fogColor = fogColor;
+
+            // Atualizar Volume URP se disponível
+            UpdateAtmosphereVolumes();
         }
 
         #endregion

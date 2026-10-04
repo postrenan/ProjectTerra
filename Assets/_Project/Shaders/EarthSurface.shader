@@ -46,40 +46,52 @@ Shader "ProjectTerra/EarthSurface"
 
         Pass
         {
-            Name "ForwardBase"
-            Tags { "LightMode"="ForwardBase" }
+            Name "UniversalForward"
+            Tags { "LightMode"="UniversalForward" }
 
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile_fwdbase
-            #include "UnityCG.cginc"
-            #include "AutoLight.cginc"
+            #pragma multi_compile _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+            #pragma multi_compile _ _NORMALMAP
+            #pragma multi_compile _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_B
+            #pragma multi_compile _ _METALLIC_TEXTURE_ALBEDO_CHANNEL_A _METALLIC_TEXTURE_ALBEDO_CHANNEL_B
+            #pragma multi_compile_fog
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityCG.hlsl"
 
-            struct appdata
+            struct Attributes
             {
-                float4 vertex : POSITION;
-                float3 normal : NORMAL;
-                float4 tangent : TANGENT;
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float4 tangentOS : TANGENT;
                 float2 uv : TEXCOORD0;
             };
 
-            struct v2f
+            struct Varyings
             {
-                float4 pos : SV_POSITION;
+                float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                float3 worldNormal : TEXCOORD1;
-                float3 worldPos : TEXCOORD2;
-                float3 viewDir : TEXCOORD3;
-                float4 tangent : TEXCOORD4;
+                float3 normalWS : TEXCOORD1;
+                float3 positionWS : TEXCOORD2;
+                float3 viewDirWS : TEXCOORD3;
+                float4 tangentWS : TEXCOORD4;
+                float fogFactor : TEXCOORD5;
             };
 
-            sampler2D _MainTex;
-            sampler2D _WaterMask;
-            sampler2D _BumpMap;
-            sampler2D _BordersTex;
-            sampler2D _RegionIdTex;
+            TEXTURE2D(_MainTex);
+            TEXTURE2D(_WaterMask);
+            TEXTURE2D(_BumpMap);
+            TEXTURE2D(_BordersTex);
+            TEXTURE2D(_RegionIdTex);
+            SAMPLER(sampler_MainTex);
+            SAMPLER(sampler_WaterMask);
+            SAMPLER(sampler_BumpMap);
+            SAMPLER(sampler_BordersTex);
+            SAMPLER(sampler_RegionIdTex);
 
+            CBUFFER_START(UnityPerMaterial)
             float4 _Color;
             float4 _DayColor;
             float4 _OceanColor;
@@ -94,37 +106,37 @@ Shader "ProjectTerra/EarthSurface"
             float _BumpScale;
             float _AtmospherePower;
             float _AtmosphereIntensity;
-
             float _DetailTiling;
             float _DetailNormalStrength;
             float _DetailColorStrength;
+            CBUFFER_END
 
-            uniform float4 _LightColor0;
-
-            v2f vert(appdata v)
+            Varyings vert(Attributes input)
             {
-                v2f o;
-                o.pos = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
-                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
-                o.worldNormal = UnityObjectToWorldNormal(v.normal);
-                o.tangent = float4(UnityObjectToWorldDir(v.tangent.xyz), v.tangent.w);
-                o.viewDir = normalize(_WorldSpaceCameraPos.xyz - o.worldPos);
-                return o;
+                Varyings output;
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = vertexInput.positionCS;
+                output.positionWS = vertexInput.positionWS;
+                output.normalWS = GetNormalizedNormalWS(vertexInput.normalOS, input.normalOS, input.tangentOS.xyz);
+                output.tangentWS = float4(GetTangentWS(vertexInput.normalOS, input.normalOS, input.tangentOS), input.tangentOS.w);
+                output.viewDirWS = normalize(_WorldSpaceCameraPos.xyz - output.positionWS);
+                output.uv = input.uv;
+                output.fogFactor = 0.0;
+                return output;
             }
 
-            fixed4 frag(v2f i) : SV_Target
+            half4 frag(Varyings input) : SV_Target
             {
-                float2 uv = i.uv;
-                fixed4 dayColor = tex2D(_MainTex, uv) * _DayColor * _Color;
-                fixed4 waterMask = tex2D(_WaterMask, uv);
+                float2 uv = input.uv;
+                half4 dayColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv) * _DayColor * _Color;
+                half4 waterMask = SAMPLE_TEXTURE2D(_WaterMask, sampler_WaterMask, uv);
                 float isWater = waterMask.r;
 
                 // Distância da câmera para ativar resolução de solo (escala 50m)
-                float camDist = length(_WorldSpaceCameraPos.xyz - i.worldPos);
+                float camDist = length(_WorldSpaceCameraPos.xyz - input.positionWS);
 
                 // Normal macro global da Terra
-                half3 normalMap = UnpackNormal(tex2D(_BumpMap, uv));
+                half3 normalMap = UnpackNormal(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uv));
                 normalMap.xy *= _BumpScale;
 
                 // Transição contínua multi-escala estilo Google Maps:
@@ -160,57 +172,53 @@ Shader "ProjectTerra/EarthSurface"
 
                     float colorMod = 1.0 + (fineNoise * _DetailColorStrength * microFactor) + (mesoNoise * 0.08 * mesoFactor);
 
-                    fixed3 vegetColor = dayColor.rgb * fixed3(0.82, 1.18, 0.78) * colorMod;
-                    fixed3 desertColor = dayColor.rgb * fixed3(1.12, 1.04, 0.88) * colorMod;
+                    half3 vegetColor = dayColor.rgb * half3(0.82, 1.18, 0.78) * colorMod;
+                    half3 desertColor = dayColor.rgb * half3(1.12, 1.04, 0.88) * colorMod;
 
-                    fixed3 detailedLand = lerp(dayColor.rgb * colorMod, vegetColor, isGreen);
+                    half3 detailedLand = lerp(dayColor.rgb * colorMod, vegetColor, isGreen);
                     detailedLand = lerp(detailedLand, desertColor, isDesert);
 
                     dayColor.rgb = lerp(dayColor.rgb, detailedLand, (1.0 - isWater) * mesoFactor);
                 }
 
                 // Cálculo do vetor normal em espaço mundial com base nas tangentes reais da esfera
-                half3 worldTangent = i.tangent.xyz;
-                half3 worldBinormal = cross(i.worldNormal, worldTangent) * i.tangent.w;
-                half3 worldNorm = normalize(normalMap.x * worldTangent + normalMap.y * worldBinormal + normalMap.z * i.worldNormal);
+                half3 worldTangent = input.tangentWS.xyz;
+                half3 worldBinormal = cross(input.normalWS, worldTangent) * input.tangentWS.w;
+                half3 worldNorm = normalize(normalMap.x * worldTangent + normalMap.y * worldBinormal + normalMap.z * input.normalWS);
 
-                // Iluminação solar direcional protegida contra vetor nulo
-                half3 lightDir = length(_WorldSpaceLightPos0.xyz) > 0.001 
-                               ? normalize(_WorldSpaceLightPos0.xyz) 
-                               : normalize(float3(0.5, 0.8, 0.3));
+                // Iluminação solar direcional
+                Light mainLight = GetMainLight();
+                half3 lightDir = normalize(mainLight.direction);
+                half3 lightColor = mainLight.color;
                 half ndotl = max(0.0, dot(worldNorm, lightDir));
 
                 // Reflexo especular (Sun glint nos oceanos)
-                half3 h = normalize(lightDir + i.viewDir);
+                half3 h = normalize(lightDir + input.viewDirWS);
                 half ndoth = max(0.0, dot(worldNorm, h));
                 float smoothness = lerp(_LandSmoothness, _OceanSmoothness, isWater);
                 float specPower = exp2(10.0 * smoothness + 1.0);
                 float specular = pow(max(0.0, ndoth), specPower) * isWater * ndotl;
 
                 // Atmosfera / Efeito Fresnel no horizonte do planeta
-                half vdotn = 1.0 - saturate(dot(i.viewDir, worldNorm));
+                half vdotn = 1.0 - saturate(dot(input.viewDirWS, worldNorm));
                 half rim = pow(vdotn, _AtmospherePower) * _AtmosphereIntensity;
                 // Diminui a atmosfera de borda quando a câmera está muito próxima do solo (escala de 50m)
                 float closeGroundFactor = saturate(camDist / 100000.0);
-                fixed4 atmosphere = _AtmosphereColor * rim * closeGroundFactor;
+                half4 atmosphere = _AtmosphereColor * rim * closeGroundFactor;
 
-                // Iluminação ambiente espacial (não deixa o lado escuro 100% invisível)
-                half3 ambient = ShadeSH9(float4(worldNorm, 1.0));
+                // Iluminação ambiente (SH)
+                half3 ambient = SampleSH9(float4(worldNorm, 1.0));
                 if (length(ambient) < 0.05)
                     ambient = half3(0.04, 0.04, 0.07);
 
-                fixed3 lightCol = _LightColor0.rgb;
-                if (length(lightCol) < 0.01)
-                    lightCol = half3(1.0, 0.98, 0.95);
+                half3 diffuse = dayColor.rgb * (ndotl * lightColor + ambient);
+                half3 spec = specular * _OceanColor.rgb * 2.0 * lightColor;
+                half3 atmos = atmosphere.rgb * saturate(ndotl + 0.25);
 
-                fixed3 diffuse = dayColor.rgb * (ndotl * lightCol + ambient);
-                fixed3 spec = specular * _OceanColor.rgb * 2.0 * lightCol;
-                fixed3 atmos = atmosphere.rgb * saturate(ndotl + 0.25);
-
-                fixed3 finalColor = diffuse + spec + atmos;
+                half3 finalColor = diffuse + spec + atmos;
 
                 // Overlay de Linhas de Fronteira (Países e Estados/Províncias)
-                fixed4 borderSample = tex2D(_BordersTex, uv);
+                half4 borderSample = SAMPLE_TEXTURE2D(_BordersTex, sampler_BordersTex, uv);
                 if (borderSample.a > 0.005)
                 {
                     float camDistKm = camDist * 0.001; // converter para km
@@ -229,7 +237,7 @@ Shader "ProjectTerra/EarthSurface"
                     // Elimina completamente qualquer interpolação bilinear ou vazamento entre regiões vizinhas
                     float2 idUV = frac(uv);
                     float2 snapUV = (floor(idUV * float2(4096.0, 2048.0)) + 0.5) / float2(4096.0, 2048.0);
-                    fixed4 idPixel = tex2Dlod(_RegionIdTex, float4(snapUV, 0.0, 0.0));
+                    half4 idPixel = SAMPLE_TEXTURE2D_LOD(_RegionIdTex, sampler_RegionIdTex, float4(snapUV, 0.0, 0.0));
                     
                     int sampledId = (int)round(idPixel.r * 255.0) + ((int)round(idPixel.g * 255.0) * 256);
                     int targetId = (int)round(_SelectedRegionId);
@@ -244,11 +252,58 @@ Shader "ProjectTerra/EarthSurface"
                     }
                 }
 
-                return fixed4(finalColor, 1.0);
+                // Fog
+                finalColor = MixFog(finalColor, input.fogFactor);
+
+                return half4(finalColor, 1.0);
+            }
+            ENDCG
+        }
+
+        // ShadowCaster Pass para URP
+        Pass
+        {
+            Name "UniversalShadowCaster"
+            Tags { "LightMode"="UniversalShadowCaster" }
+
+            CGPROGRAM
+            #pragma vertex vert_shadow
+            #pragma fragment frag_shadow
+            #pragma multi_compile_shadowcaster
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityCG.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float4 positionWS : TEXCOORD0;
+            };
+
+            TEXTURE2D(_RegionIdTex);
+            SAMPLER(sampler_RegionIdTex);
+            float _SelectedRegionId;
+
+            Varyings vert_shadow(Attributes input)
+            {
+                Varyings output;
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = vertexInput.positionCS;
+                output.positionWS = vertexInput.positionWS;
+                return output;
+            }
+
+            float4 frag_shadow(Varyings input) : SV_Target
+            {
+                return 0;
             }
             ENDCG
         }
     }
 
-    Fallback "Standard"
+    Fallback "Universal Render Pipeline/Lit"
 }

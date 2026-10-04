@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using UnityEngine;
 using ProjectTerra.Planet;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -162,11 +163,7 @@ namespace ProjectTerra.Sandbox
 
         private static Material Mat(Color c, float gloss = 0.1f)
         {
-            var s = Shader.Find("Standard") ?? Shader.Find("Diffuse");
-            var m = s != null ? new Material(s) : new Material(Shader.Find("Sprites/Default"));
-            m.color = c;
-            if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", gloss);
-            return m;
+            return URPMaterialHelper.CreateURPLitMaterial("Landmark_" + c.GetHashCode(), c, gloss, 0.0f);
         }
 
         private static Mesh ConeMesh(float radius, float height, int seg = 20)

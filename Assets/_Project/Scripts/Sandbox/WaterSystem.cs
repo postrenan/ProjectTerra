@@ -371,10 +371,10 @@ namespace ProjectTerra.Sandbox
             // dependia de m_AlwaysIncludedShaders para não ser removido no build (foi
             // adicionado lá). O guard evita que um Stripping mais agressivo vire
             // new Material(null) -> ArgumentNullException derrubando a construção da região.
-            var shader = Shader.Find("ProjectTerra/WaterSurface") ?? Shader.Find("Standard");
+            var shader = Shader.Find("ProjectTerra/WaterSurface") ?? Shader.Find("Universal Render Pipeline/Particles/Lit") ?? Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
             {
-                Debug.LogError("[WaterSystem] Nenhum shader de água disponível (WaterSurface nem Standard). Superfície de água não será criada.");
+                Debug.LogError("[WaterSystem] Nenhum shader de água disponível (WaterSurface nem URP Lit). Superfície de água não será criada.");
                 return null;
             }
 
@@ -397,6 +397,12 @@ namespace ProjectTerra.Sandbox
                 mat.SetFloat("_WaveHeight", 0.38f);
                 mat.SetFloat("_WaveSpeed", 1.2f);
             }
+
+            // Configurar para transparência URP
+            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f); // Transparent
+            if (mat.HasProperty("_Blend")) mat.SetFloat("_Blend", 0f);
+            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
+            mat.renderQueue = 3000;
 
             return mat;
         }

@@ -63,12 +63,7 @@ namespace ProjectTerra.Sandbox
         {
             if (furrowMaterial != null) return;
 
-            Shader shader = Shader.Find("Standard") ?? Shader.Find("Diffuse");
-            furrowMaterial = new Material(shader)
-            {
-                name = "Mat_PlowedSoil_Furrow",
-                color = new Color(0.32f, 0.22f, 0.14f) // Tom escuro de terra fértil revolvida e úmida
-            };
+            furrowMaterial = URPMaterialHelper.CreateURPLitMaterial("Mat_PlowedSoil_Furrow", new Color(0.32f, 0.22f, 0.14f), 0.05f, 0.0f);
 
             // Tenta carregar texturas PBR de Solo
             string basePath = System.IO.Path.Combine(Application.dataPath, "_Project", "Textures", "PBR", "Ground", "Soil");
@@ -84,7 +79,8 @@ namespace ProjectTerra.Sandbox
                     if (tex.LoadImage(bytes))
                     {
                         tex.wrapMode = TextureWrapMode.Repeat;
-                        furrowMaterial.mainTexture = tex;
+                        if (furrowMaterial.HasProperty("_BaseMap")) furrowMaterial.SetTexture("_BaseMap", tex);
+                        else if (furrowMaterial.HasProperty("_MainTex")) furrowMaterial.SetTexture("_MainTex", tex);
                     }
                 }
                 catch {}
@@ -99,15 +95,18 @@ namespace ProjectTerra.Sandbox
                     if (normTex.LoadImage(bytes))
                     {
                         normTex.wrapMode = TextureWrapMode.Repeat;
-                        furrowMaterial.EnableKeyword("_NORMALMAP");
-                        furrowMaterial.SetTexture("_BumpMap", normTex);
-                        furrowMaterial.SetFloat("_BumpScale", 1.2f);
+                        if (furrowMaterial.HasProperty("_BumpMap"))
+                        {
+                            furrowMaterial.SetTexture("_BumpMap", normTex);
+                            furrowMaterial.SetFloat("_BumpScale", 1.2f);
+                            furrowMaterial.EnableKeyword("_NORMALMAP");
+                        }
                     }
                 }
                 catch {}
             }
 
-            if (furrowMaterial.HasProperty("_Glossiness")) furrowMaterial.SetFloat("_Glossiness", 0.08f);
+            if (furrowMaterial.HasProperty("_Smoothness")) furrowMaterial.SetFloat("_Smoothness", 0.08f);
             if (furrowMaterial.HasProperty("_Metallic")) furrowMaterial.SetFloat("_Metallic", 0.02f);
         }
 

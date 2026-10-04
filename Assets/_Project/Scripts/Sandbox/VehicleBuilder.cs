@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -453,11 +454,7 @@ namespace ProjectTerra.Sandbox
             part.transform.localPosition = localPos;
             part.transform.localScale = scale;
             var rend = part.GetComponent<Renderer>();
-            Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Color");
-            var mat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-            mat.color = color;
-            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.2f);
-            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.1f);
+            var mat = URPMaterialHelper.CreateURPLitMaterial("VehiclePart_" + name, color, 0.2f, 0.1f);
             rend.sharedMaterial = mat;
             Object.Destroy(part.GetComponent<Collider>());
             return part;
@@ -472,11 +469,7 @@ namespace ProjectTerra.Sandbox
             wheel.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
             wheel.transform.localScale = scale;
             var rend = wheel.GetComponent<Renderer>();
-            Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Color");
-            var mat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-            mat.color = new Color(0.12f, 0.12f, 0.13f); // Pneu de borracha escura
-            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.08f);
-            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.0f);
+            var mat = URPMaterialHelper.CreateURPLitMaterial("VehicleWheel_" + name, new Color(0.12f, 0.12f, 0.13f), 0.08f, 0.0f);
             rend.sharedMaterial = mat;
             Object.Destroy(wheel.GetComponent<Collider>());
 
@@ -487,10 +480,7 @@ namespace ProjectTerra.Sandbox
             rim.transform.localPosition = Vector3.zero;
             rim.transform.localRotation = Quaternion.identity;
             rim.transform.localScale = new Vector3(0.55f, 1.02f, 0.55f);
-            var rimMat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-            rimMat.color = new Color(0.78f, 0.80f, 0.83f);
-            if (rimMat.HasProperty("_Glossiness")) rimMat.SetFloat("_Glossiness", 0.45f);
-            if (rimMat.HasProperty("_Metallic")) rimMat.SetFloat("_Metallic", 0.8f);
+            var rimMat = URPMaterialHelper.CreateURPLitMaterial("VehicleRim_" + name, new Color(0.78f, 0.80f, 0.83f), 0.45f, 0.8f);
             rim.GetComponent<Renderer>().sharedMaterial = rimMat;
             Object.Destroy(rim.GetComponent<Collider>());
 

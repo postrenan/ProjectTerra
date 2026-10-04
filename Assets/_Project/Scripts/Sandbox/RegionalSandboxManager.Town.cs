@@ -1,5 +1,6 @@
 using UnityEngine;
 using ProjectTerra.Planet;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -33,12 +34,7 @@ namespace ProjectTerra.Sandbox
                 silo.transform.localScale = new Vector3(14f, 14f, 14f);
 
                 // Silo de aço galvanizado industrial com reflexo metálico
-                Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse");
-                var siloMat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-                siloMat.name = "Silo_GalvanizedSteel";
-                siloMat.color = new Color(0.82f, 0.85f, 0.88f);
-                if (siloMat.HasProperty("_Metallic")) siloMat.SetFloat("_Metallic", 0.75f);
-                if (siloMat.HasProperty("_Glossiness")) siloMat.SetFloat("_Glossiness", 0.45f);
+                var siloMat = URPMaterialHelper.CreateURPLitMaterial("Silo_GalvanizedSteel", new Color(0.82f, 0.85f, 0.88f), 0.45f, 0.75f);
                 silo.GetComponent<Renderer>().sharedMaterial = siloMat;
 
                 // Cúpula metálica do silo
@@ -139,13 +135,8 @@ namespace ProjectTerra.Sandbox
                 {
                     Texture2D tex = Resources.Load<Texture2D>("Models/Structures/Textures/colormap_suburban")
                                  ?? Resources.Load<Texture2D>("Models/Structures/Textures/colormap");
-                    Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse");
-                    cachedSuburbanMat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-                    cachedSuburbanMat.name = "Building_Suburban_Mat";
-                    cachedSuburbanMat.mainTexture = tex;
-                    cachedSuburbanMat.color = Color.white;
-                    if (cachedSuburbanMat.HasProperty("_Glossiness")) cachedSuburbanMat.SetFloat("_Glossiness", 0.15f);
-                    if (cachedSuburbanMat.HasProperty("_Metallic")) cachedSuburbanMat.SetFloat("_Metallic", 0.0f);
+                    cachedSuburbanMat = URPMaterialHelper.CreateURPLitMaterial("Building_Suburban_Mat", Color.white, 0.15f, 0.0f);
+                    if (tex != null) URPMaterialHelper.SetupTextures(cachedSuburbanMat, tex);
                 }
                 return cachedSuburbanMat;
             }
@@ -155,13 +146,8 @@ namespace ProjectTerra.Sandbox
                 {
                     Texture2D tex = Resources.Load<Texture2D>("Models/Structures/Textures/colormap_commercial")
                                  ?? Resources.Load<Texture2D>("Models/Structures/Textures/colormap");
-                    Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse");
-                    cachedCommercialMat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-                    cachedCommercialMat.name = "Building_Commercial_Mat";
-                    cachedCommercialMat.mainTexture = tex;
-                    cachedCommercialMat.color = Color.white;
-                    if (cachedCommercialMat.HasProperty("_Glossiness")) cachedCommercialMat.SetFloat("_Glossiness", 0.20f);
-                    if (cachedCommercialMat.HasProperty("_Metallic")) cachedCommercialMat.SetFloat("_Metallic", 0.05f);
+                    cachedCommercialMat = URPMaterialHelper.CreateURPLitMaterial("Building_Commercial_Mat", Color.white, 0.20f, 0.05f);
+                    if (tex != null) URPMaterialHelper.SetupTextures(cachedCommercialMat, tex);
                 }
                 return cachedCommercialMat;
             }

@@ -296,12 +296,7 @@ namespace ProjectTerra.Sandbox
 
         public static Material CreateSolidMaterial(Color color)
         {
-            Shader shader = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Color");
-            var mat = shader != null ? new Material(shader) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-            mat.color = color;
-            if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.15f);
-            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.0f);
-            return mat;
+            return URPMaterialHelper.CreateSolidMaterial(color, 0.15f, 0.0f);
         }
 
         #endregion

@@ -59,7 +59,7 @@ namespace ProjectTerra.Sandbox
             brushRingRenderer.endWidth = 0.35f;
             brushRingRenderer.useWorldSpace = true;
 
-            Shader s = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
+            Shader s = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
             var mat = new Material(s);
             mat.color = new Color(0.2f, 0.8f, 1f, 0.85f);
             brushRingRenderer.sharedMaterial = mat;

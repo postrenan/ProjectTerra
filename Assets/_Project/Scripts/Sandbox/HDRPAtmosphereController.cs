@@ -1,15 +1,16 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace ProjectTerra.Sandbox
 {
     /// <summary>
-    /// Iluminação e atmosfera para o Built-in Render Pipeline:
-    /// sol direcional calibrado, céu procedural, nuvens procedurais, ambiente Trilight e neblina linear.
+    /// Iluminação e atmosfera para o Universal Render Pipeline (URP):
+    /// sol direcional calibrado, céu procedural (Skybox), nuvens procedurais, ambiente e neblina via Volume.
     ///
-    /// NOTA: o pacote HDRP foi removido do projeto (ele forçava os materiais padrão — inclusive o do
-    /// Terrain — a serem HDRP, que não renderizam no Built-in, causando terreno rosa/branco). O nome
-    /// da classe foi mantido para não quebrar referências existentes (AddComponent, Instance, etc.).
+    /// NOTA: O pacote HDRP foi removido do projeto. Este script configura a atmosfera usando
+    /// o sistema de Volumes do URP para Sky e Fog, mantendo compatibilidade com RenderSettings
+    /// para skybox/ambient/neblina básica.
     /// </summary>
     public partial class HDRPAtmosphereController : MonoBehaviour
     {
@@ -24,8 +25,17 @@ namespace ProjectTerra.Sandbox
         public bool autoCycleTime = false;
         public float dayCycleDurationMinutes = 20.0f; // 20 min reais para 24h in-game
 
-        [Header("Neblina")]
+        [Header("Neblina (URP Volume)")]
         public float fogDistance = 45000f;
+        public float fogStartDistance = 3000f;
+        public Color fogColor = new Color(0.60f, 0.72f, 0.85f);
+        public FogMode fogMode = FogMode.Linear;
+
+        [Header("Céu e Ambiente (URP Volume)")]
+        public Color ambientSkyColor = new Color(0.52f, 0.62f, 0.78f);
+        public Color ambientEquatorColor = new Color(0.42f, 0.46f, 0.50f);
+        public Color ambientGroundColor = new Color(0.24f, 0.26f, 0.22f);
+        public float ambientIntensity = 1.0f;
 
         [Header("Nuvens Procedurais")]
         public bool enableClouds = true;
@@ -42,6 +52,12 @@ namespace ProjectTerra.Sandbox
         private GameObject cloudDome;
         private Material cloudMaterial;
         private Vector2 cloudOffset = Vector2.zero;
+
+        // Referências aos Volumes URP
+        private Volume atmosphereVolume;
+        private VolumeProfile volumeProfile;
+        private VisualEnvironment visualEnvironment;
+        private Fog fogVolume;
 
         private void Awake()
         {
@@ -62,6 +78,85 @@ namespace ProjectTerra.Sandbox
             }
 
             UpdateClouds();
+        }
+
+        private void ConfigureAtmosphere()
+        {
+            // 1. Configurar Skybox Procedural (compatível com URP via RenderSettings)
+            if (RenderSettings.skybox == null)
+            {
+                var skyShader = Shader.Find("Skybox/Procedural");
+                if (skyShader != null)
+                {
+                    var skyMat = new Material(skyShader);
+                    skyMat.name = "Skybox_Procedural_URP";
+                    if (skyMat.HasProperty("_SunSize")) skyMat.SetFloat("_SunSize", 0.04f);
+                    if (skyMat.HasProperty("_AtmosphereThickness")) skyMat.SetFloat("_AtmosphereThickness", 1.0f);
+                    if (skyMat.HasProperty("_SkyTint")) skyMat.SetColor("_SkyTint", new Color(0.48f, 0.62f, 0.88f));
+                    if (skyMat.HasProperty("_GroundColor")) skyMat.SetColor("_GroundColor", new Color(0.32f, 0.30f, 0.28f));
+                    RenderSettings.skybox = skyMat;
+                }
+            }
+
+            // 2. Configurar Ambient Lighting (ainda funciona via RenderSettings no URP)
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = ambientSkyColor;
+            RenderSettings.ambientEquatorColor = ambientEquatorColor;
+            RenderSettings.ambientGroundColor = ambientGroundColor;
+            RenderSettings.ambientIntensity = ambientIntensity;
+
+            // 3. Configurar Neblina via RenderSettings (compatibilidade básica)
+            // NOTA: Para controle total URP, usar Volume com Fog component
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = fogMode;
+            RenderSettings.fogStartDistance = fogStartDistance;
+            RenderSettings.fogEndDistance = Mathf.Max(8000f, fogDistance);
+            RenderSettings.fogColor = fogColor;
+
+            // 4. Criar/Configurar Volume URP para Sky e Fog avançados
+            SetupURPVolumes();
+
+            Debug.Log("[Atmosphere] URP: céu procedural, iluminação solar, nuvens e atmosfera configuradas (RenderSettings + Volumes).");
+        }
+
+        private void SetupURPVolumes()
+        {
+            // Criar Volume global para atmosfera
+            var volumeGO = new GameObject("AtmosphereVolume");
+            volumeGO.transform.SetParent(transform);
+            atmosphereVolume = volumeGO.AddComponent<Volume>();
+            atmosphereVolume.isGlobal = true;
+            atmosphereVolume.priority = 10;
+
+            volumeProfile = ScriptableObject.CreateInstance<VolumeProfile>();
+            atmosphereVolume.profile = volumeProfile;
+
+            // VisualEnvironment (Sky, Ambient, etc.)
+            visualEnvironment = volumeProfile.Add<VisualEnvironment>(true);
+            visualEnvironment.skyType.value = SkyType.Procedural;
+            // Nota: Para Procedural Sky no URP, precisa do pacote "Unity.RenderPipelines.Universal.Shaders" 
+            // e o skybox procedural é definido via RenderSettings.skybox mesmo.
+
+            // Fog Volume
+            fogVolume = volumeProfile.Add<Fog>(true);
+            fogVolume.enabled.value = true;
+            fogVolume.mode.value = fogMode;
+            fogVolume.color.value = fogColor;
+            fogVolume.startDistance.value = fogStartDistance;
+            fogVolume.endDistance.value = fogDistance;
+            fogVolume.maxFogDistance.value = fogDistance;
+        }
+
+        private void UpdateAtmosphereVolumes()
+        {
+            if (fogVolume != null)
+            {
+                fogVolume.mode.value = fogMode;
+                fogVolume.color.value = fogColor;
+                fogVolume.startDistance.value = fogStartDistance;
+                fogVolume.endDistance.value = fogDistance;
+                fogVolume.maxFogDistance.value = fogDistance;
+            }
         }
 
         private void ConfigureClouds()
@@ -277,44 +372,11 @@ namespace ProjectTerra.Sandbox
                 sunLight.colorTemperature = sunColorKelvin;
                 sunLight.shadows = LightShadows.Soft;
 
-                // Built-in: intensidade fotométrica balanceada (valores altos estouram a tela em branco).
+                // URP: intensidade fotométrica balanceada
                 sunLight.intensity = 1.0f;
                 sunLight.color = new Color(1.0f, 0.96f, 0.90f);
                 sunLight.shadowStrength = 0.85f;
             }
-        }
-
-        private void ConfigureAtmosphere()
-        {
-            // Céu procedural (cor visível e reflexo de ambiente coerente).
-            if (RenderSettings.skybox == null)
-            {
-                var skyShader = Shader.Find("Skybox/Procedural");
-                if (skyShader != null)
-                {
-                    var skyMat = new Material(skyShader);
-                    skyMat.name = "Skybox_Procedural_Builtin";
-                    if (skyMat.HasProperty("_SunSize")) skyMat.SetFloat("_SunSize", 0.04f);
-                    if (skyMat.HasProperty("_AtmosphereThickness")) skyMat.SetFloat("_AtmosphereThickness", 1.0f);
-                    if (skyMat.HasProperty("_SkyTint")) skyMat.SetColor("_SkyTint", new Color(0.48f, 0.62f, 0.88f));
-                    if (skyMat.HasProperty("_GroundColor")) skyMat.SetColor("_GroundColor", new Color(0.32f, 0.30f, 0.28f));
-                    RenderSettings.skybox = skyMat;
-                }
-            }
-
-            RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.52f, 0.62f, 0.78f);
-            RenderSettings.ambientEquatorColor = new Color(0.42f, 0.46f, 0.50f);
-            RenderSettings.ambientGroundColor = new Color(0.24f, 0.26f, 0.22f);
-            RenderSettings.ambientIntensity = 1.0f;
-
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = 3000f;
-            RenderSettings.fogEndDistance = Mathf.Max(8000f, fogDistance);
-            RenderSettings.fogColor = new Color(0.60f, 0.72f, 0.85f);
-
-            Debug.Log("[Atmosphere] Built-in: céu procedural, iluminação solar, nuvens e atmosfera configuradas.");
         }
     }
 }

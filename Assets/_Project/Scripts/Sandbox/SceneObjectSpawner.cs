@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectTerra.Gameplay;
+using ProjectTerra.Core;
 
 namespace ProjectTerra.Sandbox
 {
@@ -384,28 +385,14 @@ namespace ProjectTerra.Sandbox
         }
 
         /// <summary>
-        /// Atribui uma cor a um renderer criando um novo Material com o shader Standard do Unity.
+        /// Atribui uma cor a um renderer criando um novo Material com o shader URP Lit.
         /// NUNCA modifique .material.color diretamente em primitivos — isso corrompe o Default-Material
         /// compartilhado entre todos os objetos, causando que todos fiquem brancos.
         /// </summary>
         private static void SetPrimitiveColor(Renderer renderer, Color color)
         {
-            // Busca o shader Standard (Built-in) ou Unlit/Color como fallback
-            Shader shader = Shader.Find("Standard") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Diffuse");
-            if (shader != null)
-            {
-                var mat = new Material(shader);
-                mat.color = color;
-                if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", 0.15f);
-                if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.0f);
-                renderer.sharedMaterial = mat;
-            }
-            else
-            {
-                // Último recurso: instanciar o material atual para não poluir o compartilhado
-                renderer.material = Object.Instantiate(renderer.sharedMaterial);
-                renderer.material.color = color;
-            }
+            var mat = URPMaterialHelper.CreateURPLitMaterial("Primitive_" + color.GetHashCode(), color, 0.15f, 0.0f);
+            renderer.sharedMaterial = mat;
         }
 
         /// <summary>
@@ -427,24 +414,9 @@ namespace ProjectTerra.Sandbox
             var renderers = instance.GetComponentsInChildren<Renderer>(true);
             if (renderers == null || renderers.Length == 0) return;
 
-            Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse");
-            var matPrimary = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-            matPrimary.name = $"{instance.name}_MatPrimary";
-            matPrimary.color = primaryColor;
-            if (matPrimary.HasProperty("_Glossiness")) matPrimary.SetFloat("_Glossiness", 0.15f);
-            if (matPrimary.HasProperty("_Metallic")) matPrimary.SetFloat("_Metallic", 0.0f);
-
-            var matSecondary = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-            matSecondary.name = $"{instance.name}_MatSecondary";
-            matSecondary.color = secondaryColor;
-            if (matSecondary.HasProperty("_Glossiness")) matSecondary.SetFloat("_Glossiness", 0.15f);
-            if (matSecondary.HasProperty("_Metallic")) matSecondary.SetFloat("_Metallic", 0.0f);
-
-            var matAccent = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-            matAccent.name = $"{instance.name}_MatAccent";
-            matAccent.color = new Color(0.88f, 0.55f, 0.58f); // Rosa para focinho/orelhas
-            if (matAccent.HasProperty("_Glossiness")) matAccent.SetFloat("_Glossiness", 0.18f);
-            if (matAccent.HasProperty("_Metallic")) matAccent.SetFloat("_Metallic", 0.0f);
+            var matPrimary = URPMaterialHelper.CreateURPLitMaterial($"{instance.name}_MatPrimary", primaryColor, 0.15f, 0.0f);
+            var matSecondary = URPMaterialHelper.CreateURPLitMaterial($"{instance.name}_MatSecondary", secondaryColor, 0.15f, 0.0f);
+            var matAccent = URPMaterialHelper.CreateURPLitMaterial($"{instance.name}_MatAccent", new Color(0.88f, 0.55f, 0.58f), 0.18f, 0.0f);
 
             string instNameLower = instance.name.ToLower();
             bool isTree = instNameLower.Contains("tree") || instNameLower.Contains("arvore");

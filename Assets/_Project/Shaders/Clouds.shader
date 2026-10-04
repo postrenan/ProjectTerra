@@ -24,47 +24,58 @@ Shader "ProjectTerra/Clouds/Procedural"
 
         Pass
         {
+            Name "UniversalForward"
+            Tags { "LightMode"="UniversalForward" }
+
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma target 3.0
+            #pragma multi_compile _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+            #pragma multi_compile_fog
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityCG.hlsl"
 
-            #include "UnityCG.cginc"
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                float2 uv : TEXCOORD0;
+            };
 
-            sampler2D _MainTex;
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 worldNormal : TEXCOORD1;
+                float3 worldPos : TEXCOORD2;
+                float fogFactor : TEXCOORD3;
+            };
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+
+            CBUFFER_START(UnityPerMaterial)
             float _Coverage;
             float _Density;
-            fixed4 _ColorDay;
-            fixed4 _ColorNight;
-            fixed4 _ColorSunset;
+            float4 _ColorDay;
+            float4 _ColorNight;
+            float4 _ColorSunset;
             float4 _SunDirection;
             float _TimeOfDay;
             float2 _CloudOffset;
             float _CloudScale;
+            CBUFFER_END
 
-            struct appdata
+            Varyings vert(Attributes input)
             {
-                float4 vertex : POSITION;
-                float3 normal : NORMAL;
-                float2 uv : TEXCOORD0;
-            };
-
-            struct v2f
-            {
-                float2 uv : TEXCOORD0;
-                float3 worldNormal : TEXCOORD1;
-                float3 worldPos : TEXCOORD2;
-                float4 vertex : SV_POSITION;
-            };
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.worldNormal = normalize(mul(v.normal, (float3x3)unity_ObjectToWorld));
-                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
-                o.uv = v.uv;
-                return o;
+                Varyings output;
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                output.positionCS = vertexInput.positionCS;
+                output.worldPos = vertexInput.positionWS;
+                output.worldNormal = GetNormalizedNormalWS(vertexInput.normalOS, input.normalOS, float3(0,0,0));
+                output.uv = input.uv;
+                output.fogFactor = 0.0;
+                return output;
             }
 
             // Perlin noise 2D simples
@@ -107,10 +118,10 @@ Shader "ProjectTerra/Clouds/Procedural"
                 return value / maxAmplitude;
             }
 
-            fixed4 frag(v2f i) : SV_Target
+            half4 frag(Varyings input) : SV_Target
             {
                 // UV baseado na posição mundial + offset do vento
-                float2 uv = (i.worldPos.xz * _CloudScale) + _CloudOffset;
+                float2 uv = (input.worldPos.xz * _CloudScale) + _CloudOffset;
 
                 // FBM (Fractional Brownian Motion) para nuvens
                 float n = fbm(uv, 5);
@@ -125,10 +136,10 @@ Shader "ProjectTerra/Clouds/Procedural"
                 float density = coverage * _Density;
 
                 // Silver lining - iluminar bordas voltadas para o sol
-                float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+                float3 viewDir = normalize(_WorldSpaceCameraPos - input.worldPos);
                 float3 sunDir = normalize(_SunDirection.xyz);
-                float sunDot = dot(i.worldNormal, sunDir);
-                float viewDot = dot(i.worldNormal, viewDir);
+                float sunDot = dot(input.worldNormal, sunDir);
+                float viewDot = dot(input.worldNormal, viewDir);
                 float rim = pow(max(0.0, sunDot), 8.0) * max(0.0, viewDot) * 0.3;
 
                 // Cor baseada na hora do dia
@@ -137,7 +148,7 @@ Shader "ProjectTerra/Clouds/Procedural"
                 bool isDay = elevationFactor > 0.04;
                 bool isGoldenHour = abs(elevationFactor) <= 0.28;
 
-                fixed4 cloudColor;
+                half4 cloudColor;
                 if (isGoldenHour)
                 {
                     float t = 1.0 - abs(elevationFactor) / 0.28;
@@ -152,14 +163,17 @@ Shader "ProjectTerra/Clouds/Procedural"
                     cloudColor = _ColorNight;
                 }
 
-                fixed4 col = cloudColor;
+                half4 col = cloudColor;
                 col.rgb += rim;
                 col.a = density;
+
+                // Fog
+                col.rgb = MixFog(col.rgb, input.fogFactor);
 
                 return col;
             }
             ENDCG
         }
     }
-    FallBack "Transparent/VertexLit"
+    Fallback "Universal Render Pipeline/Particles/Lit"
 }
