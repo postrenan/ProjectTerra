@@ -39,7 +39,6 @@ namespace ProjectTerra.Sandbox
         private Rigidbody rb;
         private Collider mainCollider;
         private PlowFurrowManager furrowManager;
-        private float lastPlowTime = 0f;
         private Vector3 lastPlowPos;
         private float currentPivotAngle = 0f;
 
