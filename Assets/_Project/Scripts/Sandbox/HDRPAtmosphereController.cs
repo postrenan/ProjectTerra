@@ -53,12 +53,6 @@ namespace ProjectTerra.Sandbox
         private Material cloudMaterial;
         private Vector2 cloudOffset = Vector2.zero;
 
-        // Referências aos Volumes URP
-        private Volume atmosphereVolume;
-        private VolumeProfile volumeProfile;
-        private VisualEnvironment visualEnvironment;
-        private Fog fogVolume;
-
         private void Awake()
         {
             Instance = this;
@@ -105,58 +99,26 @@ namespace ProjectTerra.Sandbox
             RenderSettings.ambientGroundColor = ambientGroundColor;
             RenderSettings.ambientIntensity = ambientIntensity;
 
-            // 3. Configurar Neblina via RenderSettings (compatibilidade básica)
-            // NOTA: Para controle total URP, usar Volume com Fog component
+            // 3. Configurar Neblina via RenderSettings (modo suportado pelo URP)
             RenderSettings.fog = true;
             RenderSettings.fogMode = fogMode;
             RenderSettings.fogStartDistance = fogStartDistance;
             RenderSettings.fogEndDistance = Mathf.Max(8000f, fogDistance);
             RenderSettings.fogColor = fogColor;
 
-            // 4. Criar/Configurar Volume URP para Sky e Fog avançados
-            SetupURPVolumes();
-
-            Debug.Log("[Atmosphere] URP: céu procedural, iluminação solar, nuvens e atmosfera configuradas (RenderSettings + Volumes).");
+            Debug.Log("[Atmosphere] URP: céu procedural, iluminação solar, nuvens e atmosfera configuradas via RenderSettings.");
         }
 
-        private void SetupURPVolumes()
-        {
-            // Criar Volume global para atmosfera
-            var volumeGO = new GameObject("AtmosphereVolume");
-            volumeGO.transform.SetParent(transform);
-            atmosphereVolume = volumeGO.AddComponent<Volume>();
-            atmosphereVolume.isGlobal = true;
-            atmosphereVolume.priority = 10;
-
-            volumeProfile = ScriptableObject.CreateInstance<VolumeProfile>();
-            atmosphereVolume.profile = volumeProfile;
-
-            // VisualEnvironment (Sky, Ambient, etc.)
-            visualEnvironment = volumeProfile.Add<VisualEnvironment>(true);
-            visualEnvironment.skyType.value = SkyType.Procedural;
-            // Nota: Para Procedural Sky no URP, precisa do pacote "Unity.RenderPipelines.Universal.Shaders" 
-            // e o skybox procedural é definido via RenderSettings.skybox mesmo.
-
-            // Fog Volume
-            fogVolume = volumeProfile.Add<Fog>(true);
-            fogVolume.enabled.value = true;
-            fogVolume.mode.value = fogMode;
-            fogVolume.color.value = fogColor;
-            fogVolume.startDistance.value = fogStartDistance;
-            fogVolume.endDistance.value = fogDistance;
-            fogVolume.maxFogDistance.value = fogDistance;
-        }
-
+        // NOTA: O URP não expõe overrides de Volume para Fog/Sky (isso é exclusivo do HDRP).
+        // A neblina, o skybox e a iluminação ambiente são controlados diretamente por RenderSettings,
+        // que o URP respeita. Este método mantém o RenderSettings de neblina sincronizado com os campos.
         private void UpdateAtmosphereVolumes()
         {
-            if (fogVolume != null)
-            {
-                fogVolume.mode.value = fogMode;
-                fogVolume.color.value = fogColor;
-                fogVolume.startDistance.value = fogStartDistance;
-                fogVolume.endDistance.value = fogDistance;
-                fogVolume.maxFogDistance.value = fogDistance;
-            }
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = fogMode;
+            RenderSettings.fogStartDistance = fogStartDistance;
+            RenderSettings.fogEndDistance = fogDistance;
+            RenderSettings.fogColor = fogColor;
         }
 
         private void ConfigureClouds()

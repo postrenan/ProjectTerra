@@ -43,8 +43,7 @@ namespace ProjectTerra.Sandbox
                 sunLight.intensity = Mathf.Lerp(0.35f, 1.0f, factor);
                 sunLight.color = isGoldenHour ? new Color(1.0f, 0.72f, 0.42f) : new Color(1.0f, 0.96f, 0.90f);
                 
-                // URP: atualizar ambient intensity via RenderSettings (ainda funciona)
-                // Para controle total, usar VisualEnvironment volume
+                // URP: ambient intensity controlada via RenderSettings
                 RenderSettings.ambientIntensity = Mathf.Lerp(0.55f, 1.0f, factor);
             }
             else
