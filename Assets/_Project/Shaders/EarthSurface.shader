@@ -6,7 +6,7 @@ Shader "ProjectTerra/EarthSurface"
         _Color ("Main Tint", Color) = (1, 1, 1, 1)
         _DayColor ("Day Color Tint", Color) = (1, 1, 1, 1)
         _MainTex ("Albedo Map (Day)", 2D) = "white" {}
-        
+
         [Header(Water Mask)]
         _WaterMask ("Water / Specular Mask", 2D) = "black" {}
         _OceanSmoothness ("Ocean Smoothness", Range(0, 1)) = 0.92
@@ -41,7 +41,7 @@ Shader "ProjectTerra/EarthSurface"
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" "Queue"="Geometry" }
+        Tags { "RenderType"="Opaque" "Queue"="Geometry" "RenderPipeline"="UniversalPipeline" }
         LOD 300
 
         Pass
@@ -49,17 +49,15 @@ Shader "ProjectTerra/EarthSurface"
             Name "UniversalForward"
             Tags { "LightMode"="UniversalForward" }
 
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
-            #pragma multi_compile _ _NORMALMAP
-            #pragma multi_compile _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_B
-            #pragma multi_compile _ _METALLIC_TEXTURE_ALBEDO_CHANNEL_A _METALLIC_TEXTURE_ALBEDO_CHANNEL_B
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fog
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityCG.hlsl"
 
             struct Attributes
             {
@@ -113,15 +111,16 @@ Shader "ProjectTerra/EarthSurface"
 
             Varyings vert(Attributes input)
             {
-                Varyings output;
+                Varyings output = (Varyings)0;
                 VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
+                VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
                 output.positionCS = vertexInput.positionCS;
                 output.positionWS = vertexInput.positionWS;
-                output.normalWS = GetNormalizedNormalWS(vertexInput.normalOS, input.normalOS, input.tangentOS.xyz);
-                output.tangentWS = float4(GetTangentWS(vertexInput.normalOS, input.normalOS, input.tangentOS), input.tangentOS.w);
-                output.viewDirWS = normalize(_WorldSpaceCameraPos.xyz - output.positionWS);
+                output.normalWS = normalInput.normalWS;
+                output.tangentWS = float4(normalInput.tangentWS, input.tangentOS.w);
+                output.viewDirWS = normalize(GetWorldSpaceViewDir(vertexInput.positionWS));
                 output.uv = input.uv;
-                output.fogFactor = 0.0;
+                output.fogFactor = ComputeFogFactor(vertexInput.positionCS.z);
                 return output;
             }
 
@@ -207,7 +206,7 @@ Shader "ProjectTerra/EarthSurface"
                 half4 atmosphere = _AtmosphereColor * rim * closeGroundFactor;
 
                 // Iluminação ambiente (SH)
-                half3 ambient = SampleSH9(float4(worldNorm, 1.0));
+                half3 ambient = SampleSH(worldNorm);
                 if (length(ambient) < 0.05)
                     ambient = half3(0.04, 0.04, 0.07);
 
@@ -223,7 +222,7 @@ Shader "ProjectTerra/EarthSurface"
                 {
                     float camDistKm = camDist * 0.001; // converter para km
                     float borderFade = saturate((_BordersFadeStart - camDistKm) / max(1.0, _BordersFadeStart - _BordersFadeEnd));
-                    
+
                     // Manter traço de fronteira nítido sem borrar em baixa altitude
                     float borderAlpha = saturate((borderSample.a - 0.08) * 2.5);
                     half3 borderGlow = borderSample.rgb * _BordersColor.rgb;
@@ -237,11 +236,11 @@ Shader "ProjectTerra/EarthSurface"
                     // Elimina completamente qualquer interpolação bilinear ou vazamento entre regiões vizinhas
                     float2 idUV = frac(uv);
                     float2 snapUV = (floor(idUV * float2(4096.0, 2048.0)) + 0.5) / float2(4096.0, 2048.0);
-                    half4 idPixel = SAMPLE_TEXTURE2D_LOD(_RegionIdTex, sampler_RegionIdTex, float4(snapUV, 0.0, 0.0));
-                    
+                    half4 idPixel = SAMPLE_TEXTURE2D_LOD(_RegionIdTex, sampler_RegionIdTex, snapUV, 0.0);
+
                     int sampledId = (int)round(idPixel.r * 255.0) + ((int)round(idPixel.g * 255.0) * 256);
                     int targetId = (int)round(_SelectedRegionId);
-                    
+
                     if (sampledId == targetId && targetId > 0)
                     {
                         float pulse = 0.85 + 0.15 * sin(_Time.y * 3.5);
@@ -257,52 +256,10 @@ Shader "ProjectTerra/EarthSurface"
 
                 return half4(finalColor, 1.0);
             }
-            ENDCG
+            ENDHLSL
         }
 
-        // ShadowCaster Pass para URP
-        Pass
-        {
-            Name "UniversalShadowCaster"
-            Tags { "LightMode"="UniversalShadowCaster" }
-
-            CGPROGRAM
-            #pragma vertex vert_shadow
-            #pragma fragment frag_shadow
-            #pragma multi_compile_shadowcaster
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityCG.hlsl"
-
-            struct Attributes
-            {
-                float4 positionOS : POSITION;
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-                float4 positionWS : TEXCOORD0;
-            };
-
-            TEXTURE2D(_RegionIdTex);
-            SAMPLER(sampler_RegionIdTex);
-            float _SelectedRegionId;
-
-            Varyings vert_shadow(Attributes input)
-            {
-                Varyings output;
-                VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
-                output.positionCS = vertexInput.positionCS;
-                output.positionWS = vertexInput.positionWS;
-                return output;
-            }
-
-            float4 frag_shadow(Varyings input) : SV_Target
-            {
-                return 0;
-            }
-            ENDCG
-        }
+        // Passes de sombra / profundidade herdados do shader URP Lit padrão.
     }
 
     Fallback "Universal Render Pipeline/Lit"

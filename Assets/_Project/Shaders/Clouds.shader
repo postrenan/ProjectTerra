@@ -15,7 +15,7 @@ Shader "ProjectTerra/Clouds/Procedural"
     }
     SubShader
     {
-        Tags { "Queue" = "Transparent" "RenderType" = "Transparent" }
+        Tags { "Queue" = "Transparent" "RenderType" = "Transparent" "RenderPipeline" = "UniversalPipeline" }
         LOD 200
 
         Blend SrcAlpha OneMinusSrcAlpha
@@ -27,13 +27,13 @@ Shader "ProjectTerra/Clouds/Procedural"
             Name "UniversalForward"
             Tags { "LightMode"="UniversalForward" }
 
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
             #pragma multi_compile_fog
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityCG.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             struct Attributes
             {
@@ -68,13 +68,13 @@ Shader "ProjectTerra/Clouds/Procedural"
 
             Varyings vert(Attributes input)
             {
-                Varyings output;
+                Varyings output = (Varyings)0;
                 VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = vertexInput.positionCS;
                 output.worldPos = vertexInput.positionWS;
-                output.worldNormal = GetNormalizedNormalWS(vertexInput.normalOS, input.normalOS, float3(0,0,0));
+                output.worldNormal = TransformObjectToWorldNormal(input.normalOS);
                 output.uv = input.uv;
-                output.fogFactor = 0.0;
+                output.fogFactor = ComputeFogFactor(vertexInput.positionCS.z);
                 return output;
             }
 
@@ -172,7 +172,7 @@ Shader "ProjectTerra/Clouds/Procedural"
 
                 return col;
             }
-            ENDCG
+            ENDHLSL
         }
     }
     Fallback "Universal Render Pipeline/Particles/Lit"

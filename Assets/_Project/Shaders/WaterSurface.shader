@@ -17,7 +17,7 @@ Shader "ProjectTerra/WaterSurface"
 
     SubShader
     {
-        Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" }
+        Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" "RenderPipeline"="UniversalPipeline" }
         LOD 200
         Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
@@ -28,14 +28,13 @@ Shader "ProjectTerra/WaterSurface"
             Name "UniversalForward"
             Tags { "LightMode"="UniversalForward" }
 
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
             #pragma multi_compile_fog
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityCG.hlsl"
 
             struct Attributes
             {
@@ -67,13 +66,12 @@ Shader "ProjectTerra/WaterSurface"
 
             Varyings vert(Attributes input)
             {
-                Varyings output;
+                Varyings output = (Varyings)0;
                 VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = vertexInput.positionCS;
                 output.positionWS = vertexInput.positionWS;
-                output.normalWS = GetNormalizedNormalWS(vertexInput.normalOS, input.normalOS, float3(0,0,0));
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.uv = input.uv;
-                output.fogFactor = 0.0;
 
                 float3 worldPos = output.positionWS;
                 float time = _Time.y * _WaveSpeed;
@@ -87,6 +85,7 @@ Shader "ProjectTerra/WaterSurface"
                 // Deslocamento vertical dos vértices
                 output.positionWS.y += totalWave;
                 output.positionCS = TransformWorldToHClip(output.positionWS);
+                output.fogFactor = ComputeFogFactor(output.positionCS.z);
 
                 // Derivadas analíticas para cálculo da normal perturbada da onda
                 float dw_dx = (0.08 * cos((worldPos.x * 0.08 + worldPos.z * 0.05) + time * 1.5) * _WaveHeight)
@@ -155,7 +154,7 @@ Shader "ProjectTerra/WaterSurface"
 
                 return waterColor;
             }
-            ENDCG
+            ENDHLSL
         }
     }
     Fallback "Universal Render Pipeline/Particles/Lit"
