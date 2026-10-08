@@ -204,6 +204,24 @@ namespace ProjectTerra.Sandbox
                 case "speeder":
                     vehicle = VehicleBuilder.CreateCar(spawnPos, "craft_speederA", "Aero Speeder Futurista", VehicleCategory.Plane);
                     break;
+
+                // ---- Modelos realistas (PBR) importados ----
+                case "tractor2":
+                case "trator2":
+                case "tratorreal":
+                case "tratorrealista":
+                    vehicle = VehicleBuilder.CreateRealisticTractor(spawnPos);
+                    break;
+                case "scania":
+                    vehicle = VehicleBuilder.CreateScania(spawnPos);
+                    break;
+                case "carpack":
+                case "carros":
+                case "car2":
+                case "carrorealista":
+                    vehicle = VehicleBuilder.CreateRealisticCarPack(spawnPos);
+                    break;
+
                 default:
                     // Tenta criar como carro com modelo específico de Resources
                     vehicle = VehicleBuilder.CreateCar(spawnPos, key, $"Veículo {key}");

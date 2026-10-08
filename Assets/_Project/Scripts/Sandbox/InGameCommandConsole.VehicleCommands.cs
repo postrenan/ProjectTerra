@@ -11,6 +11,7 @@ namespace ProjectTerra.Sandbox
             if (args.Length == 0)
             {
                 LogMessage("Uso: /spawn <tipo>  |  Ex: /spawn truck, /spawn car, /spawn plane, /spawn tractor, /spawn all", new Color(1f, 0.8f, 0.2f));
+                LogMessage("Realistas (PBR): /spawn tractor2, /spawn scania, /spawn carpack", new Color(0.6f, 0.85f, 1f));
                 return;
             }
 

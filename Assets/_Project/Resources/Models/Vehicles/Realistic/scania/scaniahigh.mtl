@@ -1,0 +1,25 @@
+# Material library reconstruída para scaniahigh.obj
+# (o .rar original não incluía o .mtl). O Unity lê map_Kd (albedo) e bump (normal);
+# Metallic/Roughness/AO/Emissive podem ser atribuídos manualmente no material URP.
+
+newmtl cabin4
+Ka 1.000 1.000 1.000
+Kd 1.000 1.000 1.000
+Ks 0.200 0.200 0.200
+Ns 50.0
+d 1.0
+illum 2
+map_Kd cabin4_Base_Color.png
+map_Bump cabin4_Normal.png
+bump cabin4_Normal.png
+
+newmtl chasis6
+Ka 1.000 1.000 1.000
+Kd 1.000 1.000 1.000
+Ks 0.200 0.200 0.200
+Ns 50.0
+d 1.0
+illum 2
+map_Kd chasis6_Base_Color.png
+map_Bump chasis6_Normal.png
+bump chasis6_Normal.png

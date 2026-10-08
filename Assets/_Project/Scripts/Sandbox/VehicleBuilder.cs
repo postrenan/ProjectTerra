@@ -417,6 +417,104 @@ namespace ProjectTerra.Sandbox
             return vehicle;
         }
 
+        // =====================================================================================
+        // Veículos realistas (modelos PBR importados). Diferente dos modelos low-poly Kenney,
+        // estes MANTÊM os materiais importados (não aplicam o colormap compartilhado).
+        // Os modelos ficam em Resources/Models/Vehicles/Realistic/.
+        // =====================================================================================
+
+        /// <summary>
+        /// Monta um veículo a partir de um modelo realista (PBR) carregado de Resources,
+        /// preservando os materiais importados. Caso o modelo não seja encontrado, cria o
+        /// veículo apenas com física (sem visual), registrando um aviso.
+        /// </summary>
+        public static VehicleController CreateRealisticVehicle(
+            Vector3 position, string resourcePath, string displayName, VehicleCategory category,
+            float visualScale, Vector3 colliderSize, Vector3 colliderCenter,
+            float maxSpeedKmh, float enginePower, float cargoKg, Vector3 visualOffset)
+        {
+            var root = new GameObject($"Veiculo_{displayName}");
+            root.transform.position = position;
+
+            var col = root.AddComponent<BoxCollider>();
+            col.size = colliderSize;
+            col.center = colliderCenter;
+
+            // Esferas de contato de baixo atrito nos 4 cantos do footprint do collider
+            var wMat = GetWheelPhysicsMaterial();
+            float halfW = colliderSize.x * 0.45f;
+            float halfL = colliderSize.z * 0.35f;
+            float wheelR = Mathf.Max(0.4f, colliderSize.y * 0.28f);
+            AddWheelSphere(root, new Vector3(-halfW, wheelR, halfL), wheelR, wMat);
+            AddWheelSphere(root, new Vector3(halfW, wheelR, halfL), wheelR, wMat);
+            AddWheelSphere(root, new Vector3(-halfW, wheelR, -halfL), wheelR, wMat);
+            AddWheelSphere(root, new Vector3(halfW, wheelR, -halfL), wheelR, wMat);
+
+            var vehicle = root.AddComponent<VehicleController>();
+            vehicle.category = category;
+            vehicle.vehicleName = displayName;
+            vehicle.maxSpeedKmh = maxSpeedKmh;
+            vehicle.enginePower = enginePower;
+            vehicle.maxCargoCapacityKg = cargoKg;
+
+            var meshPrefab = Resources.Load<GameObject>(resourcePath);
+            if (meshPrefab != null)
+            {
+                var visual = Object.Instantiate(meshPrefab, root.transform);
+                visual.name = "Visual_Realista3D";
+                visual.transform.localPosition = visualOffset;
+                visual.transform.localRotation = Quaternion.identity;
+                visual.transform.localScale = Vector3.one * visualScale;
+                // IMPORTANTE: não aplica colormap — mantém os materiais PBR importados do modelo.
+            }
+            else
+            {
+                Debug.LogWarning($"[VehicleBuilder] Modelo realista não encontrado em Resources/{resourcePath}. " +
+                                 "O veículo foi criado apenas com física (sem malha visual). " +
+                                 "Verifique se o arquivo está sob uma pasta Resources e reimporte o projeto.");
+            }
+
+            vehicle.driverSeatPoint = CreatePoint(root.transform, new Vector3(-colliderSize.x * 0.22f, colliderCenter.y + 0.30f, 0f), "DriverSeat");
+            vehicle.cockpitCameraPoint = CreatePoint(root.transform, new Vector3(-colliderSize.x * 0.22f, colliderCenter.y + 0.60f, 0.10f), "CockpitCam");
+            vehicle.exitPoint = CreatePoint(root.transform, new Vector3(-(colliderSize.x * 0.5f + 1.25f), 0.35f, 0f), "ExitPoint");
+
+            if (category == VehicleCategory.Tractor)
+                vehicle.rearHitchPoint = CreatePoint(root.transform, new Vector3(0f, colliderCenter.y * 0.4f, -(colliderSize.z * 0.5f + 0.4f)), "RearHitchPoint");
+
+            vehicle.CreateDefaultHeadlights();
+            return vehicle;
+        }
+
+        public static VehicleController CreateRealisticTractor(Vector3 position)
+        {
+            return CreateRealisticVehicle(
+                position, "Models/Vehicles/Realistic/tractor/tractor_painted2",
+                "Trator Realista PBR", VehicleCategory.Tractor,
+                visualScale: 1.0f,
+                colliderSize: new Vector3(2.2f, 2.4f, 4.0f), colliderCenter: new Vector3(0f, 1.2f, 0f),
+                maxSpeedKmh: 40f, enginePower: 3400f, cargoKg: 2000f, visualOffset: Vector3.zero);
+        }
+
+        public static VehicleController CreateScania(Vector3 position)
+        {
+            return CreateRealisticVehicle(
+                position, "Models/Vehicles/Realistic/scania/scaniahigh",
+                "Caminhão Scania PBR", VehicleCategory.Truck,
+                visualScale: 1.0f,
+                colliderSize: new Vector3(2.6f, 3.4f, 9.0f), colliderCenter: new Vector3(0f, 1.8f, 0f),
+                maxSpeedKmh: 90f, enginePower: 6000f, cargoKg: 12000f, visualOffset: Vector3.zero);
+        }
+
+        public static VehicleController CreateRealisticCarPack(Vector3 position)
+        {
+            return CreateRealisticVehicle(
+                position, "Models/Vehicles/Realistic/cars/fab",
+                "Carro Realista PBR", VehicleCategory.Car,
+                visualScale: 1.0f,
+                colliderSize: new Vector3(2.0f, 1.5f, 4.5f), colliderCenter: new Vector3(0f, 0.9f, 0f),
+                maxSpeedKmh: 150f, enginePower: 4400f, cargoKg: 500f, visualOffset: Vector3.zero);
+        }
+
         /// <summary>
         /// Aplica a textura de paleta colormap.png original da coleção Kenney em todos os MeshRenderers
         /// do veículo instanciado, garantindo cores reais de fábrica com sombreamento Standard.
