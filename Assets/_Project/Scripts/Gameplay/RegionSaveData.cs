@@ -36,6 +36,32 @@ namespace ProjectTerra.Gameplay
         // Dívida bancária em aberto (empréstimos tomados no app Finanças).
         public long loanDebt = 0;
 
+        // --- Economia avançada da campanha (save v3) ---
+        // Gate mestre: só partidas criadas com os sistemas novos ligam custos operacionais,
+        // despesa diária e (futuro) prazos. Saves v1/v2 carregam com isto em false e seguem
+        // jogando como antes.
+        public bool advancedEconomy = false;
+        // Dificuldade escolhida na criação (índice de GameDifficulty).
+        public int difficulty = (int)GameDifficulty.Balanced;
+        // Dia de jogo corrente (começa em 1), avançado pelo GameClock à meia-noite.
+        public int gameDay = 1;
+        // Preço corrente do combustível por litro. 0 = ainda não definido → derivado da dificuldade.
+        public float fuelPricePerLiter = 0f;
+        // Total gasto em custos operacionais (combustível, reparo, despesa diária) — estatística.
+        public long totalExpenses = 0;
+        // Bitmask das metas de campanha já resgatadas (ver CampaignGoalCatalog).
+        public long milestonesClaimed = 0;
+        // Entregas atrasadas e perdidas (estatística / pressão).
+        public int lateDeliveries = 0;
+
+        public GameDifficulty Difficulty => (GameDifficulty)difficulty;
+
+        /// <summary>Parâmetros econômicos da dificuldade desta partida.</summary>
+        public DifficultySettings DifficultyConfig => DifficultySettingsCatalog.Get(Difficulty);
+
+        /// <summary>Preço do combustível efetivo; deriva da dificuldade se nunca definido.</summary>
+        public float EffectiveFuelPrice => fuelPricePerLiter > 0f ? fuelPricePerLiter : DifficultyConfig.fuelPricePerLiter;
+
         /// <summary>Licenças efetivas do jogador; deriva da carreira se nunca inicializadas.</summary>
         public DriverLicense Licenses
         {
@@ -131,9 +157,18 @@ namespace ProjectTerra.Gameplay
             // v2
             writer.Write(licenses);
             writer.Write(loanDebt);
+
+            // v3
+            writer.Write(advancedEconomy);
+            writer.Write(difficulty);
+            writer.Write(gameDay);
+            writer.Write(fuelPricePerLiter);
+            writer.Write(totalExpenses);
+            writer.Write(milestonesClaimed);
+            writer.Write(lateDeliveries);
         }
 
-        public const byte CurrentVersion = 2;
+        public const byte CurrentVersion = 3;
 
         /// <summary>
         /// Deserializa um save. O byte de versão decide o layout: cada layout tem o seu
@@ -147,6 +182,8 @@ namespace ProjectTerra.Gameplay
                     return ReadBinaryV1(reader);
                 case 2:
                     return ReadBinaryV2(reader);
+                case 3:
+                    return ReadBinaryV3(reader);
                 default:
                     // Antes o byte de versão era lido e descartado, sempre usando o layout v1.
                     // Um save de versão futura (com um campo extra) seria lido fora de fase
@@ -201,6 +238,22 @@ namespace ProjectTerra.Gameplay
             ReadCore(reader, save);
             save.licenses = reader.ReadInt32();
             save.loanDebt = reader.ReadInt64();
+            return save;
+        }
+
+        private static RegionSaveData ReadBinaryV3(System.IO.BinaryReader reader)
+        {
+            var save = new RegionSaveData();
+            ReadCore(reader, save);
+            save.licenses = reader.ReadInt32();
+            save.loanDebt = reader.ReadInt64();
+            save.advancedEconomy = reader.ReadBoolean();
+            save.difficulty = reader.ReadInt32();
+            save.gameDay = reader.ReadInt32();
+            save.fuelPricePerLiter = reader.ReadSingle();
+            save.totalExpenses = reader.ReadInt64();
+            save.milestonesClaimed = reader.ReadInt64();
+            save.lateDeliveries = reader.ReadInt32();
             return save;
         }
     }

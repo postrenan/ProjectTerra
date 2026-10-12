@@ -31,11 +31,12 @@ namespace ProjectTerra.Sandbox
             string regName = activeSave != null ? activeSave.regionName : "Região";
             string country = activeSave != null ? activeSave.countryName : "Mundo";
             string timeStr = FormattedInGameTimeString;
+            int day = activeSave != null ? activeSave.gameDay : 1;
 
             GUILayout.BeginHorizontal();
             GUILayout.Label($" {regName}, {country}", titleStyle);
             GUILayout.FlexibleSpace();
-            GUILayout.Label($" {timeStr}", subtitleStyle);
+            GUILayout.Label($"Dia {day} • {timeStr}", subtitleStyle);
             GUILayout.EndHorizontal();
 
             // Linha 2: Saldo + Time Warp compacto
@@ -147,8 +148,10 @@ namespace ProjectTerra.Sandbox
             var contract = MissionManager.Instance.currentContract;
             if (contract.isCompleted) return;
 
+            bool hasDeadline = contract.deadlineGameHours > 0f;
+
             float w = 310f;
-            float h = 76f;
+            float h = hasDeadline ? 94f : 76f;
             Rect rect = new Rect(Screen.width - w - 20f, 15f, w, h);
 
             GUI.color = new Color(0.05f, 0.08f, 0.14f, 0.90f);
@@ -169,7 +172,21 @@ namespace ProjectTerra.Sandbox
             string distText = dist > 1000f ? $"{(dist / 1000f):F1} km" : $"{dist:F0} m";
 
             GUILayout.Label($" {contract.destinationName} ({distText}) • {contract.cargoType}", subtitleStyle);
-            GUILayout.Label(contract.description, missionDescStyle);
+
+            if (hasDeadline)
+            {
+                float hrs = MissionManager.Instance.GetHoursRemaining();
+                string tl = hrs <= 0f ? "ATRASADO" : (hrs < 1f ? $"{hrs * 60f:F0} min" : $"{hrs:F1} h");
+                string urg = contract.urgent ? "[URGENTE] " : "";
+                string frag = contract.fragile ? $" • Carga {contract.cargoIntegrity:F0}%" : "";
+                GUI.color = hrs <= 0f ? new Color(1f, 0.4f, 0.4f) : (contract.urgent ? new Color(1f, 0.6f, 0.3f) : Color.white);
+                GUILayout.Label($"{urg}Prazo: {tl}{frag}", subtitleStyle);
+                GUI.color = Color.white;
+            }
+            else
+            {
+                GUILayout.Label(contract.description, missionDescStyle);
+            }
 
             GUILayout.EndArea();
         }
@@ -185,8 +202,11 @@ namespace ProjectTerra.Sandbox
 
             var vehicle = player.currentVehicle;
 
+            bool showCondition = activeSave != null && activeSave.advancedEconomy;
+
             float w = 260f;
             float h = vehicle.category == VehicleCategory.Plane || vehicle.category == VehicleCategory.Tractor ? 122f : 105f;
+            if (showCondition) h += 22f;
             Rect rect = new Rect(Screen.width - w - 20f, Screen.height - h - 20f, w, h);
 
             GUI.color = new Color(0.04f, 0.07f, 0.12f, 0.92f);
@@ -230,6 +250,14 @@ namespace ProjectTerra.Sandbox
             Color fuelCol = vehicle.fuelPercent > 45f ? new Color(0.3f, 0.85f, 0.4f) :
                            (vehicle.fuelPercent > 20f ? new Color(1f, 0.8f, 0.2f) : new Color(1f, 0.3f, 0.3f));
             DrawMiniBar("Tanque:", vehicle.fuelPercent, 100f, fuelCol);
+
+            // Barra de Condição do veículo (desgaste) — só na economia avançada.
+            if (showCondition)
+            {
+                Color condCol = vehicle.conditionPercent > 60f ? new Color(0.3f, 0.85f, 0.4f) :
+                               (vehicle.conditionPercent > 30f ? new Color(1f, 0.8f, 0.2f) : new Color(1f, 0.3f, 0.3f));
+                DrawMiniBar("Condição:", vehicle.conditionPercent, 100f, condCol);
+            }
 
             // Barra de Carga (se não for avião com altitude)
             if (vehicle.category != VehicleCategory.Plane)

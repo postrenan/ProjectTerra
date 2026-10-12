@@ -127,7 +127,7 @@ namespace ProjectTerra.Sandbox
                         }
                     }
 
-                    float netAccel = (accelerationRate * torqueCurve + slopeAssist) * Mathf.Max(0.05f, smoothedThrottle);
+                    float netAccel = (accelerationRate * torqueCurve + slopeAssist) * Mathf.Max(0.05f, smoothedThrottle) * ConditionPowerFactor;
 
                     if (forwardSpeedKmh < maxSpeedKmh)
                     {

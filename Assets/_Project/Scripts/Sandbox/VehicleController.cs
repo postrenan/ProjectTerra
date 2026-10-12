@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using ProjectTerra.Core;
+using ProjectTerra.Gameplay;
 
 namespace ProjectTerra.Sandbox
 {
@@ -95,10 +96,31 @@ namespace ProjectTerra.Sandbox
         [Header("Telemetria & Consumo")]
         [Range(0f, 100f)] public float fuelPercent = 100f;
         public float fuelConsumptionRate = 0.05f; // % por segundo em aceleração
+        public float fuelTankLiters = 150f; // Capacidade do tanque (define o custo de reabastecer)
         [Range(0f, 100f)] public float cargoFillPercent = 0f;
         public float maxCargoCapacityKg = 1500f;
         public string cargoItemName = "Vazio";
         public bool infiniteFuel = false;
+
+        [Header("Condição & Desgaste")]
+        [Range(0f, 100f)] public float conditionPercent = 100f; // 100 = perfeito, 0 = sucata
+        public float wearPerKm = 0.06f; // perda de condição base por km rodado (× dificuldade)
+
+        /// <summary>
+        /// Fator de potência pelo estado do veículo: 1.0 em perfeito estado, caindo até ~0.6
+        /// quando sucateado. Multiplica a aceleração na física para dar peso ao desgaste.
+        /// </summary>
+        public float ConditionPowerFactor => 0.6f + 0.4f * Mathf.Clamp01(conditionPercent / 100f);
+
+        /// <summary>Consumo efetivo: um motor desgastado bebe mais combustível.</summary>
+        public float EffectiveFuelConsumption => fuelConsumptionRate * (1f + (1f - Mathf.Clamp01(conditionPercent / 100f)) * 0.5f);
+
+        private bool AdvancedEconomyActive =>
+            SaveManager.Instance != null && SaveManager.Instance.ActiveSave != null && SaveManager.Instance.ActiveSave.advancedEconomy;
+
+        private float WearMultiplier =>
+            SaveManager.Instance != null && SaveManager.Instance.ActiveSave != null
+                ? SaveManager.Instance.ActiveSave.DifficultyConfig.wearMultiplier : 1f;
 
         [Header("Estado")]
         public bool isPlayerDriven = false;
@@ -148,30 +170,35 @@ namespace ProjectTerra.Sandbox
                     rb.linearDamping = 0.4f;
                     rb.angularDamping = 2.5f;
                     rb.centerOfMass = new Vector3(0f, -0.45f, 0f);
+                    fuelTankLiters = 180f;
                     break;
                 case VehicleCategory.Truck:
                     rb.mass = 4500f;
                     rb.linearDamping = 0.3f;
                     rb.angularDamping = 2.5f;
                     rb.centerOfMass = new Vector3(0f, -0.35f, 0.2f);
+                    fuelTankLiters = 500f;
                     break;
                 case VehicleCategory.Car:
                     rb.mass = 1600f;
                     rb.linearDamping = 0.25f;
                     rb.angularDamping = 2.2f;
                     rb.centerOfMass = new Vector3(0f, -0.4f, 0.1f);
+                    fuelTankLiters = 60f;
                     break;
                 case VehicleCategory.Plane:
                     rb.mass = 1200f;
                     rb.linearDamping = 0.15f;
                     rb.angularDamping = 1.2f;
                     rb.centerOfMass = new Vector3(0f, -0.1f, 0.3f);
+                    fuelTankLiters = 150f;
                     break;
                 case VehicleCategory.Boat:
                     rb.mass = 3200f;
                     rb.linearDamping = waterDrag;
                     rb.angularDamping = 2.5f;
                     rb.centerOfMass = new Vector3(0f, -0.5f, 0f);
+                    fuelTankLiters = 250f;
                     break;
             }
         }
@@ -201,6 +228,7 @@ namespace ProjectTerra.Sandbox
                 }
             }
 
+            AccrueDistanceWear();
             UpdateVisuals();
             UpdateEngineAudio();
         }
@@ -244,7 +272,7 @@ namespace ProjectTerra.Sandbox
 
                 if (!infiniteFuel && aircraftThrottle > 0.05f && fuelPercent > 0f)
                 {
-                    fuelPercent = Mathf.Max(0f, fuelPercent - fuelConsumptionRate * aircraftThrottle * Time.deltaTime);
+                    fuelPercent = Mathf.Max(0f, fuelPercent - EffectiveFuelConsumption * aircraftThrottle * Time.deltaTime);
                 }
                 return;
             }
@@ -258,7 +286,42 @@ namespace ProjectTerra.Sandbox
             // Consumo de combustível se estiver acelerando
             if (!infiniteFuel && Mathf.Abs(currentThrottle) > 0.05f && fuelPercent > 0f)
             {
-                fuelPercent = Mathf.Max(0f, fuelPercent - fuelConsumptionRate * Time.deltaTime);
+                fuelPercent = Mathf.Max(0f, fuelPercent - EffectiveFuelConsumption * Time.deltaTime);
+            }
+        }
+
+        /// <summary>Desgaste por distância: o veículo perde condição conforme roda (× dificuldade).</summary>
+        private void AccrueDistanceWear()
+        {
+            if (!AdvancedEconomyActive || !isPlayerDriven || conditionPercent <= 0f) return;
+            float km = currentSpeedKmh * Time.deltaTime / 3600f;
+            if (km <= 0f) return;
+            conditionPercent = Mathf.Max(0f, conditionPercent - wearPerKm * WearMultiplier * km);
+        }
+
+        /// <summary>Dano por impacto: colisões fortes abatem a condição do veículo.</summary>
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (!AdvancedEconomyActive || conditionPercent <= 0f) return;
+            if (rb == null) return;
+
+            float impulse = collision.impulse.magnitude;
+            // Normaliza pela massa para que impactos leves (meio-fio) não destruam o veículo.
+            float severity = impulse / Mathf.Max(1f, rb.mass * 2.5f);
+            if (severity < 0.15f) return; // ignora toques e trepidação de terreno
+
+            float damage = Mathf.Clamp(severity, 0f, 1f) * 14f * WearMultiplier;
+            conditionPercent = Mathf.Max(0f, conditionPercent - damage);
+
+            // Repassa o tranco à carga frágil do contrato ativo (se este for o veículo em uso).
+            if (isPlayerDriven)
+            {
+                MissionManager.Instance?.ReportCargoShock(damage);
+            }
+
+            if (damage >= 3f && isPlayerDriven && SandboxHUD.Instance != null)
+            {
+                SandboxHUD.Instance.ShowToast($"[Impacto] Dano no veículo: -{damage:F0}% condição ({conditionPercent:F0}%)", 2.5f);
             }
         }
 

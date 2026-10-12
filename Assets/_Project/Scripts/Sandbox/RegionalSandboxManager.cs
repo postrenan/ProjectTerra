@@ -69,7 +69,17 @@ namespace ProjectTerra.Sandbox
             EnsureCommandConsole();
             EnsureGroundPainter();
             EnsureAmbientAudio();
+            EnsureGameClock();
+            BuildDeliveryHubs();
             SetupInitialMission();
+        }
+
+        private void EnsureGameClock()
+        {
+            if (FindAnyObjectByType<GameClock>() == null)
+            {
+                new GameObject("GameClock").AddComponent<GameClock>();
+            }
         }
 
         private void EnsurePlowAndAirplaneInScene()

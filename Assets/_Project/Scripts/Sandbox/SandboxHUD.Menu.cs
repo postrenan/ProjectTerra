@@ -17,6 +17,8 @@ namespace ProjectTerra.Sandbox
             Licenses, // Licenças / Habilitações
             Garage, // Garagem / Frota
             Dealer, // Concessionária / Loja
+            FuelStation, // Posto de combustível
+            GoalCenter, // Metas de campanha
             Stats, // Estatísticas
             Internet,
             Contacts,
@@ -115,8 +117,8 @@ namespace ProjectTerra.Sandbox
         {
             if (IsPhoneOpen && currentApp != PhoneApp.Home)
             {
-                // Finanças é aberta pela Internet: volta para lá.
-                if (currentApp == PhoneApp.Finances)
+                // Finanças e Posto são abertos pela Internet: voltam para lá.
+                if (currentApp == PhoneApp.Finances || currentApp == PhoneApp.FuelStation || currentApp == PhoneApp.GoalCenter)
                 {
                     currentApp = PhoneApp.Internet;
                     internetPage = "home";
@@ -223,6 +225,8 @@ namespace ProjectTerra.Sandbox
                 case PhoneApp.Licenses: DrawPhoneLicenses(content); break;
                 case PhoneApp.Garage: DrawPhoneGarage(content); break;
                 case PhoneApp.Dealer: DrawPhoneDealer(content); break;
+                case PhoneApp.FuelStation: DrawPhoneFuelStation(content); break;
+                case PhoneApp.GoalCenter: DrawPhoneGoals(content); break;
                 case PhoneApp.Stats: DrawPhoneStats(content); break;
                 case PhoneApp.Internet: DrawPhoneInternet(content); break;
                 case PhoneApp.Contacts: DrawPhoneContacts(content); break;
@@ -406,6 +410,16 @@ namespace ProjectTerra.Sandbox
                 if (GUILayout.Button("Finanças e Banco", phoneListButtonStyle, GUILayout.Height(30)))
                 {
                     OpenApp(PhoneApp.Finances);
+                }
+                GUILayout.Space(4);
+                if (GUILayout.Button("Posto de Combustível", phoneListButtonStyle, GUILayout.Height(30)))
+                {
+                    OpenApp(PhoneApp.FuelStation);
+                }
+                GUILayout.Space(4);
+                if (GUILayout.Button("Metas da Campanha", phoneListButtonStyle, GUILayout.Height(30)))
+                {
+                    OpenApp(PhoneApp.GoalCenter);
                 }
                 GUILayout.Space(4);
                 if (GUILayout.Button("️ Guia de Rodovias", phoneListButtonStyle, GUILayout.Height(30))) internetPage = "roads";

@@ -229,7 +229,7 @@ namespace ProjectTerra.Gameplay
             return string.Compare(b.lastSavedDate, a.lastSavedDate, StringComparison.Ordinal);
         }
 
-        public RegionSaveData CreateNewSave(RegionData region, string saveName, long startingMoney, StarterCareer career = StarterCareer.Farmer)
+        public RegionSaveData CreateNewSave(RegionData region, string saveName, long startingMoney, StarterCareer career = StarterCareer.Farmer, GameDifficulty difficulty = GameDifficulty.Balanced)
         {
             if (region == null) return null;
 
@@ -260,13 +260,20 @@ namespace ProjectTerra.Gameplay
                 originalForestPercent = region.forestPercent,
                 originalMineralsPercent = region.mineralsPercent,
                 originalArablePercent = region.arablePercent,
-                originalWaterPercent = region.waterPercent
+                originalWaterPercent = region.waterPercent,
+
+                // Economia avançada (save v3): ligada em toda partida nova.
+                advancedEconomy = true,
+                difficulty = (int)difficulty,
+                gameDay = 1,
+                fuelPricePerLiter = DifficultySettingsCatalog.Get(difficulty).fuelPricePerLiter,
+                totalExpenses = 0
             };
 
             SaveToFile(save);
             loadedSaves[save.saveId] = save;
             ActiveSave = save;
-            Debug.Log($"[SaveManager] Nova partida criada: {save.saveName} na região {save.regionName} com verba de ${save.startingMoney:N0} e carreira {save.starterCareer}");
+            Debug.Log($"[SaveManager] Nova partida criada: {save.saveName} na região {save.regionName} com verba de ${save.startingMoney:N0}, carreira {save.starterCareer} e dificuldade {save.Difficulty}");
             return save;
         }
 
