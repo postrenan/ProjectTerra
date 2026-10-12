@@ -320,16 +320,34 @@ namespace ProjectTerra.Sandbox
             cloudMaterial.SetFloat("_CloudScale", 1f / cloudLayerRadius);
         }
 
-        private void ConfigureSunLight()
+        /// <summary>
+        /// Garante uma luz direcional para o Sol. Procura por nome e, se nenhuma for
+        /// encontrada (cena renomeada/sem Sol), cria uma — sem isso o ciclo dia/noite
+        /// congelava silenciosamente porque UpdateTimeOfDay retorna cedo quando sunLight
+        /// é nulo e o Sol nunca gira.
+        /// </summary>
+        private void EnsureSunLight()
         {
+            if (sunLight != null) return;
+
+            var lightObj = GameObject.Find("Directional Light (Sun)") ?? GameObject.Find("Sun_DirectionalLight") ?? GameObject.Find("Directional Light");
+            if (lightObj != null)
+            {
+                sunLight = lightObj.GetComponent<Light>();
+            }
+
+            // Último recurso: nenhuma luz direcional na cena → cria a do Sol.
             if (sunLight == null)
             {
-                var lightObj = GameObject.Find("Directional Light (Sun)") ?? GameObject.Find("Sun_DirectionalLight") ?? GameObject.Find("Directional Light");
-                if (lightObj != null)
-                {
-                    sunLight = lightObj.GetComponent<Light>();
-                }
+                var sunObj = new GameObject("Directional Light (Sun)");
+                sunLight = sunObj.AddComponent<Light>();
+                Debug.Log("[HDRPAtmosphere] Nenhuma luz direcional encontrada; Sol criado automaticamente para o ciclo dia/noite.");
             }
+        }
+
+        private void ConfigureSunLight()
+        {
+            EnsureSunLight();
 
             if (sunLight != null)
             {

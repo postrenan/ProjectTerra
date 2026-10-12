@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectTerra.Gameplay
@@ -9,6 +10,37 @@ namespace ProjectTerra.Gameplay
         Trucker = 1, // Motorista de Carga
         Aviator = 2, // Aviador Particular
         Fisherman = 3 // Pescador
+    }
+
+    /// <summary>
+    /// Um empréstimo ativo com um banco específico. A dívida é paga em parcelas:
+    /// <see cref="remainingDebt"/> é o total ainda devido (principal + juros) e
+    /// <see cref="installmentAmount"/> é quanto cada parcela abate.
+    /// </summary>
+    [Serializable]
+    public class BankLoan
+    {
+        public string bankId;
+        public string bankName;
+        public long remainingDebt;     // total ainda devido (com juros)
+        public long installmentAmount; // valor de cada parcela
+        public int installmentsPaid;   // parcelas já quitadas
+        public int installmentsTotal;  // número total de parcelas contratadas
+        public long startDay;          // dia (gameDay) em que foi contratado
+        public long lastPenaltyDay;    // último gameDay em que recebeu multa por atraso
+
+        public int InstallmentsRemaining => Mathf.Max(0, installmentsTotal - installmentsPaid);
+        public bool IsPaidOff => remainingDebt <= 0;
+    }
+
+    /// <summary>Registro de uma movimentação bancária, para o histórico do app Finanças.</summary>
+    [Serializable]
+    public class LoanTransaction
+    {
+        public long day;        // gameDay em que ocorreu
+        public string bankName;
+        public string type;     // "Contratação", "Pagamento", "Quitação", "Multa"
+        public long amount;     // valor movimentado (sempre positivo)
     }
 
     [Serializable]
@@ -34,7 +66,88 @@ namespace ProjectTerra.Gameplay
         // Bitflags de DriverLicense. 0 = ainda não inicializado → derivado da carreira.
         public int licenses = 0;
         // Dívida bancária em aberto (empréstimos tomados no app Finanças).
+        // Mantido apenas para migração de saves v2; a dívida real vive em loans.
         public long loanDebt = 0;
+
+        // --- Empréstimos (save v3) ---
+        // Empréstimos ativos, até RegionSaveData.MaxActiveLoans ao mesmo tempo,
+        // cada um com um banco diferente e pago em parcelas.
+        public List<BankLoan> loans = new List<BankLoan>();
+
+        public const int MaxActiveLoans = 3;
+
+        // Dia corrente do jogo (incrementa a cada virada de meia-noite in-game).
+        // Usado para agendar parcelas e cobrar multa por atraso.
+        public long gameDay = 0;
+
+        // Histórico de movimentações bancárias (mais recentes no fim da lista).
+        public List<LoanTransaction> loanHistory = new List<LoanTransaction>();
+
+        public const int MaxHistoryEntries = 40;
+
+        /// <summary>Adiciona um registro ao histórico, mantendo apenas os mais recentes.</summary>
+        public void AddLoanHistory(string bankName, string type, long amount)
+        {
+            if (loanHistory == null) loanHistory = new List<LoanTransaction>();
+            loanHistory.Add(new LoanTransaction { day = gameDay, bankName = bankName, type = type, amount = amount });
+            int overflow = loanHistory.Count - MaxHistoryEntries;
+            if (overflow > 0) loanHistory.RemoveRange(0, overflow);
+        }
+
+        /// <summary>Soma de toda a dívida bancária em aberto.</summary>
+        public long TotalLoanDebt
+        {
+            get
+            {
+                long sum = 0;
+                if (loans != null)
+                    foreach (var l in loans)
+                        if (l != null) sum += l.remainingDebt;
+                return sum;
+            }
+        }
+
+        /// <summary>True se já existe um empréstimo ativo com o banco informado.</summary>
+        public bool HasLoanWith(string bankId)
+        {
+            if (loans == null) return false;
+            foreach (var l in loans)
+                if (l != null && l.bankId == bankId) return true;
+            return false;
+        }
+
+        public int ActiveLoanCount => loans != null ? loans.Count : 0;
+
+        /// <summary>
+        /// Avança um dia de jogo e cobra multa por atraso em cada empréstimo com
+        /// parcelas vencidas e ainda não pagas (uma parcela vence por dia a partir
+        /// da contratação). A multa entra na dívida e no histórico. Retorna o total
+        /// de multas aplicadas neste dia.
+        /// </summary>
+        public long AdvanceDayAndChargeLate(int lateFeePercent)
+        {
+            gameDay++;
+            long totalPenalty = 0;
+            if (loans == null) return 0;
+            foreach (var l in loans)
+            {
+                if (l == null || l.IsPaidOff) continue;
+
+                long elapsed = Math.Max(0, gameDay - l.startDay);
+                long expectedPaid = Math.Min(l.installmentsTotal, elapsed);
+                bool overdue = l.installmentsPaid < expectedPaid;
+
+                if (overdue && l.lastPenaltyDay < gameDay)
+                {
+                    long fee = Math.Max(1, (l.installmentAmount * lateFeePercent + 99) / 100); // ceil
+                    l.remainingDebt += fee;
+                    l.lastPenaltyDay = gameDay;
+                    totalPenalty += fee;
+                    AddLoanHistory(l.bankName, "Multa", fee);
+                }
+            }
+            return totalPenalty;
+        }
 
         /// <summary>Licenças efetivas do jogador; deriva da carreira se nunca inicializadas.</summary>
         public DriverLicense Licenses
@@ -130,10 +243,38 @@ namespace ProjectTerra.Gameplay
 
             // v2
             writer.Write(licenses);
-            writer.Write(loanDebt);
+
+            // v3: lista de empréstimos (substitui o campo único loanDebt).
+            int loanCount = loans != null ? loans.Count : 0;
+            writer.Write(loanCount);
+            for (int i = 0; i < loanCount; i++)
+            {
+                var l = loans[i];
+                writer.Write(l.bankId ?? "");
+                writer.Write(l.bankName ?? "");
+                writer.Write(l.remainingDebt);
+                writer.Write(l.installmentAmount);
+                writer.Write(l.installmentsPaid);
+                writer.Write(l.installmentsTotal);
+                writer.Write(l.startDay);
+                writer.Write(l.lastPenaltyDay);
+            }
+
+            // v3: calendário e histórico bancário.
+            writer.Write(gameDay);
+            int histCount = loanHistory != null ? loanHistory.Count : 0;
+            writer.Write(histCount);
+            for (int i = 0; i < histCount; i++)
+            {
+                var h = loanHistory[i];
+                writer.Write(h.day);
+                writer.Write(h.bankName ?? "");
+                writer.Write(h.type ?? "");
+                writer.Write(h.amount);
+            }
         }
 
-        public const byte CurrentVersion = 2;
+        public const byte CurrentVersion = 3;
 
         /// <summary>
         /// Deserializa um save. O byte de versão decide o layout: cada layout tem o seu
@@ -147,6 +288,8 @@ namespace ProjectTerra.Gameplay
                     return ReadBinaryV1(reader);
                 case 2:
                     return ReadBinaryV2(reader);
+                case 3:
+                    return ReadBinaryV3(reader);
                 default:
                     // Antes o byte de versão era lido e descartado, sempre usando o layout v1.
                     // Um save de versão futura (com um campo extra) seria lido fora de fase
@@ -201,7 +344,70 @@ namespace ProjectTerra.Gameplay
             ReadCore(reader, save);
             save.licenses = reader.ReadInt32();
             save.loanDebt = reader.ReadInt64();
+            // Migra a dívida única v2 para um empréstimo legado pago em 10 parcelas.
+            MigrateLegacyLoan(save);
             return save;
+        }
+
+        private static RegionSaveData ReadBinaryV3(System.IO.BinaryReader reader)
+        {
+            var save = new RegionSaveData();
+            ReadCore(reader, save);
+            save.licenses = reader.ReadInt32();
+
+            int loanCount = reader.ReadInt32();
+            save.loans = new List<BankLoan>(Mathf.Max(0, loanCount));
+            for (int i = 0; i < loanCount; i++)
+            {
+                var l = new BankLoan
+                {
+                    bankId = reader.ReadString(),
+                    bankName = reader.ReadString(),
+                    remainingDebt = reader.ReadInt64(),
+                    installmentAmount = reader.ReadInt64(),
+                    installmentsPaid = reader.ReadInt32(),
+                    installmentsTotal = reader.ReadInt32(),
+                    startDay = reader.ReadInt64(),
+                    lastPenaltyDay = reader.ReadInt64(),
+                };
+                save.loans.Add(l);
+            }
+
+            save.gameDay = reader.ReadInt64();
+            int histCount = reader.ReadInt32();
+            save.loanHistory = new List<LoanTransaction>(Mathf.Max(0, histCount));
+            for (int i = 0; i < histCount; i++)
+            {
+                save.loanHistory.Add(new LoanTransaction
+                {
+                    day = reader.ReadInt64(),
+                    bankName = reader.ReadString(),
+                    type = reader.ReadString(),
+                    amount = reader.ReadInt64(),
+                });
+            }
+            return save;
+        }
+
+        /// <summary>
+        /// Converte a dívida única de um save antigo (loanDebt) num empréstimo legado,
+        /// parcelado em 10 vezes, para que continue quitável no novo sistema.
+        /// </summary>
+        private static void MigrateLegacyLoan(RegionSaveData save)
+        {
+            if (save.loanDebt <= 0) return;
+            const int parcelas = 10;
+            long parcela = (save.loanDebt + parcelas - 1) / parcelas; // arredonda para cima
+            save.loans.Add(new BankLoan
+            {
+                bankId = "legado",
+                bankName = "Empréstimo anterior",
+                remainingDebt = save.loanDebt,
+                installmentAmount = parcela,
+                installmentsPaid = 0,
+                installmentsTotal = parcelas,
+            });
+            save.loanDebt = 0;
         }
     }
 

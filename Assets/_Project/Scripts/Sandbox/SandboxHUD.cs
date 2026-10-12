@@ -165,6 +165,9 @@ namespace ProjectTerra.Sandbox
             // Regeneração adiada do mercado de fretes (fora do OnGUI).
             TickJobMarket();
 
+            // Avança o calendário in-game e cobra multas de empréstimos vencidos.
+            TickGameCalendar();
+
             if (saveToastTimer > 0f)
             {
                 saveToastTimer -= Time.unscaledDeltaTime;
@@ -172,6 +175,44 @@ namespace ProjectTerra.Sandbox
             }
 
             UpdateWaypointVisualMarker();
+        }
+
+        // Último horário observado, para detectar a virada da meia-noite in-game.
+        private float lastTimeOfDay = -1f;
+        private const int LoanLateFeePercent = 5; // multa de 5% da parcela por dia de atraso
+
+        /// <summary>
+        /// Detecta a passagem de um dia in-game (virada da meia-noite) e, quando
+        /// ocorre, avança o calendário do save e cobra multas por parcelas vencidas.
+        /// </summary>
+        private void TickGameCalendar()
+        {
+            var save = CurrentSave;
+            if (save == null)
+            {
+                lastTimeOfDay = -1f;
+                return;
+            }
+
+            float t = InGameTimeOfDay;
+            if (lastTimeOfDay < 0f)
+            {
+                lastTimeOfDay = t;
+                return;
+            }
+
+            // Virada do fim do dia (~noite) para o começo (~madrugada) = novo dia.
+            if (lastTimeOfDay > 18f && t < 6f)
+            {
+                long penalty = save.AdvanceDayAndChargeLate(LoanLateFeePercent);
+                PersistSave();
+                if (penalty > 0)
+                {
+                    ShowToast($"[Banco] Multa por atraso: ${penalty:N0}");
+                }
+            }
+
+            lastTimeOfDay = t;
         }
 
         private void HandleKeyInputs()
