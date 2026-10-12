@@ -67,11 +67,8 @@ namespace ProjectTerra.Sandbox
             if (!loaded && activeHydroData == null) elevRange = 180f;
             activeTerrainData.size = new Vector3(worldWidthMeters, elevRange, worldLengthMeters);
 
-            // Síntese topográfica multi-escala (Relevo Macro Geográfico + Colinas Médias + Micro-ondulações de Lavoura)
-            float[,] detailedHeights = SynthesizeDetailedHeights(macroHeights, HeightmapRes, activeHydroData, activeSave, elevRange);
-            activeTerrainData.SetHeights(0, 0, detailedHeights);
-
-            // Carregar metadados geográficos da região (bounding box e coordenadas reais)
+            // Carregar metadados geográficos da região (bounding box e coordenadas reais) ANTES de
+            // esculpir o relevo — a seleção/posicionamento dos marcos depende da bounding box real.
             string dbPath = System.IO.Path.Combine(Application.streamingAssetsPath, "regions_database.bin");
             if (System.IO.File.Exists(dbPath))
             {
@@ -88,6 +85,21 @@ namespace ProjectTerra.Sandbox
                     Debug.LogWarning($"[RegionalSandbox] Falha ao carregar metadados geográficos: {ex.Message}");
                 }
             }
+
+            // Síntese topográfica multi-escala (Relevo Macro Geográfico + Colinas Médias + Micro-ondulações de Lavoura)
+            float[,] detailedHeights = SynthesizeDetailedHeights(macroHeights, HeightmapRes, activeHydroData, activeSave, elevRange);
+
+            // RELEVO REAL DOS MARCOS: esculpe vulcões (cone+cratera), montanhas, chapadas, escarpas de
+            // quedas d'água e bacias de lagos diretamente no heightmap — antes de estradas/cidades/vegetação,
+            // para que tudo se assente sobre o relevo final e GetTerrainHeight fique coerente.
+            if (activeRegionData != null)
+            {
+                activeLandmarks = TerrainLandmarkSculptor.ReadAndSelect(activeRegionData);
+                TerrainLandmarkSculptor.SculptIntoHeights(detailedHeights, HeightmapRes, activeRegionData,
+                    worldWidthMeters, worldLengthMeters, elevRange, activeLandmarks);
+            }
+
+            activeTerrainData.SetHeights(0, 0, detailedHeights);
 
             // IMPORTANTE: alphamapResolution deve ser definido ANTES de atribuir terrainLayers e calcular splatmap
             activeTerrainData.alphamapResolution = 512;

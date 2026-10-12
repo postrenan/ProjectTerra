@@ -43,7 +43,7 @@ namespace ProjectTerra.Sandbox
             // Marcos geográficos (vulcões, montanhas, chapadas, quedas d'água, rios)
             if (activeTerrain != null)
             {
-                LandmarkManager.Create(activeTerrain, activeRegionData);
+                LandmarkManager.Create(activeTerrain, activeRegionData, activeLandmarks);
             }
             else
             {

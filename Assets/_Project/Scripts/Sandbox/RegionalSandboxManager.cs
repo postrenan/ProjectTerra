@@ -42,6 +42,10 @@ namespace ProjectTerra.Sandbox
         private RegionSaveData activeSave;
         public RegionData activeRegionData { get; private set; }
 
+        // Marcos geográficos já selecionados e esculpidos no relevo (preenchido na geração do terreno).
+        // O LandmarkManager consome esta lista para decorar (água, rótulos) sem reler o dataset.
+        public System.Collections.Generic.List<Landmark> activeLandmarks { get; private set; }
+
         private void Awake()
         {
             Instance = this;
