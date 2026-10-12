@@ -137,7 +137,7 @@ namespace ProjectTerra.Sandbox
 
         public bool IsInputBlocked()
         {
-            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen))
+            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen || SandboxHUD.Instance.IsBrowserOpen))
                 return true;
             if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpenOrJustClosed)
                 return true;
@@ -177,6 +177,15 @@ namespace ProjectTerra.Sandbox
 
         private void HandleCursorLock()
         {
+            // Navegador da loja: cursor do SO oculto (o HUD desenha a setinha retrô), mas o
+            // mouse continua livre para operar a interface.
+            if (SandboxHUD.Instance != null && SandboxHUD.Instance.IsBrowserOpen)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = false;
+                return;
+            }
+
             // Se o Console, Mapa Regional ou Menu de Opções estiver aberto, mantém o cursor liberado
             if (IsInputBlocked())
             {

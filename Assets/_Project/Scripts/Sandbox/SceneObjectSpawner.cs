@@ -323,6 +323,66 @@ namespace ProjectTerra.Sandbox
         }
 
         /// <summary>
+        /// Instancia um único animal adquirido na loja, perto de uma posição informada
+        /// (tipicamente à frente do jogador). Reaproveita o modelo FBX quando disponível,
+        /// com fallback para primitivo, colorização e ajuste de tamanho/colisor idênticos
+        /// aos rebanhos do cenário, e já ativa a IA de pastagem/fuga.
+        /// </summary>
+        public static GameObject SpawnPurchasedAnimal(AnimalSpecies species, Vector3 pos, Terrain terrain)
+        {
+            terrain = terrain != null ? terrain : Terrain.activeTerrain;
+            if (terrain != null)
+                pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
+
+            var rootGo = GameObject.Find("Fauna_Animals");
+            Transform parent = rootGo != null ? rootGo.transform : new GameObject("Fauna_Animals").transform;
+
+            string path; float len; Color a, b; Vector3 primSize; string label;
+            switch (species)
+            {
+                case AnimalSpecies.Horse:
+                    path = "Models/Animals/Farm/Horse"; len = 2.5f; label = "Animal_Cavalo_Comprado";
+                    a = new Color(0.32f, 0.20f, 0.12f); b = new Color(0.15f, 0.10f, 0.08f);
+                    primSize = new Vector3(0.7f, 1.6f, 1.9f); break;
+                case AnimalSpecies.Sheep:
+                    path = "Models/Animals/Farm/Sheep"; len = 1.2f; label = "Animal_Ovelha_Comprada";
+                    a = new Color(0.92f, 0.90f, 0.85f); b = new Color(0.20f, 0.18f, 0.18f);
+                    primSize = new Vector3(0.6f, 0.7f, 0.9f); break;
+                case AnimalSpecies.Fox:
+                    path = "Models/Animals/Wild/Red Fox"; len = 0.9f; label = "Animal_Raposa_Comprada";
+                    a = new Color(0.85f, 0.42f, 0.12f); b = new Color(0.95f, 0.95f, 0.95f);
+                    primSize = new Vector3(0.3f, 0.4f, 0.7f); break;
+                case AnimalSpecies.Wolf:
+                    path = "Models/Animals/Wild/Wolf"; len = 1.5f; label = "Animal_Lobo_Comprado";
+                    a = new Color(0.35f, 0.35f, 0.38f); b = new Color(0.20f, 0.20f, 0.22f);
+                    primSize = new Vector3(0.45f, 0.8f, 1.1f); break;
+                default: // Cow
+                    path = "Models/Animals/Farm/Cow"; len = 2.4f; label = "Animal_Vaca_Comprada";
+                    a = new Color(0.55f, 0.35f, 0.22f); b = new Color(0.92f, 0.90f, 0.88f);
+                    primSize = new Vector3(0.85f, 1.5f, 1.6f); break;
+            }
+
+            GameObject model = LoadModel(path);
+            GameObject obj;
+            if (model != null)
+            {
+                obj = Object.Instantiate(model, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), parent);
+                obj.name = label;
+                ApplyModelColors(obj, a, b);
+                FitAnimalModel(obj, len, pos.y);
+                var anim = obj.AddComponent<AnimalController>();
+                anim.Initialize(species, terrain, path, pos, 35f);
+            }
+            else
+            {
+                obj = SpawnAnimalPrimitive(parent, pos, label, primSize, a);
+                var anim = obj.AddComponent<AnimalController>();
+                anim.Initialize(species, terrain, null, pos, 35f);
+            }
+            return obj;
+        }
+
+        /// <summary>
         /// Cria um primitivo Capsule representando um animal, com escala e cor realistas.
         /// bodySize = (width, height, length) em metros.
         /// </summary>

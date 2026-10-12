@@ -203,7 +203,7 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen))
+            if (SandboxHUD.Instance != null && (SandboxHUD.Instance.IsRegionalMapOpen || SandboxHUD.Instance.IsOptionsMenuOpen || SandboxHUD.Instance.IsBrowserOpen))
             {
                 currentThrottle = 0f;
                 currentSteer = 0f;
