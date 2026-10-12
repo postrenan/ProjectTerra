@@ -53,7 +53,25 @@ namespace ProjectTerra.Sandbox
 
         private static string TypeName(byte b)
         {
-            switch (b) { case 1: return "volcano"; case 2: return "plateau"; case 3: return "waterfall"; case 4: return "river"; default: return "mountain"; }
+            switch (b) { case 1: return "volcano"; case 2: return "plateau"; case 3: return "waterfall"; case 4: return "river"; case 5: return "lake"; default: return "mountain"; }
+        }
+
+        private static bool IsTerrainType(string t) { return t == "mountain" || t == "plateau"; }
+
+        /// <summary>
+        /// Garante o marco mais proeminente (mais alto/maior) de cada tipo presente na lista.
+        /// A lista deve vir ordenada por altura decrescente. Assim a assinatura da região
+        /// (vulcão mais alto, maior montanha, maior lago/queda) nunca é descartada.
+        /// </summary>
+        private static void AddTopOfEachType(List<Landmark> sortedByHeightDesc, List<Landmark> chosen, HashSet<Landmark> picked)
+        {
+            var typesDone = new HashSet<string>();
+            foreach (var lm in sortedByHeightDesc)
+            {
+                if (chosen.Count >= MaxPerRegion) break;
+                if (typesDone.Contains(lm.type)) continue;
+                if (picked.Add(lm)) { chosen.Add(lm); typesDone.Add(lm.type); }
+            }
         }
 
         private void Start()
@@ -65,17 +83,36 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            var specials = new List<Landmark>();   // vulcões, quedas, rios (sempre)
-            var terrainy = new List<Landmark>();    // montanhas, chapadas (top por altura)
+            var specials = new List<Landmark>();   // vulcões, quedas, rios, lagos
+            var terrainy = new List<Landmark>();    // montanhas, chapadas (relevo)
             ReadInRegion(specials, terrainy);
 
+            // Ordena os dois grupos por proeminência (altura/tamanho) — mais marcante primeiro.
+            specials.Sort((a, b) => b.height.CompareTo(a.height));
             terrainy.Sort((a, b) => b.height.CompareTo(a.height));
 
+            // Seleção por proeminência (antes era pela ordem bruta do arquivo, o que descartava
+            // marcos famosos como o Fuji em regiões densas). Agora:
+            //   1) garante o maior marco de CADA tipo presente (assinatura da região);
+            //   2) preenche o resto priorizando o relevo até o teto, do mais alto ao menos;
+            //   3) completa com os especiais mais proeminentes restantes.
             var chosen = new List<Landmark>();
-            int specialCap = MaxPerRegion - 0;
-            for (int i = 0; i < specials.Count && chosen.Count < specialCap; i++) chosen.Add(specials[i]);
-            int room = Mathf.Min(MaxTerrainFeatures, MaxPerRegion - chosen.Count);
-            for (int i = 0; i < terrainy.Count && i < room; i++) chosen.Add(terrainy[i]);
+            var picked = new HashSet<Landmark>();
+
+            AddTopOfEachType(terrainy, chosen, picked);
+            AddTopOfEachType(specials, chosen, picked);
+
+            int terrainInChosen = 0;
+            foreach (var c in chosen) if (IsTerrainType(c.type)) terrainInChosen++;
+
+            for (int i = 0; i < terrainy.Count && chosen.Count < MaxPerRegion && terrainInChosen < MaxTerrainFeatures; i++)
+            {
+                if (picked.Add(terrainy[i])) { chosen.Add(terrainy[i]); terrainInChosen++; }
+            }
+            for (int i = 0; i < specials.Count && chosen.Count < MaxPerRegion; i++)
+            {
+                if (picked.Add(specials[i])) chosen.Add(specials[i]);
+            }
 
             var root = new GameObject("Landmarks").transform;
             foreach (var lm in chosen)
@@ -85,7 +122,7 @@ namespace ProjectTerra.Sandbox
             WorldStreaming.SetLayerRecursive(root.gameObject, WorldStreaming.LayerLandmark);
 
             Debug.Log($"[Landmarks] {chosen.Count} marcos em {region.name} " +
-                      $"(especiais={specials.Count}, relevo c/ corte={terrainy.Count}); visíveis até {WorldStreaming.DistLandmark:F0}m.");
+                      $"(relevo disp.={terrainy.Count}, especiais disp.={specials.Count}); visíveis até {WorldStreaming.DistLandmark:F0}m.");
         }
 
         private void ReadInRegion(List<Landmark> specials, List<Landmark> terrainy)
@@ -112,7 +149,7 @@ namespace ProjectTerra.Sandbox
                         if (lat < region.minLat || lat > region.maxLat || lon < region.minLon || lon > region.maxLon) continue;
 
                         var lm = new Landmark { lat = lat, lon = lon, height = h, type = TypeName(tp), name = Encoding.UTF8.GetString(nb) };
-                        if (lm.type == "mountain" || lm.type == "plateau") terrainy.Add(lm);
+                        if (IsTerrainType(lm.type)) terrainy.Add(lm);
                         else specials.Add(lm);
                     }
                 }
@@ -149,6 +186,10 @@ namespace ProjectTerra.Sandbox
                 case "river":
                     BuildRiver(root, pos);
                     icon = "🌊"; labelColor = new Color(0.5f, 0.8f, 1f); labelOffset = 350f; break;
+                case "lake":
+                    // height carrega o raio aproximado do lago em metros (gravado na ingestão).
+                    BuildLake(root, pos, Mathf.Clamp(lm.height, 400f, 6000f));
+                    icon = "🏞️"; labelColor = new Color(0.55f, 0.85f, 1f); labelOffset = 400f; break;
                 case "plateau":
                     BuildMarker(root, pos, new Color(0.62f, 0.44f, 0.30f), Mathf.Clamp(lm.height * 0.1f, 180f, 700f));
                     icon = "🏜️"; labelColor = new Color(0.9f, 0.75f, 0.5f); labelOffset = 500f; break;
@@ -221,6 +262,19 @@ namespace ProjectTerra.Sandbox
             seg.transform.localScale = new Vector3(140f, 2f, 1400f);
             seg.GetComponent<Renderer>().sharedMaterial = Mat(new Color(0.15f, 0.42f, 0.62f), 0.7f);
             Destroy(seg.GetComponent<Collider>());
+        }
+
+        /// <summary>Corpo d'água de lago: disco raso e translúcido rente ao terreno, com raio em metros.</summary>
+        private void BuildLake(Transform root, Vector3 pos, float radius)
+        {
+            var water = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            water.name = "Lake_Water"; water.transform.SetParent(root);
+            // Cylinder do Unity tem 2m de altura e 1m de raio por padrão; escala para o raio desejado
+            // e achata a espessura para uma lâmina d'água rente ao solo.
+            water.transform.position = pos + Vector3.up * 1.5f;
+            water.transform.localScale = new Vector3(radius * 2f, 1.5f, radius * 2f);
+            water.GetComponent<Renderer>().sharedMaterial = Mat(new Color(0.20f, 0.45f, 0.68f), 0.85f);
+            Destroy(water.GetComponent<Collider>());
         }
 
         private void AddLabel(Transform root, Vector3 pos, string text, Color color)

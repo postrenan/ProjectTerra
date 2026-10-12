@@ -34,7 +34,7 @@ namespace ProjectTerra.Sandbox
         public const float DistFar = 1400f;      // árvores e estruturas
         public const float DistMid = 600f;       // rochas
         public const float DistNear = 280f;      // animais e folhagem
-        public const float DistLandmark = 22000f; // marcos visíveis bem de longe (vista da região)
+        public const float DistLandmark = 45000f; // marcos visíveis em todo o setor (picos de assinatura nas bordas não somem)
 
         public static int LayerFor(WorldObjectCategory category)
         {

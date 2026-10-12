@@ -101,7 +101,7 @@ namespace ProjectTerra.Sandbox
             }
 
             activeCamera.nearClipPlane = 0.75f;
-            activeCamera.farClipPlane = 45000f;
+            activeCamera.farClipPlane = 48000f;
 
             yaw = transform.eulerAngles.y;
             pitch = 0f;
