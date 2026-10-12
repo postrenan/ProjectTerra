@@ -376,7 +376,7 @@ namespace ProjectTerra.Sandbox
             float h = 20f;
             Rect rect = new Rect(20f, Screen.height - h - 12f, w, h);
             GUI.color = new Color(0.6f, 0.75f, 0.9f, 0.85f);
-            GUI.Label(rect, "[M] Mapa  •  [P] Pintar Chão  •  [/] Console  •  [L] Faróis  •  [Tab] Veículos  •  [C] Câmera  •  [Alt] Menu", subtitleStyle);
+            GUI.Label(rect, "[M] Mapa  •  [P] Pintar Chão  •  [/] Console  •  [L] Faróis  •  [Tab] Veículos  •  [C] Câmera  •  [Alt] Celular", subtitleStyle);
             GUI.color = Color.white;
         }
 

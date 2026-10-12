@@ -30,6 +30,26 @@ namespace ProjectTerra.Gameplay
         public long startingMoney;
         public long currentMoney;
 
+        // --- Progressão estilo FS / ETS2 (save v2) ---
+        // Bitflags de DriverLicense. 0 = ainda não inicializado → derivado da carreira.
+        public int licenses = 0;
+        // Dívida bancária em aberto (empréstimos tomados no app Finanças).
+        public long loanDebt = 0;
+
+        /// <summary>Licenças efetivas do jogador; deriva da carreira se nunca inicializadas.</summary>
+        public DriverLicense Licenses
+        {
+            get
+            {
+                if (licenses == 0) licenses = (int)DriverLicenseCatalog.DefaultFor(starterCareer);
+                return (DriverLicense)licenses;
+            }
+            set { licenses = (int)value; }
+        }
+
+        public bool HasLicense(DriverLicense lic) => (Licenses & lic) == lic;
+        public void GrantLicense(DriverLicense lic) { Licenses |= lic; }
+
         public int forestPercent;
         public int mineralsPercent;
         public int arablePercent;
@@ -107,9 +127,13 @@ namespace ProjectTerra.Gameplay
             writer.Write(originalMineralsPercent);
             writer.Write(originalArablePercent);
             writer.Write(originalWaterPercent);
+
+            // v2
+            writer.Write(licenses);
+            writer.Write(loanDebt);
         }
 
-        public const byte CurrentVersion = 1;
+        public const byte CurrentVersion = 2;
 
         /// <summary>
         /// Deserializa um save. O byte de versão decide o layout: cada layout tem o seu
@@ -121,6 +145,8 @@ namespace ProjectTerra.Gameplay
             {
                 case 1:
                     return ReadBinaryV1(reader);
+                case 2:
+                    return ReadBinaryV2(reader);
                 default:
                     // Antes o byte de versão era lido e descartado, sempre usando o layout v1.
                     // Um save de versão futura (com um campo extra) seria lido fora de fase
@@ -131,9 +157,9 @@ namespace ProjectTerra.Gameplay
             }
         }
 
-        private static RegionSaveData ReadBinaryV1(System.IO.BinaryReader reader)
+        /// <summary>Lê o bloco comum a todas as versões (layout original v1).</summary>
+        private static void ReadCore(System.IO.BinaryReader reader, RegionSaveData save)
         {
-            var save = new RegionSaveData();
             save.saveId = reader.ReadString();
             save.saveName = reader.ReadString();
             save.regionId = reader.ReadInt32();
@@ -159,7 +185,22 @@ namespace ProjectTerra.Gameplay
             save.originalMineralsPercent = reader.ReadInt32();
             save.originalArablePercent = reader.ReadInt32();
             save.originalWaterPercent = reader.ReadInt32();
+        }
 
+        private static RegionSaveData ReadBinaryV1(System.IO.BinaryReader reader)
+        {
+            var save = new RegionSaveData();
+            ReadCore(reader, save);
+            // Campos v2 ausentes: licenses=0 (derivado da carreira sob demanda), loanDebt=0.
+            return save;
+        }
+
+        private static RegionSaveData ReadBinaryV2(System.IO.BinaryReader reader)
+        {
+            var save = new RegionSaveData();
+            ReadCore(reader, save);
+            save.licenses = reader.ReadInt32();
+            save.loanDebt = reader.ReadInt64();
             return save;
         }
     }

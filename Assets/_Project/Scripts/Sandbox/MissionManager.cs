@@ -201,6 +201,39 @@ namespace ProjectTerra.Sandbox
             Debug.Log($"[MissionManager] Novo contrato gerado: {currentContract.title}");
         }
 
+        /// <summary>
+        /// Aceita um frete escolhido no mercado do celular (apps Frete). Reaproveita os
+        /// pontos de coleta/entrega do contrato atual para continuar compatível com a
+        /// lógica de gatilho por raio já existente.
+        /// </summary>
+        public void AcceptMarketContract(string title, string description, string cargo, float weightKg, long reward, int reputation)
+        {
+            Vector3 playerPos = PlayerCharacterController.Instance != null ? PlayerCharacterController.Instance.transform.position : Vector3.zero;
+            Vector3 pickup = currentContract != null ? currentContract.pickupLocation : playerPos;
+            Vector3 delivery = currentContract != null ? currentContract.deliveryLocation : playerPos;
+            string dest = currentContract != null && !string.IsNullOrEmpty(currentContract.destinationName)
+                ? currentContract.destinationName
+                : "Centro de Distribuição Municipal";
+
+            currentContract = new CommercialContract
+            {
+                title = title,
+                description = description,
+                cargoType = cargo,
+                cargoWeightKg = weightKg,
+                rewardMoney = reward,
+                rewardReputation = reputation,
+                pickupLocation = pickup,
+                deliveryLocation = delivery,
+                destinationName = dest,
+                isCompleted = false
+            };
+            hasActiveContract = true;
+            isCompletingContract = false;
+
+            Debug.Log($"[MissionManager] Frete aceito via celular: '{title}' (${reward:N0}).");
+        }
+
         public float GetDistanceToDestination()
         {
             if (!hasActiveContract || currentContract == null || currentContract.isCompleted) return 0f;

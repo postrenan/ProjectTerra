@@ -137,6 +137,98 @@ namespace ProjectTerra.Sandbox
             toastStyle.normal.background = whiteTex;
             toastStyle.normal.textColor = new Color(0.3f, 1f, 0.5f);
 
+            // ---- Estilos do Celular ----
+            phoneStatusStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            phoneStatusStyle.normal.textColor = new Color(0.8f, 0.9f, 1f);
+
+            phoneHeaderStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            phoneHeaderStyle.normal.textColor = Color.white;
+
+            phoneIconStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 30,
+                alignment = TextAnchor.MiddleCenter
+            };
+            phoneIconStyle.normal.textColor = Color.white;
+
+            phoneAppLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.UpperCenter,
+                wordWrap = false
+            };
+            phoneAppLabelStyle.normal.textColor = new Color(0.9f, 0.95f, 1f);
+
+            phoneBackStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+
+            phoneUrlStyle = new GUIStyle(GUI.skin.box)
+            {
+                fontSize = 11,
+                alignment = TextAnchor.MiddleLeft
+            };
+            phoneUrlStyle.normal.background = whiteTex;
+            phoneUrlStyle.normal.textColor = new Color(0.8f, 0.9f, 1f);
+
+            phoneSectionStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold
+            };
+            phoneSectionStyle.normal.textColor = new Color(0.4f, 0.85f, 1f);
+
+            phoneListButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+                padding = new RectOffset(10, 6, 4, 4)
+            };
+
+            phoneLinkStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold
+            };
+            phoneLinkStyle.normal.textColor = new Color(0.4f, 0.8f, 1f);
+
+            phoneBodyStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                wordWrap = true
+            };
+            phoneBodyStyle.normal.textColor = new Color(0.88f, 0.93f, 1f);
+
+            phoneSmallStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                wordWrap = true
+            };
+            phoneSmallStyle.normal.textColor = new Color(0.68f, 0.76f, 0.88f);
+
+            phoneLockStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                wordWrap = true
+            };
+            phoneLockStyle.normal.textColor = new Color(1f, 0.72f, 0.3f);
+
             stylesReady = true;
         }
 

@@ -6,7 +6,56 @@ namespace ProjectTerra.Sandbox
 {
     public partial class SandboxHUD
     {
-        #region Gestão do Menu de Opções / Pausa
+        #region Estado do Celular (Smartphone estilo GTA V)
+
+        /// <summary>Apps/telas disponíveis dentro do celular do personagem.</summary>
+        public enum PhoneApp
+        {
+            Home,
+            Jobs,        // 📦 Mercado de Fretes (FS/ETS2) + contrato ativo
+            Finances,    // 💰 Finanças e Banco (empréstimos)
+            Licenses,    // 🎓 Licenças / Habilitações
+            Garage,      // 🚚 Garagem / Frota
+            Dealer,      // 🏬 Concessionária / Loja
+            Stats,       // 📊 Estatísticas
+            Internet,
+            Contacts,
+            Settings,
+            GameSystem
+        }
+
+        // App atualmente aberto na tela do celular.
+        private PhoneApp currentApp = PhoneApp.Home;
+
+        // Progresso da animação de deslizar (0 = escondido, 1 = totalmente levantado).
+        private float phoneAnim = 0f;
+
+        // Dimensões do aparelho (canto inferior direito).
+        private const float PhoneWidth = 300f;
+        private const float PhoneHeight = 600f;
+
+        // Scroll das telas de app mais longas.
+        private Vector2 phoneScroll = Vector2.zero;
+
+        // Feedback de "página aberta" no app Internet.
+        private string internetPage = "home";
+
+        // Atalho para o save ativo (economia/progressão).
+        private RegionSaveData CurrentSave =>
+            SaveManager.Instance != null ? SaveManager.Instance.ActiveSave : activeSave;
+
+        private void PersistSave()
+        {
+            var s = CurrentSave;
+            if (s != null && SaveManager.Instance != null)
+            {
+                SaveManager.Instance.SaveToFile(s);
+            }
+        }
+
+        #endregion
+
+        #region Gestão do Celular / Menu (API pública preservada)
 
         public void ToggleOptionsMenu()
         {
@@ -14,11 +63,14 @@ namespace ProjectTerra.Sandbox
             if (IsOptionsMenuOpen)
             {
                 if (IsRegionalMapOpen) IsRegionalMapOpen = false;
-                previousTimeScale = Time.timeScale;
-                Time.timeScale = 0f; // Pausa a simulação
+                // O mundo NÃO pausa: o personagem apenas saca o celular, como em GTA V.
+                // O input de gameplay segue bloqueado pela flag IsOptionsMenuOpen,
+                // então o veículo não dispara sozinho enquanto o cursor opera a tela.
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
-                isSettingsSubmenuOpen = false;
+                currentApp = PhoneApp.Home;
+                internetPage = "home";
+                phoneScroll = Vector2.zero;
             }
             else
             {
@@ -29,8 +81,28 @@ namespace ProjectTerra.Sandbox
         public void CloseOptionsMenu()
         {
             IsOptionsMenuOpen = false;
-            Time.timeScale = previousTimeScale > 0f ? previousTimeScale : 1f;
             RestoreGameplayCursor();
+        }
+
+        /// <summary>Volta para a tela inicial do celular, ou guarda o aparelho se já estiver nela.</summary>
+        public void PhoneBack()
+        {
+            if (IsOptionsMenuOpen && currentApp != PhoneApp.Home)
+            {
+                currentApp = PhoneApp.Home;
+                phoneScroll = Vector2.zero;
+            }
+            else
+            {
+                ToggleOptionsMenu();
+            }
+        }
+
+        private void OpenApp(PhoneApp app)
+        {
+            currentApp = app;
+            phoneScroll = Vector2.zero;
+            if (app == PhoneApp.Internet) internetPage = "home";
         }
 
         public void SaveCurrentGame()
@@ -57,105 +129,343 @@ namespace ProjectTerra.Sandbox
 
         #endregion
 
-        #region Renderização Menu de Opções [Alt Esquerdo]
+        #region Renderização do Celular [Alt Esquerdo]
 
-        private void DrawLeftAltOptionsMenu()
+        private void DrawPhone()
         {
-            // Overlay de fundo escuro
-            GUI.color = new Color(0f, 0f, 0f, 0.70f);
+            float ease = Mathf.SmoothStep(0f, 1f, phoneAnim);
+
+            // Leve escurecimento do fundo (o mundo continua visível atrás do aparelho).
+            GUI.color = new Color(0f, 0f, 0f, 0.38f * ease);
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), whiteTex);
-
-            float w = 420f;
-            float h = isSettingsSubmenuOpen ? 420f : 360f;
-            float x = (Screen.width - w) * 0.5f;
-            float y = (Screen.height - h) * 0.5f;
-            Rect modalRect = new Rect(x, y, w, h);
-
-            GUI.color = new Color(0.04f, 0.08f, 0.14f, 0.96f);
-            GUI.DrawTexture(modalRect, whiteTex);
-            GUI.color = new Color(0.25f, 0.7f, 1f, 0.9f);
-            GUI.DrawTexture(new Rect(modalRect.x, modalRect.y, w, 2), whiteTex);
-            GUI.DrawTexture(new Rect(modalRect.x, modalRect.y + h - 2, w, 2), whiteTex);
             GUI.color = Color.white;
 
-            GUILayout.BeginArea(new Rect(modalRect.x + 25f, modalRect.y + 20f, w - 50f, h - 35f));
+            float w = PhoneWidth;
+            float h = Mathf.Min(PhoneHeight, Screen.height - 40f);
+            float x = Screen.width - w - 28f;
+            float yRest = Screen.height - h - 22f;
+            // Desliza de baixo para cima.
+            float y = Mathf.Lerp(Screen.height + 30f, yRest, ease);
 
-            if (!isSettingsSubmenuOpen)
+            Rect body = new Rect(x, y, w, h);
+
+            // Corpo do aparelho (moldura escura) + fio de luz ciano no topo.
+            GUI.color = new Color(0.02f, 0.02f, 0.035f, 0.99f);
+            GUI.DrawTexture(body, whiteTex);
+            GUI.color = new Color(0.25f, 0.7f, 1f, 0.9f);
+            GUI.DrawTexture(new Rect(body.x, body.y, w, 2), whiteTex);
+            GUI.DrawTexture(new Rect(body.x, body.y, 2, h), whiteTex);
+            GUI.DrawTexture(new Rect(body.x + w - 2, body.y, 2, h), whiteTex);
+            GUI.color = Color.white;
+
+            // Alto-falante / câmera (detalhe no topo).
+            GUI.color = new Color(0.12f, 0.14f, 0.18f, 1f);
+            GUI.DrawTexture(new Rect(body.x + w * 0.5f - 22f, body.y + 7f, 44f, 4f), whiteTex);
+            GUI.DrawTexture(new Rect(body.x + w * 0.5f + 28f, body.y + 7f, 5f, 5f), whiteTex);
+            GUI.color = Color.white;
+
+            // Tela interna.
+            float pad = 9f;
+            float screenTop = body.y + 18f;
+            float homeBarH = 24f;
+            Rect screenRect = new Rect(body.x + pad, screenTop, w - pad * 2f, body.height - (screenTop - body.y) - homeBarH);
+            GUI.color = new Color(0.06f, 0.09f, 0.14f, 1f);
+            GUI.DrawTexture(screenRect, whiteTex);
+            GUI.color = Color.white;
+
+            // Barra de status (hora + sinal + bateria).
+            DrawPhoneStatusBar(screenRect);
+
+            // Conteúdo abaixo da barra de status.
+            Rect content = new Rect(screenRect.x + 8f, screenRect.y + 24f, screenRect.width - 16f, screenRect.height - 32f);
+
+            switch (currentApp)
             {
-                // Cabeçalho Principal
-                GUILayout.Label("⚙️ MENU DE OPÇÕES", modalTitleStyle);
-                string reg = activeSave != null ? activeSave.regionName : "Região";
-                string country = activeSave != null ? activeSave.countryName : "Mundo";
-                GUILayout.Label($"Simulação Pausada  •  {reg}, {country}", subtitleStyle);
-                GUILayout.Space(15);
+                case PhoneApp.Home: DrawPhoneHome(content); break;
+                case PhoneApp.Jobs: DrawPhoneJobs(content); break;
+                case PhoneApp.Finances: DrawPhoneFinances(content); break;
+                case PhoneApp.Licenses: DrawPhoneLicenses(content); break;
+                case PhoneApp.Garage: DrawPhoneGarage(content); break;
+                case PhoneApp.Dealer: DrawPhoneDealer(content); break;
+                case PhoneApp.Stats: DrawPhoneStats(content); break;
+                case PhoneApp.Internet: DrawPhoneInternet(content); break;
+                case PhoneApp.Contacts: DrawPhoneContacts(content); break;
+                case PhoneApp.Settings: DrawPhoneSettings(content); break;
+                case PhoneApp.GameSystem: DrawPhoneGameSystem(content); break;
+            }
 
-                // Botão 1: Continuar
-                if (GUILayout.Button("▶ Continuar Partida", menuButtonPrimaryStyle, GUILayout.Height(36)))
-                {
-                    CloseOptionsMenu();
-                }
-                GUILayout.Space(8);
+            // Barra "home" inferior: toque para voltar à tela inicial / guardar o celular.
+            Rect homeBar = new Rect(body.x, body.y + body.height - homeBarH, w, homeBarH);
+            GUI.color = new Color(0.4f, 0.55f, 0.7f, 0.55f);
+            GUI.DrawTexture(new Rect(homeBar.x + w * 0.5f - 45f, homeBar.y + homeBarH - 8f, 90f, 4f), whiteTex);
+            GUI.color = Color.white;
+            if (GUI.Button(homeBar, "", GUIStyle.none))
+            {
+                PhoneBack();
+            }
+        }
 
-                // Botão 2: Salvar Partida
-                if (GUILayout.Button("💾 Salvar Jogo", menuButtonStyle, GUILayout.Height(34)))
-                {
-                    SaveCurrentGame();
-                }
-                GUILayout.Space(8);
+        private void DrawPhoneStatusBar(Rect screenRect)
+        {
+            float curHour = HDRPAtmosphereController.Instance != null ? HDRPAtmosphereController.Instance.timeOfDay : 12f;
+            int hInt = Mathf.FloorToInt(curHour);
+            int mInt = Mathf.FloorToInt((curHour - hInt) * 60f);
 
-                // Botão 3: Retornar ao Globo Terrestre
-                if (GUILayout.Button("🌐 Retornar ao Globo Terrestre", menuButtonStyle, GUILayout.Height(34)))
-                {
-                    ReturnToGlobe();
-                }
-                GUILayout.Space(8);
+            Rect barRect = new Rect(screenRect.x + 8f, screenRect.y + 4f, screenRect.width - 16f, 18f);
+            GUI.Label(new Rect(barRect.x, barRect.y, 80f, barRect.height), $"{hInt:D2}:{mInt:D2}", phoneStatusStyle);
 
-                // Botão 4: Salvar e Voltar ao Menu Principal
-                if (GUILayout.Button("🏠 Salvar e Sair para o Menu", menuButtonDangerStyle, GUILayout.Height(34)))
-                {
-                    ReturnToGlobe();
-                }
-                GUILayout.Space(8);
+            var rightStyle = phoneStatusStyle;
+            Rect rightRect = new Rect(barRect.x + barRect.width - 90f, barRect.y, 90f, barRect.height);
+            var prev = rightStyle.alignment;
+            rightStyle.alignment = TextAnchor.MiddleRight;
+            GUI.Label(rightRect, "TerraNet  4G  🔋87%", rightStyle);
+            rightStyle.alignment = prev;
 
-                // Botão 5: Configurações
-                if (GUILayout.Button("🛠️ Configurações (Áudio / HUD / Gráficos)", menuButtonStyle, GUILayout.Height(34)))
+            // Linha separadora.
+            GUI.color = new Color(0.25f, 0.7f, 1f, 0.35f);
+            GUI.DrawTexture(new Rect(screenRect.x + 6f, screenRect.y + 23f, screenRect.width - 12f, 1f), whiteTex);
+            GUI.color = Color.white;
+        }
+
+        // ---- Tela inicial: grade de apps ----
+        private static readonly string[] HomeEmojis = { "🗺️", "📦", "💰", "🎓", "🚚", "🏬", "📊", "🌐", "👥", "🛠️", "🎮" };
+        private static readonly string[] HomeLabels = { "Mapa", "Frete", "Finanças", "Licenças", "Garagem", "Loja", "Estatíst.", "Internet", "Contatos", "Ajustes", "Jogo" };
+        private static readonly PhoneApp[] HomeTargets =
+        {
+            PhoneApp.Home, PhoneApp.Jobs, PhoneApp.Finances, PhoneApp.Licenses, PhoneApp.Garage,
+            PhoneApp.Dealer, PhoneApp.Stats, PhoneApp.Internet, PhoneApp.Contacts, PhoneApp.Settings, PhoneApp.GameSystem
+        };
+
+        private void DrawPhoneHome(Rect content)
+        {
+            GUILayout.BeginArea(new Rect(content.x, content.y, content.width, 48f));
+            GUILayout.Space(2);
+            string reg = CurrentSave != null ? CurrentSave.regionName : "Região";
+            GUILayout.Label($"📱 Celular  •  {reg}", phoneHeaderStyle);
+            string money = CurrentSave != null ? CurrentSave.GetFormattedMoney() : "$500,000";
+            GUILayout.Label(money, moneyStyle);
+            GUILayout.EndArea();
+
+            // Grade 3 colunas, dimensionada para caber toda a grade dentro da tela.
+            const int cols = 3;
+            float gap = 8f;
+            float gridTop = content.y + 52f;
+            float gridAvail = content.height - 52f;
+            int count = HomeEmojis.Length;
+            int rows = Mathf.CeilToInt(count / (float)cols);
+
+            float cellW = (content.width - gap * (cols - 1)) / cols;
+            float cellH = Mathf.Min(cellW + 16f, (gridAvail - gap * (rows - 1)) / rows);
+            float tile = Mathf.Min(cellW, cellH - 14f);
+
+            Color[] palette =
+            {
+                new Color(0.18f, 0.55f, 0.35f), // Mapa
+                new Color(0.72f, 0.45f, 0.15f), // Frete
+                new Color(0.20f, 0.60f, 0.35f), // Finanças
+                new Color(0.45f, 0.35f, 0.70f), // Licenças
+                new Color(0.30f, 0.45f, 0.65f), // Garagem
+                new Color(0.65f, 0.30f, 0.30f), // Loja
+                new Color(0.25f, 0.55f, 0.60f), // Estatísticas
+                new Color(0.18f, 0.42f, 0.75f), // Internet
+                new Color(0.60f, 0.42f, 0.18f), // Contatos
+                new Color(0.40f, 0.42f, 0.50f), // Ajustes
+                new Color(0.55f, 0.25f, 0.55f)  // Jogo
+            };
+
+            for (int i = 0; i < count; i++)
+            {
+                int row = i / cols;
+                int col = i % cols;
+                float ix = content.x + col * (cellW + gap);
+                float iy = gridTop + row * (cellH + gap);
+                Rect cellRect = new Rect(ix, iy, cellW, cellH);
+
+                if (DrawAppIcon(cellRect, tile, HomeEmojis[i], HomeLabels[i], palette[i]))
                 {
-                    isSettingsSubmenuOpen = true;
+                    if (HomeTargets[i] == PhoneApp.Home) // Mapa: fecha o celular e abre o mapa tático
+                    {
+                        CloseOptionsMenu();
+                        ToggleRegionalMap();
+                    }
+                    else
+                    {
+                        OpenApp(HomeTargets[i]);
+                    }
                 }
+            }
+        }
+
+        private bool DrawAppIcon(Rect cell, float tile, string emoji, string label, Color tileColor)
+        {
+            float tileX = cell.x + (cell.width - tile) * 0.5f;
+            Rect tileRect = new Rect(tileX, cell.y, tile, tile);
+
+            GUI.color = tileColor;
+            GUI.DrawTexture(tileRect, whiteTex);
+            GUI.color = new Color(1f, 1f, 1f, 0.12f);
+            GUI.DrawTexture(new Rect(tileRect.x, tileRect.y, tile, 2f), whiteTex);
+            GUI.color = Color.white;
+
+            GUI.Label(tileRect, emoji, phoneIconStyle);
+            GUI.Label(new Rect(cell.x, cell.y + tile + 1f, cell.width, 13f), label, phoneAppLabelStyle);
+
+            return GUI.Button(cell, "", GUIStyle.none);
+        }
+
+        // ---- Cabeçalho comum dos apps (seta voltar + título) ----
+        private void DrawAppHeader(Rect content, string title)
+        {
+            Rect backRect = new Rect(content.x, content.y, 34f, 22f);
+            if (GUI.Button(backRect, "◀", phoneBackStyle))
+            {
+                PhoneBack();
+            }
+            GUI.Label(new Rect(content.x + 38f, content.y, content.width - 38f, 22f), title, phoneHeaderStyle);
+            GUI.color = new Color(0.25f, 0.7f, 1f, 0.3f);
+            GUI.DrawTexture(new Rect(content.x, content.y + 26f, content.width, 1f), whiteTex);
+            GUI.color = Color.white;
+        }
+
+        // ---- App: Internet (navegador fictício TerraNet) ----
+        private void DrawPhoneInternet(Rect content)
+        {
+            DrawAppHeader(content, "🌐 TerraNet");
+            Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
+            GUILayout.BeginArea(area);
+
+            GUI.color = new Color(1f, 1f, 1f, 0.08f);
+            GUILayout.Box("🔒 www.terranet.world", phoneUrlStyle, GUILayout.Height(22));
+            GUI.color = Color.white;
+            GUILayout.Space(8);
+
+            if (internetPage == "home")
+            {
+                GUILayout.Label("Portais", phoneSectionStyle);
+                if (GUILayout.Button("📰  Notícias da Região", phoneListButtonStyle, GUILayout.Height(30))) internetPage = "news";
+                GUILayout.Space(4);
+                if (GUILayout.Button("🚜  Mercado Agrícola", phoneListButtonStyle, GUILayout.Height(30))) internetPage = "market";
+                GUILayout.Space(4);
+                if (GUILayout.Button("🚗  Concessionária Online", phoneListButtonStyle, GUILayout.Height(30)))
+                {
+                    ShowToast("🚗 Concessionária: use o comando de spawn de veículos.");
+                }
+                GUILayout.Space(4);
+                if (GUILayout.Button("🗺️  Guia de Rodovias", phoneListButtonStyle, GUILayout.Height(30))) internetPage = "roads";
             }
             else
             {
-                // Submenu de Configurações
-                GUILayout.Label("🛠️ CONFIGURAÇÕES DO JOGO", modalTitleStyle);
-                GUILayout.Space(10);
+                if (GUILayout.Button("◀ Voltar ao portal", phoneLinkStyle, GUILayout.Height(22))) internetPage = "home";
+                GUILayout.Space(6);
 
-                // 1. Volume Master de Áudio
-                GUILayout.Label($"🔊 Volume Geral: {Mathf.RoundToInt(AudioListener.volume * 100f)}%", subtitleStyle);
-                AudioListener.volume = GUILayout.HorizontalSlider(AudioListener.volume, 0f, 1f);
-                GUILayout.Space(10);
+                string reg = activeSave != null ? activeSave.regionName : "a região";
+                string country = activeSave != null ? activeSave.countryName : "o país";
 
-                // 2. Toggles de Elementos da HUD
-                GUILayout.Label("Exibição da Interface (HUD):", subtitleStyle);
-                GUILayout.BeginHorizontal();
-                ShowCompass = GUILayout.Toggle(ShowCompass, "🧭 Bússola", GUILayout.Width(110));
-                ShowMissionTracker = GUILayout.Toggle(ShowMissionTracker, "🎯 Missões", GUILayout.Width(110));
-                ShowTelemetry = GUILayout.Toggle(ShowTelemetry, "🏎️ Telemetria", GUILayout.Width(110));
-                GUILayout.EndHorizontal();
-                GUILayout.Space(10);
-
-                // 3. Qualidade Gráfica
-                GUILayout.Label($"Qualidade Gráfica Atual: {QualitySettings.names[QualitySettings.GetQualityLevel()]}", subtitleStyle);
-                GUILayout.BeginHorizontal();
-                if (GUILayout.Button("Médio", menuButtonStyle, GUILayout.Height(24))) QualitySettings.SetQualityLevel(1, true);
-                if (GUILayout.Button("Alto", menuButtonStyle, GUILayout.Height(24))) QualitySettings.SetQualityLevel(2, true);
-                if (GUILayout.Button("Ultra", menuButtonStyle, GUILayout.Height(24))) QualitySettings.SetQualityLevel(3, true);
-                GUILayout.EndHorizontal();
-                GUILayout.Space(16);
-
-                if (GUILayout.Button("◀ Voltar ao Menu de Pausa", menuButtonPrimaryStyle, GUILayout.Height(34)))
+                if (internetPage == "news")
                 {
-                    isSettingsSubmenuOpen = false;
+                    GUILayout.Label("📰 Notícias", phoneSectionStyle);
+                    GUILayout.Label($"Clima estável em {reg}. Produtores de {country} relatam boa safra nesta temporada.", phoneBodyStyle);
+                    GUILayout.Space(6);
+                    GUILayout.Label("Obras de pavimentação avançam nas rodovias regionais.", phoneBodyStyle);
                 }
+                else if (internetPage == "market")
+                {
+                    GUILayout.Label("🚜 Mercado", phoneSectionStyle);
+                    GUILayout.Label("Grãos: 📈 em alta\nFretes: estáveis\nCombustível: moderado", phoneBodyStyle);
+                }
+                else if (internetPage == "roads")
+                {
+                    GUILayout.Label("🗺️ Rodovias", phoneSectionStyle);
+                    GUILayout.Label("Abra o app Mapa para traçar rotas e marcar waypoints com um clique.", phoneBodyStyle);
+                }
+            }
+
+            GUILayout.EndArea();
+        }
+
+        // ---- App: Contatos ----
+        private void DrawPhoneContacts(Rect content)
+        {
+            DrawAppHeader(content, "👥 Contatos");
+            Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
+
+            string[] names = { "🔧 Mecânico", "🏪 Cooperativa", "🚜 Concessionária", "👷 Capataz", "🚑 Emergência" };
+
+            GUILayout.BeginArea(area);
+            phoneScroll = GUILayout.BeginScrollView(phoneScroll);
+            foreach (var n in names)
+            {
+                if (GUILayout.Button(n, phoneListButtonStyle, GUILayout.Height(32)))
+                {
+                    ShowToast($"📞 Ligando para {n.Substring(n.IndexOf(' ') + 1)}...");
+                }
+                GUILayout.Space(4);
+            }
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+
+        // ---- App: Ajustes (áudio / HUD / gráficos) ----
+        private void DrawPhoneSettings(Rect content)
+        {
+            DrawAppHeader(content, "🛠️ Ajustes");
+            Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
+            GUILayout.BeginArea(area);
+            phoneScroll = GUILayout.BeginScrollView(phoneScroll);
+
+            GUILayout.Label($"🔊 Volume: {Mathf.RoundToInt(AudioListener.volume * 100f)}%", phoneSectionStyle);
+            AudioListener.volume = GUILayout.HorizontalSlider(AudioListener.volume, 0f, 1f);
+            GUILayout.Space(12);
+
+            GUILayout.Label("Interface (HUD):", phoneSectionStyle);
+            ShowCompass = GUILayout.Toggle(ShowCompass, " 🧭 Bússola");
+            GUILayout.Space(3);
+            ShowMissionTracker = GUILayout.Toggle(ShowMissionTracker, " 🎯 Rastreador de Missões");
+            GUILayout.Space(3);
+            ShowTelemetry = GUILayout.Toggle(ShowTelemetry, " 🏎️ Telemetria do Veículo");
+            GUILayout.Space(12);
+
+            GUILayout.Label($"Qualidade: {QualitySettings.names[QualitySettings.GetQualityLevel()]}", phoneSectionStyle);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Médio", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(1, true);
+            if (GUILayout.Button("Alto", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(2, true);
+            if (GUILayout.Button("Ultra", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(3, true);
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+
+        // ---- App: Jogo (salvar / sair) ----
+        private void DrawPhoneGameSystem(Rect content)
+        {
+            DrawAppHeader(content, "🎮 Jogo");
+            Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
+            GUILayout.BeginArea(area);
+
+            string reg = activeSave != null ? activeSave.regionName : "Região";
+            string country = activeSave != null ? activeSave.countryName : "Mundo";
+            GUILayout.Label($"{reg}, {country}", phoneBodyStyle);
+            GUILayout.Space(12);
+
+            if (GUILayout.Button("▶  Continuar", menuButtonPrimaryStyle, GUILayout.Height(36)))
+            {
+                CloseOptionsMenu();
+            }
+            GUILayout.Space(8);
+            if (GUILayout.Button("💾  Salvar Jogo", menuButtonStyle, GUILayout.Height(34)))
+            {
+                SaveCurrentGame();
+            }
+            GUILayout.Space(8);
+            if (GUILayout.Button("🌐  Retornar ao Globo", menuButtonStyle, GUILayout.Height(34)))
+            {
+                ReturnToGlobe();
+            }
+            GUILayout.Space(8);
+            if (GUILayout.Button("🏠  Salvar e Sair", menuButtonDangerStyle, GUILayout.Height(34)))
+            {
+                ReturnToGlobe();
             }
 
             GUILayout.EndArea();

@@ -10,7 +10,7 @@ namespace ProjectTerra.Sandbox
     /// HUD e Gerenciador de Interface da Cena Sandbox Regional:
     /// 1. Layout UI/UX limpo e moderno (Status Pill no topo-esquerdo, Bússola 360° no topo-central, Rastreador no topo-direito e Telemetria no canto inferior).
     /// 2. Atalho [M]: Abre o Mapa Regional Tático GIS interativo com Pan, Zoom, marcadores e criação de waypoints customizados ao clicar.
-    /// 3. Atalho [Alt Esquerdo]: Abre o Menu de Opções / Pausa com Salvar, Retornar ao Globo Terrestre, Salvar e Voltar ao Menu, e Ajustes de Som/Gráficos.
+    /// 3. Atalho [Alt Esquerdo]: O personagem saca o celular (canto inferior direito, estilo GTA V) com apps: Mapa, Internet, Contatos, Missões, Ajustes e Jogo (Salvar/Sair). O mundo não pausa.
     /// 4. Atalho [H]: Alterna visibilidade total do HUD para imersão e capturas de tela.
     /// </summary>
     public partial class SandboxHUD : MonoBehaviour
@@ -41,8 +41,6 @@ namespace ProjectTerra.Sandbox
         private Vector2 dragStartPan;
         private Rect lastMapRect;
 
-        // Submenu de Configurações no Menu Alt
-        private bool isSettingsSubmenuOpen = false;
         private string saveToastMessage = "";
         private float saveToastTimer = 0f;
 
@@ -71,6 +69,21 @@ namespace ProjectTerra.Sandbox
         private GUIStyle menuButtonPrimaryStyle;
         private GUIStyle menuButtonDangerStyle;
         private GUIStyle toastStyle;
+
+        // Estilos do Celular (estilo GTA V)
+        private GUIStyle phoneStatusStyle;
+        private GUIStyle phoneHeaderStyle;
+        private GUIStyle phoneIconStyle;
+        private GUIStyle phoneAppLabelStyle;
+        private GUIStyle phoneBackStyle;
+        private GUIStyle phoneUrlStyle;
+        private GUIStyle phoneSectionStyle;
+        private GUIStyle phoneListButtonStyle;
+        private GUIStyle phoneLinkStyle;
+        private GUIStyle phoneBodyStyle;
+        private GUIStyle phoneSmallStyle;
+        private GUIStyle phoneLockStyle;
+
         private bool stylesReady = false;
 
         private void Awake()
@@ -95,6 +108,13 @@ namespace ProjectTerra.Sandbox
         private void Update()
         {
             HandleKeyInputs();
+
+            // Anima o celular deslizando para cima/baixo (independente do timeScale).
+            float phoneTarget = IsOptionsMenuOpen ? 1f : 0f;
+            phoneAnim = Mathf.MoveTowards(phoneAnim, phoneTarget, Time.unscaledDeltaTime * 6.5f);
+
+            // Regeneração adiada do mercado de fretes (fora do OnGUI).
+            TickJobMarket();
 
             if (saveToastTimer > 0f)
             {
@@ -123,10 +143,11 @@ namespace ProjectTerra.Sandbox
                 ToggleRegionalMap();
             }
 
-            // Atalho [Alt Esquerdo]: Abre/Fecha o Menu de Opções do Jogo
+            // Atalho [Alt Esquerdo]: Saca/guarda o celular. Com o celular aberto dentro
+            // de um app, o atalho volta primeiro para a tela inicial (como o botão home).
             if (TerraInput.GetKeyDown(Key.LeftAlt) || (TerraInput.GetKeyDown(Key.Escape) && !IsRegionalMapOpen))
             {
-                ToggleOptionsMenu();
+                PhoneBack();
             }
             else if (TerraInput.GetKeyDown(Key.Escape) && IsRegionalMapOpen)
             {
@@ -187,15 +208,7 @@ namespace ProjectTerra.Sandbox
         {
             InitStyles();
 
-            // 1. Menu de Opções [Alt Esquerdo] (Sobrepõe tudo se aberto)
-            if (IsOptionsMenuOpen)
-            {
-                DrawLeftAltOptionsMenu();
-                DrawToastNotification();
-                return;
-            }
-
-            // 2. Mapa Regional Tático GIS [M]
+            // 1. Mapa Regional Tático GIS [M] (tela cheia)
             if (IsRegionalMapOpen)
             {
                 DrawInteractiveRegionalMap();
@@ -203,15 +216,28 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            // 3. HUD In-Game Moderno (se visível via [H])
+            bool phoneActive = IsOptionsMenuOpen || phoneAnim > 0.001f;
+
+            // 2. HUD In-Game Moderno (se visível via [H]). O celular ocupa apenas o
+            //    canto inferior direito, então o HUD do topo permanece. Os elementos
+            //    do rodapé/direita são ocultados para não colidir com o aparelho.
             if (IsHudVisible)
             {
                 DrawTopLeftStatusPill();
                 if (ShowCompass) DrawTopCompassTape();
                 if (ShowMissionTracker) DrawTopRightMissionCard();
-                if (ShowTelemetry) DrawVehicleTelemetry();
-                DrawContextualHints();
-                DrawSubtleKeyShortcuts();
+                if (!phoneActive)
+                {
+                    if (ShowTelemetry) DrawVehicleTelemetry();
+                    DrawContextualHints();
+                    DrawSubtleKeyShortcuts();
+                }
+            }
+
+            // 3. Celular do personagem [Alt Esquerdo] por cima do HUD.
+            if (phoneActive)
+            {
+                DrawPhone();
             }
 
             DrawToastNotification();
