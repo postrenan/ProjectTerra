@@ -233,6 +233,35 @@ namespace ProjectTerra.Sandbox
             roadMaskMark = RoadMaskSegments.Count;
         }
 
+        /// <summary>
+        /// True se a posição (XZ local) cai sobre a pegada de uma via, ferrovia ou leito de rio
+        /// (os mesmos segmentos usados para suprimir a grama). A vegetação e os rochedos usam
+        /// isto para não nascerem no meio das estradas e dos rios. <paramref name="extraMargin"/>
+        /// amplia a folga para afastar objetos volumosos (árvores/rochas) do acostamento.
+        /// </summary>
+        public bool IsOnRoadOrRiver(float wx, float wz, float extraMargin = 0f)
+        {
+            var segs = RoadMaskSegments;
+            for (int i = 0; i < segs.Count; i++)
+            {
+                var s = segs[i];
+                float limit = s.clearance + extraMargin;
+                if (DistPointToSegmentSqrXZ(wx, wz, s.a, s.b) < limit * limit) return true;
+            }
+            return false;
+        }
+
+        private static float DistPointToSegmentSqrXZ(float px, float pz, Vector2 a, Vector2 b)
+        {
+            float abx = b.x - a.x, abz = b.y - a.y;
+            float apx = px - a.x, apz = pz - a.y;
+            float len2 = abx * abx + abz * abz;
+            float t = len2 > 1e-6f ? Mathf.Clamp01((apx * abx + apz * abz) / len2) : 0f;
+            float cx = a.x + abx * t, cz = a.y + abz * t;
+            float dx = px - cx, dz = pz - cz;
+            return dx * dx + dz * dz;
+        }
+
         private void BuildRoadRibbon(Transform parent, RoadPolyline poly)
         {
             // 1. Projeta os pontos reais para XZ local.

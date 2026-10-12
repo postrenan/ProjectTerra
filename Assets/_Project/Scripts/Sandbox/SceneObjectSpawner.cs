@@ -87,6 +87,10 @@ namespace ProjectTerra.Sandbox
 
                 if (spawnPos.y < 1.0f) continue;
 
+                // Não planta árvores sobre estradas/ferrovias/leitos de rio (folga extra para a copa).
+                var rsmTree = RegionalSandboxManager.Instance;
+                if (rsmTree != null && rsmTree.IsOnRoadOrRiver(spawnPos.x, spawnPos.z, 3f)) continue;
+
                 GameObject[] treeModels = { treeDefault, treeCone, treeDetailed };
                 GameObject treePrefab = treeModels[i % treeModels.Length];
                 if (treePrefab != null)
@@ -131,6 +135,10 @@ namespace ProjectTerra.Sandbox
                 spawnPos.y = terrain.SampleHeight(spawnPos) + terrainPos.y;
 
                 if (spawnPos.y < 1.0f) continue;
+
+                // Não espalha rochedos sobre estradas/ferrovias/leitos de rio.
+                var rsmRock = RegionalSandboxManager.Instance;
+                if (rsmRock != null && rsmRock.IsOnRoadOrRiver(spawnPos.x, spawnPos.z, 2f)) continue;
 
                 GameObject[] rockModels = { rockSmall, rockLarge, rockTall };
                 GameObject rockPrefab = rockModels[i % rockModels.Length];

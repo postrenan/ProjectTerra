@@ -72,6 +72,10 @@ namespace ProjectTerra.Sandbox
 
                 if (pos.y < 1.0f) continue; // evita água/leito
 
+                // Não espalha arbustos/moitas sobre estradas/ferrovias/leitos de rio.
+                var rsmFol = RegionalSandboxManager.Instance;
+                if (rsmFol != null && rsmFol.IsOnRoadOrRiver(pos.x, pos.z, 1f)) continue;
+
                 GameObject prefab = (i % 2 == 0) ? bushA : bushB;
                 if (prefab != null)
                 {

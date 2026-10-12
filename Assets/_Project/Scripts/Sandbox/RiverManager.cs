@@ -17,6 +17,7 @@ namespace ProjectTerra.Sandbox
 
         private const float RiverWidth = 90f;     // largura da fita (m)
         private const float YOffset = 2.5f;       // levanta a fita acima do solo (evita z-fighting)
+        private const float RiverSampleStep = 15f; // passo de reamostragem do relevo ao longo da fita (m)
 
         public static RiverManager Create(Terrain terrain, RegionData region)
         {
@@ -108,7 +109,27 @@ namespace ProjectTerra.Sandbox
 
                             Vector3 a = WorldPos(lats[i], lons[i], size, tp);
                             Vector3 b = WorldPos(lats[i + 1], lons[i + 1], size, tp);
-                            AddQuad(verts, uvs, tris, a, b, ref vCoord);
+
+                            // Os vértices do Natural Earth podem estar a quilômetros de distância.
+                            // Um único quad reto entre A e B só tem as pontas assentadas no solo:
+                            // o miolo da fita atravessa colinas e vales em linha reta e a água
+                            // aparece "voando" sobre as depressões. Subdividimos o segmento em
+                            // passos curtos, reamostrando a altura do terreno em cada sub-ponto
+                            // (como as estradas e os rios regionais já fazem).
+                            float planar = Vector3.Distance(new Vector3(a.x, 0f, a.z), new Vector3(b.x, 0f, b.z));
+                            int steps = Mathf.Clamp(Mathf.CeilToInt(planar / RiverSampleStep), 1, 512);
+                            Vector3 prev = a;
+                            for (int s = 1; s <= steps; s++)
+                            {
+                                float f = s / (float)steps;
+                                Vector3 cur = (s == steps)
+                                    ? b
+                                    : WorldPos(Mathf.Lerp(lats[i], lats[i + 1], f), Mathf.Lerp(lons[i], lons[i + 1], f), size, tp);
+                                AddQuad(verts, uvs, tris, prev, cur, ref vCoord);
+                                prev = cur;
+                            }
+                            // Física/empuxo: registra UM segmento por aresta original (não por sub-passo),
+                            // para não inflar a lista varrida a cada consulta de GetWaterInfo em tempo real.
                             waterSys.RegisterRiverSegment(a, b, RiverWidth, 2.2f, name);
                             any = true;
                             if (labelPos == Vector3.zero) labelPos = a;

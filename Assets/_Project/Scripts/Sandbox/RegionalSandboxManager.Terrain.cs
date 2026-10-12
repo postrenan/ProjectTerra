@@ -289,9 +289,16 @@ namespace ProjectTerra.Sandbox
                 // fora desse retangulo, entao o lago precisa ser calculado em coordenadas
                 // relativas a origem do terreno, nunca em coordenadas 0-based.
                 Vector3 lakePos = new Vector3(-worldWidthMeters * 0.35f, 0f, -worldLengthMeters * 0.4f);
-                lakePos.y = GetTerrainHeight(lakePos) + 0.4f;
+                // A lâmina tem 900x600 m de raio. Usar a altura de UM ponto central e
+                // esticá-la pelo disco inteiro fazia o lago pairar sempre que esse ponto
+                // caía numa encosta. Em vez disso, assentamos a superfície logo acima do
+                // ponto MAIS BAIXO do relevo sob a pegada do lago, de modo que ele preencha
+                // a depressão e as margens fiquem acima da água (aparência de bacia real).
+                const float lakeRadiusX = 900f, lakeRadiusZ = 600f;
+                float lakeBedY = SampleMinTerrainHeight(lakePos, lakeRadiusX, lakeRadiusZ);
+                lakePos.y = lakeBedY + 0.4f;
                 lakeObj.transform.position = lakePos;
-                lakeObj.transform.localScale = new Vector3(1800f, 0.2f, 1200f);
+                lakeObj.transform.localScale = new Vector3(lakeRadiusX * 2f, 0.2f, lakeRadiusZ * 2f);
                 Destroy(lakeObj.GetComponent<Collider>());
 
                 var rend = lakeObj.GetComponent<Renderer>();
@@ -301,7 +308,7 @@ namespace ProjectTerra.Sandbox
                 }
 
                 string lakeName = infra != null && !string.IsNullOrEmpty(infra.waterBodyName) ? infra.waterBodyName : "Lago/Represa Regional";
-                waterSys.RegisterLake(lakePos, 900f, 600f, lakePos.y, lakeName);
+                waterSys.RegisterLake(lakePos, lakeRadiusX, lakeRadiusZ, lakePos.y, lakeName);
                 Debug.Log($"[RegionalSandbox] Bacia hidrográfica/lacustre interior construída ({lakeName}) com física e dinâmica ativas.");
             }
             else

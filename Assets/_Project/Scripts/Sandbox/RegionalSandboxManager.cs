@@ -249,6 +249,31 @@ namespace ProjectTerra.Sandbox
             return 0f;
         }
 
+        /// <summary>
+        /// Menor altura do terreno dentro de uma pegada elíptica (XZ) centrada em <paramref name="center"/>.
+        /// Usado para assentar corpos d'água planos (lagos/represas) no fundo da depressão em vez de
+        /// deixá-los pairando na altura de um único ponto amostrado sobre uma encosta.
+        /// </summary>
+        public float SampleMinTerrainHeight(Vector3 center, float radiusX, float radiusZ, int samples = 12)
+        {
+            if (activeTerrain == null) return GetTerrainHeight(center);
+
+            float minY = float.MaxValue;
+            for (int iz = 0; iz <= samples; iz++)
+            {
+                float fz = (iz / (float)samples) * 2f - 1f; // -1..1
+                for (int ix = 0; ix <= samples; ix++)
+                {
+                    float fx = (ix / (float)samples) * 2f - 1f; // -1..1
+                    if (fx * fx + fz * fz > 1f) continue; // fora da elipse
+                    Vector3 p = new Vector3(center.x + fx * radiusX, 0f, center.z + fz * radiusZ);
+                    float y = GetTerrainHeight(p);
+                    if (y < minY) minY = y;
+                }
+            }
+            return minY == float.MaxValue ? GetTerrainHeight(center) : minY;
+        }
+
         #endregion
 
         #region Spawn do Jogador e Missões
