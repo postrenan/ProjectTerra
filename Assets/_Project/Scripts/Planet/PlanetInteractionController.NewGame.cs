@@ -12,8 +12,8 @@ namespace ProjectTerra.Planet
         {
             var infra = RegionInfrastructureDatabase.GetInfrastructure(selectedRegion.id, selectedRegion);
 
-            GUILayout.Label("🎮 Configurar Nova Partida", headerTitleStyle);
-            GUILayout.Label($"Região: {selectedRegion.name} ({selectedRegion.country}) • {infra.environmentCategory}", headerSubtitleStyle);
+            GUILayout.Label("Configurar Nova Partida", headerTitleStyle);
+            GUILayout.Label($"Região: {selectedRegion.name} ({selectedRegion.country}) - {infra.environmentCategory}", headerSubtitleStyle);
             GUILayout.Space(4);
 
             GUI.color = new Color(1f, 1f, 1f, 0.15f);
@@ -45,7 +45,7 @@ namespace ProjectTerra.Planet
             {
                 bool isFarmer = selectedCareer == StarterCareer.Farmer;
                 GUI.color = isFarmer ? new Color(0.3f, 1f, 0.4f) : Color.white;
-                if (GUILayout.Button("🌾 Agricultor", buttonStyle, GUILayout.Height(26)))
+                if (GUILayout.Button("Agricultor", buttonStyle, GUILayout.Height(26)))
                 {
                     selectedCareer = StarterCareer.Farmer;
                 }
@@ -53,9 +53,9 @@ namespace ProjectTerra.Planet
             else
             {
                 GUI.color = new Color(0.6f, 0.4f, 0.4f, 0.7f);
-                if (GUILayout.Button("🌾 Agricultor 🚫", buttonStyle, GUILayout.Height(26)))
+                if (GUILayout.Button("Agricultor [Indisponível]", buttonStyle, GUILayout.Height(26)))
                 {
-                    notificationMessage = $"🚫 {farmReason}";
+                    notificationMessage = $"[Indisponível] {farmReason}";
                     notificationTimer = 5.0f;
                 }
             }
@@ -65,7 +65,7 @@ namespace ProjectTerra.Planet
             {
                 bool isTrucker = selectedCareer == StarterCareer.Trucker;
                 GUI.color = isTrucker ? new Color(1f, 0.85f, 0.3f) : Color.white;
-                if (GUILayout.Button("🚛 Motorista", buttonStyle, GUILayout.Height(26)))
+                if (GUILayout.Button("Motorista", buttonStyle, GUILayout.Height(26)))
                 {
                     selectedCareer = StarterCareer.Trucker;
                 }
@@ -73,9 +73,9 @@ namespace ProjectTerra.Planet
             else
             {
                 GUI.color = new Color(0.6f, 0.4f, 0.4f, 0.7f);
-                if (GUILayout.Button("🚛 Motorista 🚫", buttonStyle, GUILayout.Height(26)))
+                if (GUILayout.Button("Motorista [Indisponível]", buttonStyle, GUILayout.Height(26)))
                 {
-                    notificationMessage = $"🚫 {truckReason}";
+                    notificationMessage = $"[Indisponível] {truckReason}";
                     notificationTimer = 5.0f;
                 }
             }
@@ -85,7 +85,7 @@ namespace ProjectTerra.Planet
             {
                 bool isAviator = selectedCareer == StarterCareer.Aviator;
                 GUI.color = isAviator ? new Color(0.4f, 0.85f, 1f) : Color.white;
-                if (GUILayout.Button("🛩️ Aviador", buttonStyle, GUILayout.Height(26)))
+                if (GUILayout.Button("Aviador", buttonStyle, GUILayout.Height(26)))
                 {
                     selectedCareer = StarterCareer.Aviator;
                 }
@@ -93,9 +93,9 @@ namespace ProjectTerra.Planet
             else
             {
                 GUI.color = new Color(0.6f, 0.4f, 0.4f, 0.7f);
-                if (GUILayout.Button("🛩️ Aviador 🚫", buttonStyle, GUILayout.Height(26)))
+                if (GUILayout.Button("Aviador [Indisponível]", buttonStyle, GUILayout.Height(26)))
                 {
-                    notificationMessage = $"🚫 {flyReason}";
+                    notificationMessage = $"[Indisponível] {flyReason}";
                     notificationTimer = 5.0f;
                 }
             }
@@ -105,7 +105,7 @@ namespace ProjectTerra.Planet
             {
                 bool isFisherman = selectedCareer == StarterCareer.Fisherman;
                 GUI.color = isFisherman ? new Color(0.3f, 0.95f, 0.95f) : Color.white;
-                if (GUILayout.Button("🎣 Pescador", buttonStyle, GUILayout.Height(26)))
+                if (GUILayout.Button("Pescador", buttonStyle, GUILayout.Height(26)))
                 {
                     selectedCareer = StarterCareer.Fisherman;
                 }
@@ -113,9 +113,9 @@ namespace ProjectTerra.Planet
             else
             {
                 GUI.color = new Color(0.6f, 0.4f, 0.4f, 0.7f);
-                if (GUILayout.Button("🎣 Pescador 🚫", buttonStyle, GUILayout.Height(26)))
+                if (GUILayout.Button("Pescador [Indisponível]", buttonStyle, GUILayout.Height(26)))
                 {
-                    notificationMessage = $"🚫 {fishReason}";
+                    notificationMessage = $"[Indisponível] {fishReason}";
                     notificationTimer = 5.0f;
                 }
             }
@@ -128,16 +128,16 @@ namespace ProjectTerra.Planet
             switch (selectedCareer)
             {
                 case StarterCareer.Farmer:
-                    careerDesc = $"🌾 Fazenda rural com trator e lavoura cultivável. ({farmReason})";
+                    careerDesc = $"Fazenda rural com trator e lavoura cultivável. ({farmReason})";
                     break;
                 case StarterCareer.Trucker:
-                    careerDesc = $"🚛 Pátio logístico e fretes rodoviários intermunicipais. ({truckReason})";
+                    careerDesc = $"Pátio logístico e fretes rodoviários intermunicipais. ({truckReason})";
                     break;
                 case StarterCareer.Aviator:
-                    careerDesc = $"🛩️ Base aérea em '{infra.airportName}' com monomotor de carga. ({flyReason})";
+                    careerDesc = $"Base aérea em '{infra.airportName}' com monomotor de carga. ({flyReason})";
                     break;
                 case StarterCareer.Fisherman:
-                    careerDesc = $"🎣 Cais em '{infra.portName}' para pesca comercial em {infra.waterBodyName}. ({fishReason})";
+                    careerDesc = $"Cais em '{infra.portName}' para pesca comercial em {infra.waterBodyName}. ({fishReason})";
                     break;
             }
             GUILayout.Label(careerDesc, headerSubtitleStyle);
@@ -150,11 +150,11 @@ namespace ProjectTerra.Planet
                 GUI.color = new Color(1f, 0.75f, 0.35f, 0.95f);
                 if (!canFish)
                 {
-                    GUILayout.Label($"⚠️ Restrição Hídrica: {fishReason}", headerSubtitleStyle);
+                    GUILayout.Label($"[Aviso] Restrição Hídrica: {fishReason}", headerSubtitleStyle);
                 }
                 if (!canFarm)
                 {
-                    GUILayout.Label($"⚠️ Restrição Agrícola: {farmReason}", headerSubtitleStyle);
+                    GUILayout.Label($"[Aviso] Restrição Agrícola: {farmReason}", headerSubtitleStyle);
                 }
                 GUI.color = Color.white;
             }
@@ -165,7 +165,7 @@ namespace ProjectTerra.Planet
             GUI.color = new Color(0.1f, 0.2f, 0.35f, 0.65f);
             GUILayout.BeginVertical(saveCardBoxStyle);
             GUI.color = new Color(0.7f, 0.9f, 1.0f);
-            GUILayout.Label($"⚓ Porto: {infra.portName}  |  🛫 Aeroporto: {infra.airportName}", headerSubtitleStyle);
+            GUILayout.Label($"Porto: {infra.portName} | Aeroporto: {infra.airportName}", headerSubtitleStyle);
             GUILayout.EndVertical();
             GUI.color = Color.white;
             GUILayout.Space(6);
@@ -210,12 +210,12 @@ namespace ProjectTerra.Planet
             }
 
             // 4. Botão Iniciar Partida com Verificação de Infraestrutura
-            if (GUILayout.Button("▶ Iniciar & Desembarcar na Região", primaryButtonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button("Iniciar & Desembarcar na Região", primaryButtonStyle, GUILayout.Height(32)))
             {
                 // Trava de segurança: impede iniciar em carreira inviável para a região
                 if (!infra.IsCareerViable(selectedCareer, out string blockReason))
                 {
-                    notificationMessage = $"🚫 Impossível iniciar: {blockReason}";
+                    notificationMessage = $"[Indisponível] Impossível iniciar: {blockReason}";
                     notificationTimer = 5.0f;
                     return;
                 }
@@ -258,7 +258,7 @@ namespace ProjectTerra.Planet
             }
 
             GUILayout.Space(4);
-            if (GUILayout.Button("↩ Voltar aos Detalhes", buttonStyle, GUILayout.Height(22)))
+            if (GUILayout.Button("Voltar aos Detalhes", buttonStyle, GUILayout.Height(22)))
             {
                 currentCardMode = CardMode.RegionDetails;
             }

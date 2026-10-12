@@ -31,8 +31,8 @@ namespace ProjectTerra.Planet
             GUI.color = Color.white;
 
             // Texto do botão
-            string arrow = isRecentSavesOpen ? "▲" : "▼";
-            string buttonLabel = totalSaves > 0 ? $"📁 Saves Recentes ({totalSaves})  {arrow}" : $"📁 Saves Recentes (0)  {arrow}";
+            string arrow = isRecentSavesOpen ? "(aberto)" : "";
+            string buttonLabel = totalSaves > 0 ? $"Saves Recentes ({totalSaves}) {arrow}" : $"Saves Recentes (0) {arrow}";
 
             if (GUI.Button(recentSavesButtonRect, buttonLabel, recentBtnStyle ?? primaryButtonStyle))
             {
@@ -73,9 +73,9 @@ namespace ProjectTerra.Planet
 
             // --- CABEÇALHO DO MODAL ---
             GUILayout.BeginHorizontal();
-            GUILayout.Label("💾 Partidas Recentes", headerTitleStyle);
+            GUILayout.Label("Partidas Recentes", headerTitleStyle);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("▲ Recolher", buttonStyle, GUILayout.Width(85), GUILayout.Height(24)))
+            if (IconButtonLayout("Recolher", ProjectTerra.UI.TerraIcon.CancelCross, buttonStyle, GUILayout.Width(100), GUILayout.Height(24)))
             {
                 CloseRecentSavesModal();
             }
@@ -88,11 +88,13 @@ namespace ProjectTerra.Planet
 
             // --- BARRA DE BUSCA RÁPIDA ---
             GUILayout.BeginHorizontal();
-            GUILayout.Label("🔍", labelStyle, GUILayout.Width(22));
+            Rect searchIconRect = GUILayoutUtility.GetRect(18, 18, GUILayout.Width(22), GUILayout.Height(24));
+            searchIconRect.y += 3f;
+            ProjectTerra.UI.TerraIcons.Draw(new Rect(searchIconRect.x, searchIconRect.y, 18, 18), ProjectTerra.UI.TerraIcon.Search, Color.white);
             recentSavesSearchQuery = GUILayout.TextField(recentSavesSearchQuery, textFieldStyle, GUILayout.Height(24));
             if (!string.IsNullOrEmpty(recentSavesSearchQuery))
             {
-                if (GUILayout.Button("✕", buttonStyle, GUILayout.Width(24), GUILayout.Height(24)))
+                if (IconButtonLayout("", ProjectTerra.UI.TerraIcon.CancelCross, buttonStyle, GUILayout.Width(28), GUILayout.Height(24)))
                 {
                     recentSavesSearchQuery = "";
                     GUI.FocusControl(null);
@@ -125,7 +127,7 @@ namespace ProjectTerra.Planet
                 {
                     GUILayout.Label("Nenhuma partida salva encontrada no sistema.", headerSubtitleStyle);
                     GUILayout.Space(6);
-                    GUILayout.Label("💡 Clique em qualquer estado ou país do globo para iniciar uma nova jornada!", headerSubtitleStyle);
+                    GUILayout.Label("Clique em qualquer estado ou país do globo para iniciar uma nova jornada!", headerSubtitleStyle);
                 }
                 else
                 {
@@ -147,20 +149,19 @@ namespace ProjectTerra.Planet
 
                     // Linha 1: Ícone de Carreira + Nome do Save + Saldo
                     GUILayout.BeginHorizontal();
-                    string careerIcon = save.starterCareer == StarterCareer.Farmer ? "🌾" :
-                                        save.starterCareer == StarterCareer.Trucker ? "🚛" :
-                                        save.starterCareer == StarterCareer.Aviator ? "🛩️" : "🎣";
-                    GUILayout.Label($"{careerIcon} {save.saveName}", labelStyle);
+                    Rect careerIconRect = GUILayoutUtility.GetRect(18, 18, GUILayout.Width(18), GUILayout.Height(18));
+                    ProjectTerra.UI.TerraIcons.Draw(careerIconRect, GetCareerIcon(save.starterCareer), Color.white);
+                    GUILayout.Label(save.saveName, labelStyle);
                     GUILayout.Label(save.GetFormattedMoney(), valueStyle);
                     GUILayout.EndHorizontal();
 
                     // Linha 2: Região, País e Tipo
                     GUI.color = new Color(0.5f, 0.85f, 1.0f, 0.95f);
-                    GUILayout.Label($"📍 {save.regionName}, {save.countryName} ({save.regionType})", headerSubtitleStyle);
+                    GUILayout.Label($" {save.regionName}, {save.countryName} ({save.regionType})", headerSubtitleStyle);
 
                     // Linha 3: Data de Salvamento + Reputação
                     GUI.color = new Color(0.7f, 0.82f, 0.95f, 0.80f);
-                    GUILayout.Label($"📅 Salvo em: {save.lastSavedDate}  •  ★ {save.reputation} Reputação", headerSubtitleStyle);
+                    GUILayout.Label($"Salvo em: {save.lastSavedDate} - {save.reputation} Reputação", headerSubtitleStyle);
 
                     // Linha 4: Resumo de alterações de status
                     if (save.IsStatsModified)
@@ -176,7 +177,7 @@ namespace ProjectTerra.Planet
                     GUILayout.BeginHorizontal();
 
                     // Botão 1: Localizar no Globo (Foca câmera e seleciona região no planeta)
-                    if (GUILayout.Button("📍 Localizar no Globo", buttonStyle, GUILayout.Height(24)))
+                    if (GUILayout.Button("Localizar no Globo", buttonStyle, GUILayout.Height(24)))
                     {
                         FocusAndSelectRegion(save.regionId, true);
                         CloseRecentSavesModal();
@@ -185,7 +186,7 @@ namespace ProjectTerra.Planet
                     }
 
                     // Botão 2: Carregar Jogo (Mergulho orbital + tela de loading)
-                    if (GUILayout.Button("▶ Carregar", primaryButtonStyle, GUILayout.Height(24)))
+                    if (GUILayout.Button("Carregar", primaryButtonStyle, GUILayout.Height(24)))
                     {
                         LoadSaveGame(save);
                     }
@@ -203,14 +204,14 @@ namespace ProjectTerra.Planet
                             saveIdConfirmDelete = null;
                         }
                         GUI.color = Color.white;
-                        if (GUILayout.Button("✕", buttonStyle, GUILayout.Width(24), GUILayout.Height(24)))
+                        if (IconButtonLayout("", ProjectTerra.UI.TerraIcon.CancelCross, buttonStyle, GUILayout.Width(28), GUILayout.Height(24)))
                         {
                             saveIdConfirmDelete = null;
                         }
                     }
                     else
                     {
-                        if (GUILayout.Button("🗑 Excluir", dangerButtonStyle, GUILayout.Width(70), GUILayout.Height(24)))
+                        if (IconButtonLayout("Excluir", ProjectTerra.UI.TerraIcon.Trash, dangerButtonStyle, GUILayout.Width(86), GUILayout.Height(24)))
                         {
                             saveIdConfirmDelete = save.saveId;
                             deleteConfirmTimer = 4.0f;

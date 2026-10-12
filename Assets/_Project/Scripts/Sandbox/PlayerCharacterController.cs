@@ -69,9 +69,9 @@ namespace ProjectTerra.Sandbox
         private float pitch = 0f;
 
         // Ângulos em veículos
-        private float vehicleYawLook = 0f;      // Livre visão em 1ª pessoa no cockpit
+        private float vehicleYawLook = 0f; // Livre visão em 1ª pessoa no cockpit
         private float vehiclePitchLook = 0f;
-        private float thirdPersonYaw = 0f;      // Órbita em 3ª pessoa
+        private float thirdPersonYaw = 0f; // Órbita em 3ª pessoa
         private float thirdPersonPitch = 15f;
 
         private Camera activeCamera;
@@ -223,7 +223,7 @@ namespace ProjectTerra.Sandbox
 
             if (isSwimming && !wasSwimming)
             {
-                SandboxHUD.Instance?.ShowToast("🏊 Nadando na água [Espaço: Subir / Ctrl: Mergulhar]", 3.0f);
+                SandboxHUD.Instance?.ShowToast("Nadando na água [Espaço: Subir / Ctrl: Mergulhar]", 3.0f);
             }
 
             isGrounded = controller.isGrounded;
@@ -315,7 +315,7 @@ namespace ProjectTerra.Sandbox
 
                 // Movimento unificado: horizontal + vertical em UMA ÚNICA chamada Move.
                 // Antes eram duas chamadas (horizontal e depois vertical). Uma chamada só-horizontal
-                // com isGrounded=true faz o CharacterController "colar" no solo (snap de até stepOffset),
+                // com isGrounded=true faz o CharacterController "colar"no solo (snap de até stepOffset),
                 // o que engolia o primeiro quadro do salto — a travada "como se preso ao chão".
                 // Combinando o impulso vertical no mesmo Move, o salto decola limpo no primeiro frame.
                 Vector3 frameMove = moveDir * speed + Vector3.up * velocity.y;
@@ -463,7 +463,7 @@ namespace ProjectTerra.Sandbox
             {
                 flashlight.enabled = isFlashlightOn;
             }
-            SandboxHUD.Instance?.ShowToast(isFlashlightOn ? "🔦 Lanterna: Ligada" : "🔦 Lanterna: Desligada", 1.8f);
+            SandboxHUD.Instance?.ShowToast(isFlashlightOn ? "Lanterna: Ligada" : "Lanterna: Desligada", 1.8f);
         }
 
         private void CreateFlashlight()

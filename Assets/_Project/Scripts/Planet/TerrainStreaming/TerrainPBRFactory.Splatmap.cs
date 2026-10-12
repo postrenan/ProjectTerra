@@ -131,7 +131,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
 
                     // Gradiente polar em 3 zonas:
                     // • Boreal/Taiga (58°–72°): neve parcial — floresta boreal ainda predomina no satélite,
-                    //   então apenas realçamos levemente a afinidade de neve para não engolir a vegetação.
+                    // então apenas realçamos levemente a afinidade de neve para não engolir a vegetação.
                     // • Subártico (72°–80°): tundra majoritária, neve predominante.
                     // • Ártico / Polar (>80°): neve quase total (calota de gelo).
                     float absLat = Mathf.Abs(curLat);
@@ -264,7 +264,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
                     {
                         // Rede de segurança: os pesos nunca podem sair negativos nem estourar 1,
                         // senão o shader extrapola a cor da camada e o TerrainGroundPainter
-                        // (que soma os "outros" pesos) passa a zerar todas as camadas do texel.
+                        // (que soma os "outros"pesos) passa a zerar todas as camadas do texel.
                         splatmap[y, x, LayerGrass] = Mathf.Max(0f, grassWeight / totalWeight);
                         splatmap[y, x, LayerJungle] = Mathf.Max(0f, jungleWeight / totalWeight);
                         splatmap[y, x, LayerSavanna] = Mathf.Max(0f, savannaWeight / totalWeight);

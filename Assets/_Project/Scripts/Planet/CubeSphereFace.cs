@@ -5,12 +5,12 @@ namespace ProjectTerra.Planet
 {
     public enum CubeFaceDirection
     {
-        Up,      // +Y (Polo Norte)
-        Down,    // -Y (Polo Sul)
-        Left,    // -X (Oceano Pacífico Leste / Oceania)
-        Right,   // +X (Oceano Índico / África)
+        Up, // +Y (Polo Norte)
+        Down, // -Y (Polo Sul)
+        Left, // -X (Oceano Pacífico Leste / Oceania)
+        Right, // +X (Oceano Índico / África)
         Forward, // +Z (Europa / África / Atlântico)
-        Back     // -Z (Américas / Pacífico)
+        Back // -Z (Américas / Pacífico)
     }
 
     public class CubeSphereFace

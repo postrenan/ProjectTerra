@@ -85,8 +85,8 @@ namespace ProjectTerra.Sandbox
             GUI.color = Color.white;
 
             // Barra de Título
-            GUI.Label(new Rect(x + 12f, y + 4f, 450f, 22f), "💬 CONSOLE DE COMANDOS REGIONAIS  •  [ENTER] Executar  •  [ESC] Fechar", titleStyle);
-            if (GUI.Button(new Rect(x + w - 30f, y + 4f, 24f, 20f), "✖", btnStyle))
+            GUI.Label(new Rect(x + 12f, y + 4f, 450f, 22f), "CONSOLE DE COMANDOS REGIONAIS • [ENTER] Executar • [ESC] Fechar", titleStyle);
+            if (GUI.Button(new Rect(x + w - 30f, y + 4f, 24f, 20f), "[X]", btnStyle))
             {
                 CloseConsole();
                 return;
@@ -112,7 +112,7 @@ namespace ProjectTerra.Sandbox
             string hint = GetAutocompleteHint(inputCommand);
             if (!string.IsNullOrEmpty(hint))
             {
-                GUI.Label(new Rect(x + 12f, y + h - 50f, w - 24f, 18f), $"💡 Sugestão: {hint}  <color=#888888>(Pressione TAB para completar)</color>", hintStyle);
+                GUI.Label(new Rect(x + 12f, y + h - 50f, w - 24f, 18f), $"Sugestão: {hint} <color=#888888>(Pressione TAB para completar)</color>", hintStyle);
             }
 
             // Tratamento de Teclas Especiais no Console (Enter executa, Tab autocompleta, Setas navegam histórico)
@@ -193,11 +193,11 @@ namespace ProjectTerra.Sandbox
             }
             if (lower.StartsWith("/money "))
             {
-                return "/money [quantia]  (ex: /money 100000)";
+                return "/money [quantia] (ex: /money 100000)";
             }
             if (lower.StartsWith("/speed "))
             {
-                return "/speed [multiplicador]  (ex: /speed 2.5)";
+                return "/speed [multiplicador] (ex: /speed 2.5)";
             }
 
             return "";

@@ -479,12 +479,12 @@ namespace ProjectTerra.Sandbox
             float[] lateralOffsets = new float[cols]
             {
                 -(halfRoad + shoulderW + taludeW), // 0: Pé do talude esquerdo
-                -(halfRoad + shoulderW),           // 1: Borda externa acostamento esquerdo
-                -halfRoad,                          // 2: Borda esquerda da pista
-                0f,                                 // 3: Eixo central
-                halfRoad,                           // 4: Borda direita da pista
-                halfRoad + shoulderW,              // 5: Borda externa acostamento direito
-                halfRoad + shoulderW + taludeW     // 6: Pé do talude direito
+                -(halfRoad + shoulderW), // 1: Borda externa acostamento esquerdo
+                -halfRoad, // 2: Borda esquerda da pista
+                0f, // 3: Eixo central
+                halfRoad, // 4: Borda direita da pista
+                halfRoad + shoulderW, // 5: Borda externa acostamento direito
+                halfRoad + shoulderW + taludeW // 6: Pé do talude direito
             };
 
             float uRun = 0f;
@@ -790,10 +790,10 @@ namespace ProjectTerra.Sandbox
                 Vector3 c = center[i];
                 Vector3 r = rights[i];
 
-                verts[i * 4 + 0] = c - r * halfB + Vector3.up * 0.05f;      // Base esquerda
-                verts[i * 4 + 1] = c - r * halfT + Vector3.up * h;          // Topo esquerdo
-                verts[i * 4 + 2] = c + r * halfT + Vector3.up * h;          // Topo direito
-                verts[i * 4 + 3] = c + r * halfB + Vector3.up * 0.05f;      // Base direita
+                verts[i * 4 + 0] = c - r * halfB + Vector3.up * 0.05f; // Base esquerda
+                verts[i * 4 + 1] = c - r * halfT + Vector3.up * h; // Topo esquerdo
+                verts[i * 4 + 2] = c + r * halfT + Vector3.up * h; // Topo direito
+                verts[i * 4 + 3] = c + r * halfB + Vector3.up * 0.05f; // Base direita
 
                 uvs[i * 4 + 0] = new Vector2(0f, uRun * 0.5f);
                 uvs[i * 4 + 1] = new Vector2(0.4f, uRun * 0.5f);

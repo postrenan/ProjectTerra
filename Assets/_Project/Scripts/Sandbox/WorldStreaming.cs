@@ -9,11 +9,11 @@ namespace ProjectTerra.Sandbox
     /// </summary>
     public enum WorldObjectCategory
     {
-        Structure,  // prédios, casas, galpões, silos, estradas  → longe
-        Tree,       // árvores                                    → longe
-        Rock,       // rochas/formações                          → médio
-        Animal,     // fauna                                     → perto
-        Foliage     // arbustos/moitas                           → perto
+        Structure, // prédios, casas, galpões, silos, estradas → longe
+        Tree, // árvores → longe
+        Rock, // rochas/formações → médio
+        Animal, // fauna → perto
+        Foliage // arbustos/moitas → perto
     }
 
     /// <summary>
@@ -25,15 +25,15 @@ namespace ProjectTerra.Sandbox
     public static class WorldStreaming
     {
         // Layers por índice (8..31 são livres; não precisam de nome no TagManager para uso por índice).
-        public const int LayerFar = 8;      // estruturas e árvores
-        public const int LayerMid = 9;      // rochas
-        public const int LayerNear = 10;    // animais e folhagem
+        public const int LayerFar = 8; // estruturas e árvores
+        public const int LayerMid = 9; // rochas
+        public const int LayerNear = 10; // animais e folhagem
         public const int LayerLandmark = 11; // marcos geográficos (vulcões, montanhas, chapadas, quedas, rios)
 
         // Distâncias de render por tipo (metros).
-        public const float DistFar = 1400f;      // árvores e estruturas
-        public const float DistMid = 600f;       // rochas
-        public const float DistNear = 280f;      // animais e folhagem
+        public const float DistFar = 1400f; // árvores e estruturas
+        public const float DistMid = 600f; // rochas
+        public const float DistNear = 280f; // animais e folhagem
         public const float DistLandmark = 45000f; // marcos visíveis em todo o setor (picos de assinatura nas bordas não somem)
 
         public static int LayerFor(WorldObjectCategory category)

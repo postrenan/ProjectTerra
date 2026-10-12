@@ -64,6 +64,8 @@ namespace ProjectTerra.Planet
         private GUIStyle saveCardBoxStyle;
         private GUIStyle textFieldStyle;
         private GUIStyle recentBtnStyle;
+        private GUIStyle playBtnStyle;
+        private GUIStyle closeButtonStyle;
         private Texture2D whiteTex;
 
         // Estado do Modal Retrátil de Saves Recentes
@@ -76,14 +78,19 @@ namespace ProjectTerra.Planet
         private string saveIdConfirmDelete = null;
         private float deleteConfirmTimer = 0f;
 
+        // Controle de rotação do planeta (Botão no canto inferior direito)
+        private Rect rotationButtonRect;
+
         public static PlanetInteractionController Instance { get; private set; }
 
         public bool IsPointerOverUI()
         {
+            if (MainMenuController.Instance != null && MainMenuController.Instance.IsPointerOverUI()) return true;
             Vector2 guiMouse = new Vector2(TerraInput.MousePosition.x, Screen.height - TerraInput.MousePosition.y);
             if (hasSelection && lastCardRect.Contains(guiMouse)) return true;
             if (recentSavesButtonRect.Contains(guiMouse)) return true;
             if (recentSavesAnimProgress > 0.01f && recentSavesModalRect.Contains(guiMouse)) return true;
+            if (rotationButtonRect.Contains(guiMouse)) return true;
             return false;
         }
 
@@ -126,6 +133,11 @@ namespace ProjectTerra.Planet
                 var go = new GameObject("LoadingScreenController");
                 go.AddComponent<LoadingScreenController>();
             }
+            if (MainMenuController.Instance == null && FindAnyObjectByType<MainMenuController>() == null)
+            {
+                var go = new GameObject("MainMenuController");
+                go.AddComponent<MainMenuController>();
+            }
         }
 
         private void ResolveEarthMaterial()
@@ -161,12 +173,19 @@ namespace ProjectTerra.Planet
             float targetProgress = isRecentSavesOpen ? 1.0f : 0.0f;
             recentSavesAnimProgress = Mathf.MoveTowards(recentSavesAnimProgress, targetProgress, Time.deltaTime * 6.0f);
 
+            // Se o Menu Inicial estiver ativo, não captura cliques no globo terrestre
+            if (MainMenuController.Instance != null && MainMenuController.Instance.IsMenuOpen)
+            {
+                return;
+            }
+
             if (TerraInput.GetMouseButtonDown(0))
             {
                 Vector2 guiMouse = new Vector2(TerraInput.MousePosition.x, Screen.height - TerraInput.MousePosition.y);
                 isMouseDownOnCard = (hasSelection && lastCardRect.Contains(guiMouse)) ||
                                     recentSavesButtonRect.Contains(guiMouse) ||
-                                    (recentSavesAnimProgress > 0.01f && recentSavesModalRect.Contains(guiMouse));
+                                    (recentSavesAnimProgress > 0.01f && recentSavesModalRect.Contains(guiMouse)) ||
+                                    rotationButtonRect.Contains(guiMouse);
                 mouseDownPos = TerraInput.MousePosition;
             }
 
@@ -254,14 +273,13 @@ namespace ProjectTerra.Planet
 
             if (match == null)
             {
-                selectedRegion = GenerateOceanRegion(lat, lon);
-                SetTerrainHighlight(0);
+                // Clicar no mar não faz sentido: ignora a seleção e mantém o estado atual.
+                Debug.Log($"[PlanetInteraction] Clique no mar ignorado - Lat: {lat:F2}°, Lon: {lon:F2}°");
+                return;
             }
-            else
-            {
-                selectedRegion = match;
-                SetTerrainHighlight(match.id);
-            }
+
+            selectedRegion = match;
+            SetTerrainHighlight(match.id);
 
             // Reseta estado para a tela principal de detalhes da região selecionada
             currentCardMode = CardMode.RegionDetails;
@@ -294,16 +312,33 @@ namespace ProjectTerra.Planet
             return (ushort)(regionIdMap[idx] | (regionIdMap[idx + 1] << 8));
         }
 
-        public void ResumeRotation()
+        public void CloseRegionDetails()
         {
             hasSelection = false;
             lastCardRect = Rect.zero;
             currentCardMode = CardMode.RegionDetails;
             SetTerrainHighlight(0);
+        }
+
+        public void ResumeRotation()
+        {
+            CloseRegionDetails();
 
             if (planet != null)
             {
                 planet.SetRotationPaused(false);
+            }
+        }
+
+        public void TogglePlanetRotation()
+        {
+            if (planet == null)
+            {
+                planet = CubeSpherePlanet.Instance ?? FindAnyObjectByType<CubeSpherePlanet>();
+            }
+            if (planet != null)
+            {
+                planet.ToggleRotation();
             }
         }
 
@@ -472,6 +507,11 @@ namespace ProjectTerra.Planet
                     UnityEngine.SceneManagement.SceneManager.LoadScene("RegionalSandboxScene");
                 }
             }
+        }
+
+        public void ClearSelection()
+        {
+            ResumeRotation();
         }
     }
 }

@@ -46,7 +46,7 @@ namespace ProjectTerra.Sandbox
                 }
             }
 
-            SandboxHUD.Instance?.ShowToast(headLightsOn ? $"💡 Faróis de {vehicleName}: Ligados" : $"💡 Faróis de {vehicleName}: Desligados", 1.8f);
+            SandboxHUD.Instance?.ShowToast(headLightsOn ? $"Faróis de {vehicleName}: Ligados" : $"Faróis de {vehicleName}: Desligados", 1.8f);
         }
 
         public void CreateDefaultHeadlights()

@@ -42,8 +42,8 @@ namespace ProjectTerra.Sandbox
             if (career != StarterCareer.Fisherman) return career;
 
             var infra = RegionInfrastructureDatabase.GetInfrastructure(activeSave.regionId);
-            bool hasCoast  = (infra != null && infra.hasCoastline) || (activeHydroData != null && activeHydroData.isCoastal);
-            bool hasWater  = (infra != null && (infra.hasRivers || infra.hasLakes)) || activeSave.waterPercent > 5;
+            bool hasCoast = (infra != null && infra.hasCoastline) || (activeHydroData != null && activeHydroData.isCoastal);
+            bool hasWater = (infra != null && (infra.hasRivers || infra.hasLakes)) || activeSave.waterPercent > 5;
 
             if (!hasCoast && !hasWater)
             {

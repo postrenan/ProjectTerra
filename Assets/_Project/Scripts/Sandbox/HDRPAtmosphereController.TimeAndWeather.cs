@@ -14,7 +14,7 @@ namespace ProjectTerra.Sandbox
             UpdateTimeOfDay(timeOfDay);
             int h = Mathf.FloorToInt(timeOfDay);
             int m = Mathf.FloorToInt((timeOfDay - h) * 60f);
-            SandboxHUD.Instance?.ShowToast($"🕒 Horário alterado para {h:D2}:{m:D2}", 2.0f);
+            SandboxHUD.Instance?.ShowToast($"Horário alterado para {h:D2}:{m:D2}", 2.0f);
         }
 
         public void UpdateTimeOfDay(float hour)
@@ -68,32 +68,32 @@ namespace ProjectTerra.Sandbox
                 case "limpo":
                 case "ensolarado":
                     SetFogDistance(45000f);
-                    SandboxHUD.Instance?.ShowToast("☀️ Clima alterado para: Céu Limpo", 2.0f);
+                    SandboxHUD.Instance?.ShowToast("Clima alterado para: Céu Limpo", 2.0f);
                     break;
                 case "fog":
                 case "neblina":
                 case "nevoeiro":
                     SetFogDistance(1200f);
-                    SandboxHUD.Instance?.ShowToast("🌫️ Clima alterado para: Neblina Moderada", 2.0f);
+                    SandboxHUD.Instance?.ShowToast("Clima alterado para: Neblina Moderada", 2.0f);
                     break;
                 case "densefog":
                 case "denso":
                     SetFogDistance(450f);
-                    SandboxHUD.Instance?.ShowToast("🌫️ Clima alterado para: Neblina Densa", 2.0f);
+                    SandboxHUD.Instance?.ShowToast("Clima alterado para: Neblina Densa", 2.0f);
                     break;
                 case "overcast":
                 case "nublado":
                     SetFogDistance(8000f);
-                    SandboxHUD.Instance?.ShowToast("☁️ Clima alterado para: Nublado", 2.0f);
+                    SandboxHUD.Instance?.ShowToast("Clima alterado para: Nublado", 2.0f);
                     break;
                 case "storm":
                 case "tempestade":
                 case "chuva":
                     SetFogDistance(900f);
-                    SandboxHUD.Instance?.ShowToast("⛈️ Clima alterado para: Tempestade", 2.0f);
+                    SandboxHUD.Instance?.ShowToast("Clima alterado para: Tempestade", 2.0f);
                     break;
                 default:
-                    SandboxHUD.Instance?.ShowToast($"⚠️ Clima desconhecido '{key}'. Opções: clear, fog, densefog, overcast, storm", 3.0f);
+                    SandboxHUD.Instance?.ShowToast($"[Aviso] Clima desconhecido '{key}'. Opções: clear, fog, densefog, overcast, storm", 3.0f);
                     break;
             }
         }

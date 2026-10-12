@@ -196,5 +196,25 @@ namespace ProjectTerra.Core
             var kb = Keyboard.current;
             return kb != null && kb[key].wasReleasedThisFrame;
         }
+
+        public static bool GetKeyDown(KeyCode key)
+        {
+            var kb = Keyboard.current;
+            if (kb == null) return false;
+            if (key == KeyCode.Escape) return kb.escapeKey.wasPressedThisFrame;
+            if (key == KeyCode.Return) return kb.enterKey.wasPressedThisFrame;
+            if (key == KeyCode.Space) return kb.spaceKey.wasPressedThisFrame;
+            return false;
+        }
+
+        public static bool GetKey(KeyCode key)
+        {
+            var kb = Keyboard.current;
+            if (kb == null) return false;
+            if (key == KeyCode.Escape) return kb.escapeKey.isPressed;
+            if (key == KeyCode.Return) return kb.enterKey.isPressed;
+            if (key == KeyCode.Space) return kb.spaceKey.isPressed;
+            return false;
+        }
     }
 }

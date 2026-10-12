@@ -18,9 +18,9 @@ namespace ProjectTerra.Sandbox
         public static RegionalSandboxManager Instance { get; private set; }
 
         [Header("Dimensões Reais 1:1 do Território")]
-        public float worldWidthMeters = 60000f;   // Leste-Oeste do setor sandbox em metros
-        public float worldLengthMeters = 60000f;  // Norte-Sul do setor sandbox em metros
-        public float territoryWidthMeters = 886000f;  // Dimensão geográfica total do estado/país
+        public float worldWidthMeters = 60000f; // Leste-Oeste do setor sandbox em metros
+        public float worldLengthMeters = 60000f; // Norte-Sul do setor sandbox em metros
+        public float territoryWidthMeters = 886000f; // Dimensão geográfica total do estado/país
         public float territoryLengthMeters = 606000f;
         public int realAreaKm2 = 4800;
         public float maxElevationScale = 450f;
@@ -68,6 +68,7 @@ namespace ProjectTerra.Sandbox
             EnsurePlowAndAirplaneInScene();
             EnsureCommandConsole();
             EnsureGroundPainter();
+            EnsureAmbientAudio();
             SetupInitialMission();
         }
 
@@ -233,7 +234,8 @@ namespace ProjectTerra.Sandbox
             }
 
             var atmosObj = new GameObject("HDRP_AtmosphereSystem");
-            atmosObj.AddComponent<HDRPAtmosphereController>();
+            var atmos = atmosObj.AddComponent<HDRPAtmosphereController>();
+            atmos.autoCycleTime = true;
         }
 
         #endregion
@@ -296,6 +298,15 @@ namespace ProjectTerra.Sandbox
             var missionObj = new GameObject("MissionManager");
             var mm = missionObj.AddComponent<MissionManager>();
             mm.SetupInitialContract(activeSave.starterCareer, starterBasePosition, deliveryMarketPosition);
+        }
+
+        private void EnsureAmbientAudio()
+        {
+            if (ProjectTerra.Audio.AmbientAudioManager.Instance == null)
+            {
+                var audioObj = new GameObject("AmbientAudioManager");
+                audioObj.AddComponent<ProjectTerra.Audio.AmbientAudioManager>();
+            }
         }
 
         public static Material CreateSolidMaterial(Color color)

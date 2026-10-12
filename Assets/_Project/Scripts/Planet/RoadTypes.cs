@@ -9,10 +9,10 @@ namespace ProjectTerra.Planet
     /// </summary>
     public enum RoadSurfaceType
     {
-        Asphalt = 0,    // Asfalto PBR (rodovias principais e autoestradas)
-        Concrete = 1,   // Concreto PBR (rodovias modernas e pistas expressas)
-        Dirt = 2,       // Terra batida PBR (estradas rurais e vicinais)
-        Gravel = 3      // Britas / Cascalho compactado PBR
+        Asphalt = 0, // Asfalto PBR (rodovias principais e autoestradas)
+        Concrete = 1, // Concreto PBR (rodovias modernas e pistas expressas)
+        Dirt = 2, // Terra batida PBR (estradas rurais e vicinais)
+        Gravel = 3 // Britas / Cascalho compactado PBR
     }
 
     /// <summary>
@@ -20,10 +20,10 @@ namespace ProjectTerra.Planet
     /// </summary>
     public enum RoadLaneCount
     {
-        TwoLanes = 2,   // 2 faixas (1 faixa em cada sentido)
-        FourLanes = 4,  // 4 faixas (2 faixas por sentido com canteiro/faixa central)
-        SixLanes = 6,   // 6 faixas (3 faixas por sentido com barreira central)
-        EightLanes = 8  // 8 faixas (4 faixas por sentido com canteiro largo e barreira)
+        TwoLanes = 2, // 2 faixas (1 faixa em cada sentido)
+        FourLanes = 4, // 4 faixas (2 faixas por sentido com canteiro/faixa central)
+        SixLanes = 6, // 6 faixas (3 faixas por sentido com barreira central)
+        EightLanes = 8 // 8 faixas (4 faixas por sentido com canteiro largo e barreira)
     }
 
     /// <summary>
@@ -34,10 +34,10 @@ namespace ProjectTerra.Planet
     {
         public RoadSurfaceType surfaceType = RoadSurfaceType.Asphalt;
         public RoadLaneCount laneCount = RoadLaneCount.TwoLanes;
-        public float laneWidth = 3.5f;          // Largura padrão de cada faixa de tráfego (metros)
-        public float shoulderWidth = 1.8f;       // Acostamento lateral (metros)
-        public float embankmentWidth = 3.2f;     // Talude / aterro lateral que ancora no terreno (metros)
-        public float medianWidth = 0f;           // Canteiro central (0m para 2 faixas, 1.2m para 4, 2.0m para 6, 2.6m para 8)
+        public float laneWidth = 3.5f; // Largura padrão de cada faixa de tráfego (metros)
+        public float shoulderWidth = 1.8f; // Acostamento lateral (metros)
+        public float embankmentWidth = 3.2f; // Talude / aterro lateral que ancora no terreno (metros)
+        public float medianWidth = 0f; // Canteiro central (0m para 2 faixas, 1.2m para 4, 2.0m para 6, 2.6m para 8)
 
         public float TotalRoadwayWidth => ((int)laneCount * laneWidth) + medianWidth;
         public float TotalShoulderWidth => TotalRoadwayWidth + (shoulderWidth * 2f);

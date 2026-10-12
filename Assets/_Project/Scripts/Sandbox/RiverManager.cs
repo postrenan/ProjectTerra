@@ -15,8 +15,8 @@ namespace ProjectTerra.Sandbox
         private Terrain terrain;
         private RegionData region;
 
-        private const float RiverWidth = 90f;     // largura da fita (m)
-        private const float YOffset = 2.5f;       // levanta a fita acima do solo (evita z-fighting)
+        private const float RiverWidth = 90f; // largura da fita (m)
+        private const float YOffset = 2.5f; // levanta a fita acima do solo (evita z-fighting)
 
         public static RiverManager Create(Terrain terrain, RegionData region)
         {

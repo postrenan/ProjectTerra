@@ -229,6 +229,30 @@ namespace ProjectTerra.Sandbox
             };
             phoneLockStyle.normal.textColor = new Color(1f, 0.72f, 0.3f);
 
+            phoneStatusRightStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleRight
+            };
+            phoneStatusRightStyle.normal.textColor = new Color(0.8f, 0.9f, 1f);
+
+            phoneClockWidgetStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 22,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            phoneClockWidgetStyle.normal.textColor = Color.white;
+
+            phoneClockSubStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Normal,
+                alignment = TextAnchor.MiddleCenter
+            };
+            phoneClockSubStyle.normal.textColor = new Color(0.7f, 0.85f, 1f, 0.85f);
+
             stylesReady = true;
         }
 

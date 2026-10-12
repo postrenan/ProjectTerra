@@ -51,33 +51,33 @@ namespace ProjectTerra.Planet
         private Transform[] faceParents;
 
         private static readonly Vector3[] FaceDirections = {
-            Vector3.up,      // 0: +Y (Polo Norte)
-            Vector3.down,    // 1: -Y (Polo Sul)
-            Vector3.left,    // 2: -X (Pacífico / Oceania)
-            Vector3.right,   // 3: +X (Índico / Ásia Oriental)
+            Vector3.up, // 0: +Y (Polo Norte)
+            Vector3.down, // 1: -Y (Polo Sul)
+            Vector3.left, // 2: -X (Pacífico / Oceania)
+            Vector3.right, // 3: +X (Índico / Ásia Oriental)
             Vector3.forward, // 4: +Z (Europa / África / Atlântico)
-            Vector3.back     // 5: -Z (Américas / Pacífico)
+            Vector3.back // 5: -Z (Américas / Pacífico)
         };
 
         // Eixo A do plano local do cubo (Horizontal u)
         private static readonly Vector3[] FaceAxesA = {
             Vector3.forward, // Up (+Y)
             Vector3.forward, // Down (-Y)
-            Vector3.up,      // Left (-X)
-            Vector3.up,      // Right (+X)
-            Vector3.up,      // Forward (+Z)
-            Vector3.up       // Back (-Z)
+            Vector3.up, // Left (-X)
+            Vector3.up, // Right (+X)
+            Vector3.up, // Forward (+Z)
+            Vector3.up // Back (-Z)
         };
 
         // Eixo B do plano local do cubo (Vertical v)
         // Garante rigorosamente que AxisA x AxisB = FaceDirection (vetor normal apontando para FORA)
         private static readonly Vector3[] FaceAxesB = {
-            Vector3.right,   // Up:      (0,0,1) x (1,0,0) = (0,1,0) = Up
-            Vector3.left,    // Down:    (0,0,1) x (-1,0,0) = (0,-1,0) = Down
-            Vector3.back,    // Left:    (0,1,0) x (0,0,-1) = (-1,0,0) = Left
-            Vector3.forward, // Right:   (0,1,0) x (0,0,1) = (1,0,0) = Right
-            Vector3.left,    // Forward: (0,1,0) x (-1,0,0) = (0,0,1) = Forward
-            Vector3.right    // Back:    (0,1,0) x (1,0,0) = (0,0,-1) = Back
+            Vector3.right, // Up: (0,0,1) x (1,0,0) = (0,1,0) = Up
+            Vector3.left, // Down: (0,0,1) x (-1,0,0) = (0,-1,0) = Down
+            Vector3.back, // Left: (0,1,0) x (0,0,-1) = (-1,0,0) = Left
+            Vector3.forward, // Right: (0,1,0) x (0,0,1) = (1,0,0) = Right
+            Vector3.left, // Forward: (0,1,0) x (-1,0,0) = (0,0,1) = Forward
+            Vector3.right // Back: (0,1,0) x (1,0,0) = (0,0,-1) = Back
         };
 
         private static readonly string[] FaceNames = {

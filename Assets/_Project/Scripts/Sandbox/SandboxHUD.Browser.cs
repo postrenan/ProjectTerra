@@ -7,7 +7,7 @@ namespace ProjectTerra.Sandbox
 {
     /// <summary>
     /// "TerraBrowser 95": um navegador de internet retrô em tela cheia que substitui a
-    /// antiga loja do celular. Cada loja é um "site" com descrição, preço, cores/atributos
+    /// antiga loja do celular. Cada loja é um "site"com descrição, preço, cores/atributos
     /// e uma imagem estilizada dos itens: usados, novos (econômicos), luxo, terrenos e
     /// animais. Inclui cursor de setinha clássico e um botão [X] para voltar ao jogo.
     /// </summary>
@@ -49,12 +49,12 @@ namespace ProjectTerra.Sandbox
             public string emoji;
             public string desc;
             public long price;
-            public string[] specs;      // atributos extra (ano/km, solo, temperamento...)
-            public Color[] colors;      // cores disponíveis (opcional)
+            public string[] specs; // atributos extra (ano/km, solo, temperamento...)
+            public Color[] colors; // cores disponíveis (opcional)
             public string[] colorNames;
-            public string action;       // "vehicle:<tipo>", "animal:<Species>", "land"
+            public string action; // "vehicle:<tipo>", "animal:<Species>", "land"
             public ShopArt art;
-            public Color artA, artB;    // paleta da imagem desenhada
+            public Color artA, artB; // paleta da imagem desenhada
         }
 
         private class ShopSite
@@ -91,28 +91,28 @@ namespace ProjectTerra.Sandbox
                     brand = new Color(0.62f, 0.40f, 0.12f),
                     items = new[]
                     {
-                        new ShopItem { name = "Fusca Clássico", emoji = "🚗", price = 18500, action = "vehicle:car",
+                        new ShopItem { name = "Fusca Clássico", emoji = "", price = 18500, action = "vehicle:car",
                             art = ShopArt.Car, artA = new Color(0.55f,0.70f,0.35f), artB = new Color(0.2f,0.2f,0.2f),
                             desc = "Um clássico que recusa a morrer. Motor a ar, charme de sobra e um leve cheiro de gasolina.",
-                            specs = new[]{ "📅 Ano: 1975", "🛣️ 198.400 km", "⛽ Consumo: alto", "🔧 Estado: 'roda bem'" },
+                            specs = new[]{ "Ano: 1975", "️ 198.400 km", "Consumo: alto", "Estado: 'roda bem'" },
                             colors = new[]{ new Color(0.55f,0.70f,0.35f), new Color(0.75f,0.72f,0.60f), new Color(0.30f,0.40f,0.65f) },
                             colorNames = new[]{ "Verde Musgo", "Bege", "Azul Desbotado" } },
-                        new ShopItem { name = "Picape Batalhada", emoji = "🛻", price = 34900, action = "vehicle:van",
+                        new ShopItem { name = "Picape Batalhada", emoji = "", price = 34900, action = "vehicle:van",
                             art = ShopArt.Truck, artA = new Color(0.45f,0.46f,0.48f), artB = new Color(0.2f,0.2f,0.22f),
                             desc = "Carroceria amassada mas fiel. Já carregou de tudo: ração, móveis e segredos.",
-                            specs = new[]{ "📅 Ano: 1998", "🛣️ 310.000 km", "📦 Caçamba útil", "🔧 Estado: casca-grossa" },
+                            specs = new[]{ "Ano: 1998", "️ 310.000 km", "Caçamba útil", "Estado: casca-grossa" },
                             colors = new[]{ new Color(0.45f,0.46f,0.48f), new Color(0.60f,0.30f,0.20f) },
                             colorNames = new[]{ "Cinza Fosco", "Marrom Ferrugem" } },
-                        new ShopItem { name = "Trator Veterano", emoji = "🚜", price = 46000, action = "vehicle:tractor",
+                        new ShopItem { name = "Trator Veterano", emoji = "", price = 46000, action = "vehicle:tractor",
                             art = ShopArt.Tractor, artA = new Color(0.70f,0.55f,0.10f), artB = new Color(0.15f,0.15f,0.15f),
                             desc = "Arou mais terra que muita fazenda inteira. Lento, teimoso e eterno.",
-                            specs = new[]{ "📅 Ano: 1989", "⏱️ 9.200 h de uso", "🌾 Engate traseiro OK", "🔧 Fumaça inclusa" },
+                            specs = new[]{ "Ano: 1989", "9.200 h de uso", "Engate traseiro OK", "Fumaça inclusa" },
                             colors = new[]{ new Color(0.70f,0.55f,0.10f), new Color(0.75f,0.20f,0.15f) },
                             colorNames = new[]{ "Amarelo Lavoura", "Vermelho Clássico" } },
-                        new ShopItem { name = "Caminhão Reformado", emoji = "🚛", price = 89000, action = "vehicle:truck",
+                        new ShopItem { name = "Caminhão Reformado", emoji = "", price = 89000, action = "vehicle:truck",
                             art = ShopArt.Truck, artA = new Color(0.20f,0.35f,0.55f), artB = new Color(0.15f,0.15f,0.18f),
                             desc = "Baú recém-pintado por cima da ferrugem. Pega estrada numa boa, se Deus quiser.",
-                            specs = new[]{ "📅 Ano: 2005", "🛣️ 540.000 km", "📦 Até 1.5 t", "🔧 Revisão recente" },
+                            specs = new[]{ "Ano: 2005", "️ 540.000 km", "Até 1.5 t", "Revisão recente" },
                             colors = new[]{ new Color(0.20f,0.35f,0.55f), new Color(0.80f,0.80f,0.82f) },
                             colorNames = new[]{ "Azul Estrada", "Branco Geladeira" } },
                     }
@@ -124,25 +124,25 @@ namespace ProjectTerra.Sandbox
                     brand = new Color(0.18f, 0.55f, 0.35f),
                     items = new[]
                     {
-                        new ShopItem { name = "Hatch Popular", emoji = "🚗", price = 62000, action = "vehicle:car",
+                        new ShopItem { name = "Hatch Popular", emoji = "", price = 62000, action = "vehicle:car",
                             art = ShopArt.Car, artA = new Color(0.90f,0.90f,0.92f), artB = new Color(0.2f,0.2f,0.25f),
                             desc = "O queridinho das cidades. Econômico, ágil e fácil de estacionar em qualquer lugar.",
-                            specs = new[]{ "📅 Ano: 0 km", "⛽ 14 km/l", "🛡️ Garantia 3 anos", "❄️ Ar-condicionado" },
+                            specs = new[]{ "Ano: 0 km", "14 km/l", "Garantia 3 anos", "Ar-condicionado" },
                             colors = VehiclePalette, colorNames = VehicleColorNames },
-                        new ShopItem { name = "Sedan Econômico", emoji = "🚙", price = 84000, action = "vehicle:sedan",
+                        new ShopItem { name = "Sedan Econômico", emoji = "", price = 84000, action = "vehicle:sedan",
                             art = ShopArt.Car, artA = new Color(0.20f,0.45f,0.85f), artB = new Color(0.15f,0.15f,0.2f),
                             desc = "Porta-malas grande e banco traseiro folgado. Conforto de família sem pesar no bolso.",
-                            specs = new[]{ "📅 Ano: 0 km", "⛽ 12 km/l", "🧳 Porta-malas 500 L", "🛡️ Garantia 3 anos" },
+                            specs = new[]{ "Ano: 0 km", "12 km/l", "Porta-malas 500 L", "Garantia 3 anos" },
                             colors = VehiclePalette, colorNames = VehicleColorNames },
-                        new ShopItem { name = "Van Utilitária", emoji = "🚐", price = 98000, action = "vehicle:van",
+                        new ShopItem { name = "Van Utilitária", emoji = "", price = 98000, action = "vehicle:van",
                             art = ShopArt.Truck, artA = new Color(0.90f,0.90f,0.92f), artB = new Color(0.2f,0.2f,0.22f),
                             desc = "Trabalho pesado do dia a dia. Espaço de carga generoso para começar o negócio.",
-                            specs = new[]{ "📅 Ano: 0 km", "📦 Até 800 kg", "⛽ 10 km/l", "🛡️ Garantia 2 anos" },
+                            specs = new[]{ "Ano: 0 km", "Até 800 kg", "10 km/l", "Garantia 2 anos" },
                             colors = VehiclePalette, colorNames = VehicleColorNames },
-                        new ShopItem { name = "Trator Compacto", emoji = "🚜", price = 120000, action = "vehicle:tractor",
+                        new ShopItem { name = "Trator Compacto", emoji = "", price = 120000, action = "vehicle:tractor",
                             art = ShopArt.Tractor, artA = new Color(0.20f,0.55f,0.25f), artB = new Color(0.12f,0.12f,0.12f),
                             desc = "Novinho em folha para a pequena propriedade. Pronto para o engate de implementos.",
-                            specs = new[]{ "📅 Ano: 0 km", "🐎 75 cv", "🌾 Engate traseiro", "🛡️ Garantia 2 anos" },
+                            specs = new[]{ "Ano: 0 km", "75 cv", "Engate traseiro", "Garantia 2 anos" },
                             colors = new[]{ new Color(0.20f,0.55f,0.25f), new Color(0.80f,0.20f,0.15f), new Color(0.10f,0.35f,0.70f) },
                             colorNames = new[]{ "Verde", "Vermelho", "Azul" } },
                     }
@@ -154,31 +154,31 @@ namespace ProjectTerra.Sandbox
                     brand = new Color(0.55f, 0.30f, 0.65f),
                     items = new[]
                     {
-                        new ShopItem { name = "Esportivo GT", emoji = "🏎️", price = 640000, action = "vehicle:sports",
+                        new ShopItem { name = "Esportivo GT", emoji = "", price = 640000, action = "vehicle:sports",
                             art = ShopArt.Car, artA = new Color(0.85f,0.10f,0.12f), artB = new Color(0.08f,0.08f,0.08f),
                             desc = "0 a 100 antes de você ler esta frase. Potência bruta e postura baixa de pista.",
-                            specs = new[]{ "🐎 620 cv", "🚀 0–100: 3,2 s", "🏁 Vmáx: 320 km/h", "💎 Edição limitada" },
+                            specs = new[]{ "620 cv", "0–100: 3,2 s", "Vmáx: 320 km/h", "[Luxo] Edição limitada" },
                             colors = VehiclePalette, colorNames = VehicleColorNames },
-                        new ShopItem { name = "SUV Premium 4x4", emoji = "🚙", price = 420000, action = "vehicle:suv",
+                        new ShopItem { name = "SUV Premium 4x4", emoji = "", price = 420000, action = "vehicle:suv",
                             art = ShopArt.Car, artA = new Color(0.10f,0.10f,0.12f), artB = new Color(0.25f,0.25f,0.3f),
                             desc = "Imponência no asfalto e tração total fora dele. Couro, silêncio e comando.",
-                            specs = new[]{ "🐎 400 cv", "🏔️ Tração 4x4", "🛋️ Interior em couro", "🧭 Off-road total" },
+                            specs = new[]{ "400 cv", "Tração 4x4", "Interior em couro", "Off-road total" },
                             colors = VehiclePalette, colorNames = VehicleColorNames },
-                        new ShopItem { name = "Scania Top de Linha", emoji = "🚛", price = 890000, action = "vehicle:scania",
+                        new ShopItem { name = "Scania Top de Linha", emoji = "", price = 890000, action = "vehicle:scania",
                             art = ShopArt.Truck, artA = new Color(0.10f,0.20f,0.45f), artB = new Color(0.1f,0.1f,0.12f),
                             desc = "O rei das estradas. Cabine-leito, modelo PBR realista e presença de sobra.",
-                            specs = new[]{ "🐎 560 cv", "🛏️ Cabine-leito", "📦 Alta capacidade", "✨ Modelo realista" },
+                            specs = new[]{ "560 cv", "Cabine-leito", "Alta capacidade", "Modelo realista" },
                             colors = null, colorNames = null },
-                        new ShopItem { name = "Aeronave Executiva", emoji = "🛩️", price = 1250000, action = "vehicle:plane",
+                        new ShopItem { name = "Aeronave Executiva", emoji = "", price = 1250000, action = "vehicle:plane",
                             art = ShopArt.Plane, artA = new Color(0.92f,0.92f,0.95f), artB = new Color(0.70f,0.15f,0.15f),
                             desc = "Encurte distâncias com estilo. Decole da sua própria propriedade rumo ao horizonte.",
-                            specs = new[]{ "✈️ Monomotor", "🗺️ Longo alcance", "👤 4 lugares", "💎 Acabamento premium" },
+                            specs = new[]{ "Monomotor", "️ Longo alcance", "4 lugares", "[Luxo] Acabamento premium" },
                             colors = new[]{ new Color(0.92f,0.92f,0.95f), new Color(0.10f,0.12f,0.18f) },
                             colorNames = new[]{ "Branco Pérola", "Grafite" } },
-                        new ShopItem { name = "Iate de Luxo", emoji = "🛥️", price = 980000, action = "vehicle:boat",
+                        new ShopItem { name = "Iate de Luxo", emoji = "", price = 980000, action = "vehicle:boat",
                             art = ShopArt.Boat, artA = new Color(0.95f,0.95f,0.97f), artB = new Color(0.10f,0.30f,0.55f),
                             desc = "Navegue os rios e a costa da região com todo o conforto de um lar flutuante.",
-                            specs = new[]{ "🌊 Casco em fibra", "🛋️ Cabine ampla", "⚓ Pronto para zarpar", "💎 Linha premium" },
+                            specs = new[]{ "Casco em fibra", "Cabine ampla", "Pronto para zarpar", "[Luxo] Linha premium" },
                             colors = new[]{ new Color(0.95f,0.95f,0.97f), new Color(0.10f,0.15f,0.20f) },
                             colorNames = new[]{ "Branco Náutico", "Azul Profundo" } },
                     }
@@ -190,26 +190,26 @@ namespace ProjectTerra.Sandbox
                     brand = new Color(0.40f, 0.52f, 0.20f),
                     items = new[]
                     {
-                        new ShopItem { name = "Lote Urbano", emoji = "🏙️", price = 80000, action = "land",
+                        new ShopItem { name = "Lote Urbano", emoji = "", price = 80000, action = "land",
                             art = ShopArt.Land, artA = new Color(0.55f,0.55f,0.58f), artB = new Color(0.45f,0.60f,0.30f),
                             desc = "Terreno plano à beira da cidade. Ideal para galpão, garagem ou base de operações.",
-                            specs = new[]{ "📐 Área: 600 m²", "🏙️ Zona urbana", "💧 Água e luz", "🚧 Pronto p/ construir" } },
-                        new ShopItem { name = "Chácara de Lazer", emoji = "🏡", price = 240000, action = "land",
+                            specs = new[]{ " Área: 600 m²", "Zona urbana", " Água e luz", "Pronto p/ construir" } },
+                        new ShopItem { name = "Chácara de Lazer", emoji = "", price = 240000, action = "land",
                             art = ShopArt.Land, artA = new Color(0.40f,0.60f,0.25f), artB = new Color(0.30f,0.50f,0.70f),
                             desc = "Verde, tranquila e com nascente. O refúgio perfeito longe do barulho.",
-                            specs = new[]{ "📐 Área: 2 ha", "🌳 Pomar formado", "💧 Nascente própria", "🎣 Açude" } },
-                        new ShopItem { name = "Fazenda Produtiva", emoji = "🌾", price = 1800000, action = "land",
+                            specs = new[]{ " Área: 2 ha", "Pomar formado", "Nascente própria", "Açude" } },
+                        new ShopItem { name = "Fazenda Produtiva", emoji = "", price = 1800000, action = "land",
                             art = ShopArt.Land, artA = new Color(0.75f,0.65f,0.30f), artB = new Color(0.45f,0.60f,0.25f),
                             desc = "Hectares de solo fértil prontos para plantio e pastagem em escala.",
-                            specs = new[]{ "📐 Área: 120 ha", "🌱 Solo fértil", "🚜 Mecanizável", "💧 Dois rios" } },
-                        new ShopItem { name = "Terreno Beira-Rio", emoji = "🏞️", price = 320000, action = "land",
+                            specs = new[]{ " Área: 120 ha", "Solo fértil", "Mecanizável", "Dois rios" } },
+                        new ShopItem { name = "Terreno Beira-Rio", emoji = "", price = 320000, action = "land",
                             art = ShopArt.Land, artA = new Color(0.45f,0.60f,0.28f), artB = new Color(0.20f,0.45f,0.75f),
                             desc = "Frente ampla para o rio. Perfeito para doca, pesca e turismo náutico.",
-                            specs = new[]{ "📐 Área: 5 ha", "🌊 300 m de rio", "🚤 Doca possível", "🐟 Pesca farta" } },
-                        new ShopItem { name = "Área Industrial", emoji = "🏭", price = 2600000, action = "land",
+                            specs = new[]{ " Área: 5 ha", "300 m de rio", "Doca possível", "Pesca farta" } },
+                        new ShopItem { name = "Área Industrial", emoji = "", price = 2600000, action = "land",
                             art = ShopArt.Land, artA = new Color(0.50f,0.50f,0.52f), artB = new Color(0.60f,0.55f,0.35f),
                             desc = "Gleba plana com acesso a rodovia. Base ideal para logística e distribuição.",
-                            specs = new[]{ "📐 Área: 30 ha", "🛣️ Frente p/ rodovia", "⚡ Alta tensão", "📦 Zona logística" } },
+                            specs = new[]{ " Área: 30 ha", "️ Frente p/ rodovia", "Alta tensão", "Zona logística" } },
                     }
                 },
                 new ShopSite
@@ -219,26 +219,26 @@ namespace ProjectTerra.Sandbox
                     brand = new Color(0.60f, 0.40f, 0.22f),
                     items = new[]
                     {
-                        new ShopItem { name = "Vaca Leiteira", emoji = "🐄", price = 7500, action = "animal:Cow",
+                        new ShopItem { name = "Vaca Leiteira", emoji = "", price = 7500, action = "animal:Cow",
                             art = ShopArt.Animal, artA = new Color(0.55f,0.35f,0.22f), artB = new Color(0.92f,0.90f,0.88f),
                             desc = "Dócil e produtiva. Pasta tranquila e dá leite farto para a propriedade.",
-                            specs = new[]{ "🥛 Alta produção", "🌾 Pastadora", "😌 Temperamento dócil", "⚖️ ~550 kg" } },
-                        new ShopItem { name = "Cavalo de Montaria", emoji = "🐎", price = 15000, action = "animal:Horse",
+                            specs = new[]{ "Alta produção", "Pastadora", "Temperamento dócil", " ~550 kg" } },
+                        new ShopItem { name = "Cavalo de Montaria", emoji = "", price = 15000, action = "animal:Horse",
                             art = ShopArt.Animal, artA = new Color(0.32f,0.20f,0.12f), artB = new Color(0.15f,0.10f,0.08f),
                             desc = "Forte e elegante. Companheiro ideal para o trabalho no campo e longas cavalgadas.",
-                            specs = new[]{ "🏇 Veloz", "💪 Resistente", "😌 Treinável", "⚖️ ~450 kg" } },
-                        new ShopItem { name = "Ovelha", emoji = "🐑", price = 2200, action = "animal:Sheep",
+                            specs = new[]{ "Veloz", "Resistente", "Treinável", " ~450 kg" } },
+                        new ShopItem { name = "Ovelha", emoji = "", price = 2200, action = "animal:Sheep",
                             art = ShopArt.Animal, artA = new Color(0.92f,0.90f,0.85f), artB = new Color(0.20f,0.18f,0.18f),
                             desc = "Rústica e tranquila. Lã, carne e um gramado sempre aparado de brinde.",
-                            specs = new[]{ "🧶 Produz lã", "🌾 Pastadora", "😌 Mansa", "⚖️ ~70 kg" } },
-                        new ShopItem { name = "Raposa (exótica)", emoji = "🦊", price = 9800, action = "animal:Fox",
+                            specs = new[]{ "Produz lã", "Pastadora", "Mansa", " ~70 kg" } },
+                        new ShopItem { name = "Raposa (exótica)", emoji = "", price = 9800, action = "animal:Fox",
                             art = ShopArt.Animal, artA = new Color(0.85f,0.42f,0.12f), artB = new Color(0.95f,0.95f,0.95f),
                             desc = "Esperta e arisca. Animal exótico de estimação — mantenha longe do galinheiro!",
-                            specs = new[]{ "🦊 Exótica", "🏃 Muito rápida", "😼 Arisca", "⚖️ ~7 kg" } },
-                        new ShopItem { name = "Lobo (guarda)", emoji = "🐺", price = 21000, action = "animal:Wolf",
+                            specs = new[]{ "Exótica", "Muito rápida", "Arisca", " ~7 kg" } },
+                        new ShopItem { name = "Lobo (guarda)", emoji = "", price = 21000, action = "animal:Wolf",
                             art = ShopArt.Animal, artA = new Color(0.35f,0.35f,0.38f), artB = new Color(0.20f,0.20f,0.22f),
                             desc = "Imponente e territorial. Só para criadores experientes — respeito garantido.",
-                            specs = new[]{ "🐺 Predador", "🌙 Noturno", "⚠️ Selvagem", "⚖️ ~45 kg" } },
+                            specs = new[]{ "Predador", "Noturno", "[Aviso] Selvagem", " ~45 kg" } },
                     }
                 },
             };
@@ -256,7 +256,7 @@ namespace ProjectTerra.Sandbox
 
         public void OpenVehicleBrowser()
         {
-            CloseOptionsMenu();          // guarda o celular, se estiver aberto
+            CloseOptionsMenu(); // guarda o celular, se estiver aberto
             if (IsRegionalMapOpen) CloseRegionalMap();
 
             IsBrowserOpen = true;
@@ -285,7 +285,7 @@ namespace ProjectTerra.Sandbox
 
             if (pushHistory)
             {
-                // Descarta "avançar" pendente ao navegar para um novo destino.
+                // Descarta "avançar"pendente ao navegar para um novo destino.
                 if (browserHistIdx < browserHistory.Count - 1)
                     browserHistory.RemoveRange(browserHistIdx + 1, browserHistory.Count - browserHistIdx - 1);
                 browserHistory.Add(loc);
@@ -374,14 +374,14 @@ namespace ProjectTerra.Sandbox
             GUI.color = Color.white;
 
             string pageTitle = CurrentPageTitle();
-            GUI.Label(new Rect(10, y + 3, full.width - 160, titleH - 4), $"🌐 TerraBrowser 95  —  {pageTitle}", brTitleTextStyle);
+            GUI.Label(new Rect(10, y + 3, full.width - 160, titleH - 4), $"TerraBrowser 95 — {pageTitle}", brTitleTextStyle);
 
             // Botões de janela (_ , □ , X). Só o X é funcional.
             float bw = 30f, bh = 20f, by = y + 4f;
             GUI.Label(new Rect(full.width - bw * 3 - 14, by, bw, bh), "_", brWinBtnStyle);
-            GUI.Label(new Rect(full.width - bw * 2 - 10, by, bw, bh), "❐", brWinBtnStyle);
+            GUI.Label(new Rect(full.width - bw * 2 - 10, by, bw, bh), "[Max]", brWinBtnStyle);
             GUI.color = new Color(0.80f, 0.15f, 0.15f, 1f);
-            if (GUI.Button(new Rect(full.width - bw - 6, by, bw, bh), "✕", brWinBtnStyle))
+            if (GUI.Button(new Rect(full.width - bw - 6, by, bw, bh), "[X]", brWinBtnStyle))
             {
                 GUI.color = Color.white;
                 CloseBrowser();
@@ -410,7 +410,7 @@ namespace ProjectTerra.Sandbox
             GUI.enabled = true;
             if (GUI.Button(new Rect(tx, y + 5, 36, toolH - 10), "⟳", brToolBtnStyle)) { browserLoadAnim = 0f; Navigate(browserLoc, false); }
             tx += 40;
-            if (GUI.Button(new Rect(tx, y + 5, 40, toolH - 10), "🏠", brToolBtnStyle)) Navigate("home", true);
+            if (GUI.Button(new Rect(tx, y + 5, 40, toolH - 10), "", brToolBtnStyle)) Navigate("home", true);
             tx += 48;
 
             // Barra de endereço
@@ -437,10 +437,10 @@ namespace ProjectTerra.Sandbox
             GUI.DrawTexture(bmBar, whiteTex);
             GUI.color = Color.white;
 
-            GUI.Label(new Rect(8, y + 5, 70, bmH - 8), "⭐ Favoritos:", brSmallStyle);
+            GUI.Label(new Rect(8, y + 5, 70, bmH - 8), "Favoritos:", brSmallStyle);
             float fx = 86f;
             string[] favIds = { "usados", "novos", "luxo", "terrenos", "animais" };
-            string[] favLabels = { "🚗 Usados", "🆕 Novos", "💎 Luxo", "🏞️ Terrenos", "🐄 Animais" };
+            string[] favLabels = { "Usados", "[Novo] Novos", "[Luxo] Luxo", "Terrenos", "Animais" };
             for (int i = 0; i < favIds.Length; i++)
             {
                 float w = brBookmarkStyle.CalcSize(new GUIContent(favLabels[i])).x + 14f;
@@ -452,7 +452,7 @@ namespace ProjectTerra.Sandbox
             // Saldo à direita da barra de favoritos
             var save = CurrentSave;
             string money = save != null ? save.GetFormattedMoney() : "$--";
-            GUI.Label(new Rect(full.width - 220, y + 4, 212, bmH - 6), $"💰 Saldo: {money}", brPriceStyle);
+            GUI.Label(new Rect(full.width - 220, y + 4, 212, bmH - 6), $"Saldo: {money}", brPriceStyle);
 
             // --- Barra de carregamento ---
             y += bmH;
@@ -486,7 +486,7 @@ namespace ProjectTerra.Sandbox
             GUI.color = Color.white;
             string statusTxt = browserLoadAnim < 1f ? "Carregando..." : "Concluído";
             GUI.Label(new Rect(8, statusBar.y + 3, 300, statusH - 4), statusTxt, brStatusStyle);
-            GUI.Label(new Rect(full.width - 260, statusBar.y + 3, 252, statusH - 4), "🔒 Conexão segura TerraNet  •  [Esc] volta", brStatusStyle);
+            GUI.Label(new Rect(full.width - 260, statusBar.y + 3, 252, statusH - 4), "[Bloqueado] Conexão segura TerraNet • [Esc] volta", brStatusStyle);
 
             // Cursor retrô por cima de tudo.
             DrawRetroCursor();
@@ -638,11 +638,11 @@ namespace ProjectTerra.Sandbox
             var save = CurrentSave;
             bool canAfford = save != null && save.currentMoney >= it.price;
 
-            if (GUI.Button(new Rect(rx, card.y + 60, 150, 26), "🔎 Detalhes", brToolBtnStyle))
+            if (GUI.Button(new Rect(rx, card.y + 60, 150, 26), "Detalhes", brToolBtnStyle))
                 Navigate($"item:{s.id}:{idx}", true);
 
             GUI.enabled = canAfford;
-            if (GUI.Button(new Rect(rx, card.y + 88, 150, 26), canAfford ? "🛒 Comprar" : "💸 Sem saldo", brBuyStyle))
+            if (GUI.Button(new Rect(rx, card.y + 88, 150, 26), canAfford ? "Comprar" : "Sem saldo", brBuyStyle))
                 PurchaseItem(it, 0);
             GUI.enabled = true;
 
@@ -692,7 +692,7 @@ namespace ProjectTerra.Sandbox
             {
                 GUILayout.Label("Ficha técnica", brPageH2Style);
                 foreach (var sp in it.specs)
-                    GUILayout.Label("•  " + sp, brSpecStyle);
+                    GUILayout.Label("• " + sp, brSpecStyle);
                 GUILayout.Space(10);
             }
 
@@ -725,7 +725,7 @@ namespace ProjectTerra.Sandbox
             var save = CurrentSave;
             bool canAfford = save != null && save.currentMoney >= it.price;
             GUI.enabled = canAfford;
-            if (GUILayout.Button(canAfford ? "🛒  Comprar agora" : "💸  Saldo insuficiente", brBuyStyle, GUILayout.Height(40)))
+            if (GUILayout.Button(canAfford ? "Comprar agora" : "Saldo insuficiente", brBuyStyle, GUILayout.Height(40)))
                 PurchaseItem(it, browserColorIdx);
             GUI.enabled = true;
 
@@ -743,17 +743,17 @@ namespace ProjectTerra.Sandbox
         private void PurchaseItem(ShopItem it, int colorIdx)
         {
             var save = CurrentSave;
-            if (save == null) { ShowToast("⚠️ Sem partida ativa."); return; }
-            if (save.currentMoney < it.price) { ShowToast("💸 Saldo insuficiente."); return; }
+            if (save == null) { ShowToast("[Aviso] Sem partida ativa."); return; }
+            if (save.currentMoney < it.price) { ShowToast("Saldo insuficiente."); return; }
 
             if (it.action.StartsWith("vehicle:"))
             {
                 string type = it.action.Substring("vehicle:".Length);
                 var vm = VehicleManager.Instance;
-                if (vm == null) { ShowToast("⚠️ Gerenciador de veículos indisponível."); return; }
+                if (vm == null) { ShowToast("[Aviso] Gerenciador de veículos indisponível."); return; }
 
                 var spawned = vm.SpawnVehicle(type);
-                if (spawned == null) { ShowToast("⚠️ Não foi possível entregar o veículo."); return; }
+                if (spawned == null) { ShowToast("[Aviso] Não foi possível entregar o veículo."); return; }
 
                 if (it.colors != null && it.colors.Length > 0)
                 {
@@ -763,28 +763,28 @@ namespace ProjectTerra.Sandbox
 
                 save.currentMoney -= it.price;
                 PersistSave();
-                ShowToast($"🛒 {it.name} entregue na sua posição!");
+                ShowToast($" {it.name} entregue na sua posição!");
             }
             else if (it.action.StartsWith("animal:"))
             {
                 string sp = it.action.Substring("animal:".Length);
                 if (!System.Enum.TryParse(sp, out AnimalSpecies species))
-                { ShowToast("⚠️ Espécie desconhecida."); return; }
+                { ShowToast("[Aviso] Espécie desconhecida."); return; }
 
                 Vector3 pos = AnimalDeliveryPosition();
                 var animal = SceneObjectSpawner.SpawnPurchasedAnimal(species, pos, Terrain.activeTerrain);
-                if (animal == null) { ShowToast("⚠️ Não foi possível entregar o animal."); return; }
+                if (animal == null) { ShowToast("[Aviso] Não foi possível entregar o animal."); return; }
 
                 save.currentMoney -= it.price;
                 PersistSave();
-                ShowToast($"🐾 {it.name} entregue na sua propriedade!");
+                ShowToast($" {it.name} entregue na sua propriedade!");
             }
             else if (it.action == "land")
             {
                 save.currentMoney -= it.price;
                 save.reputation += 5;
                 PersistSave();
-                ShowToast($"📜 Escritura emitida: {it.name} agora é sua! (+5 ⭐)");
+                ShowToast($"Escritura emitida: {it.name} agora é sua! (+5 )");
             }
         }
 
@@ -815,7 +815,7 @@ namespace ProjectTerra.Sandbox
 
         private void Fill(Rect r, Color c) { GUI.color = c; GUI.DrawTexture(r, whiteTex); GUI.color = Color.white; }
 
-        /// <summary>Desenha uma "foto" estilizada do produto dentro de uma moldura.</summary>
+        /// <summary>Desenha uma "foto"estilizada do produto dentro de uma moldura.</summary>
         private void DrawProductImage(Rect frame, ShopItem it)
         {
             // Moldura e "céu"/fundo
@@ -841,7 +841,7 @@ namespace ProjectTerra.Sandbox
                 {
                     float bodyH = in_.height * 0.22f;
                     float by = groundY - bodyH - in_.height * 0.06f;
-                    Fill(new Rect(ux, by, uw, bodyH), body);                                   // lataria
+                    Fill(new Rect(ux, by, uw, bodyH), body); // lataria
                     Fill(new Rect(ux + uw * 0.22f, by - bodyH * 0.7f, uw * 0.5f, bodyH * 0.8f), body); // teto
                     Fill(new Rect(ux + uw * 0.26f, by - bodyH * 0.55f, uw * 0.42f, bodyH * 0.55f), new Color(0.6f,0.8f,0.95f)); // vidro
                     DrawWheel(ux + uw * 0.2f, groundY - in_.height * 0.04f, in_.height * 0.14f, dark);
@@ -852,7 +852,7 @@ namespace ProjectTerra.Sandbox
                 {
                     float bodyH = in_.height * 0.30f;
                     float by = groundY - bodyH - in_.height * 0.07f;
-                    Fill(new Rect(ux, by, uw * 0.55f, bodyH), new Color(0.85f,0.83f,0.80f));    // baú
+                    Fill(new Rect(ux, by, uw * 0.55f, bodyH), new Color(0.85f,0.83f,0.80f)); // baú
                     Fill(new Rect(ux + uw * 0.55f, by + bodyH * 0.25f, uw * 0.45f, bodyH * 0.75f), body); // cabine
                     Fill(new Rect(ux + uw * 0.78f, by + bodyH * 0.35f, uw * 0.18f, bodyH * 0.4f), new Color(0.6f,0.8f,0.95f)); // vidro
                     DrawWheel(ux + uw * 0.18f, groundY - in_.height * 0.04f, in_.height * 0.15f, dark);
@@ -863,18 +863,18 @@ namespace ProjectTerra.Sandbox
                 case ShopArt.Tractor:
                 {
                     float by = groundY - in_.height * 0.30f;
-                    Fill(new Rect(ux + uw * 0.3f, by, uw * 0.5f, in_.height * 0.22f), body);     // corpo
+                    Fill(new Rect(ux + uw * 0.3f, by, uw * 0.5f, in_.height * 0.22f), body); // corpo
                     Fill(new Rect(ux + uw * 0.34f, by - in_.height * 0.14f, uw * 0.28f, in_.height * 0.16f), body); // cabine
                     DrawWheel(ux + uw * 0.72f, groundY - in_.height * 0.02f, in_.height * 0.22f, dark); // roda traseira grande
-                    DrawWheel(ux + uw * 0.3f, groundY - in_.height * 0.02f, in_.height * 0.12f, dark);  // dianteira
+                    DrawWheel(ux + uw * 0.3f, groundY - in_.height * 0.02f, in_.height * 0.12f, dark); // dianteira
                     break;
                 }
                 case ShopArt.Plane:
                 {
                     float cy = in_.y + in_.height * 0.42f;
-                    Fill(new Rect(ux, cy, uw * 0.78f, in_.height * 0.14f), body);                // fuselagem
+                    Fill(new Rect(ux, cy, uw * 0.78f, in_.height * 0.14f), body); // fuselagem
                     Fill(new Rect(ux + uw * 0.3f, cy - in_.height * 0.16f, uw * 0.14f, in_.height * 0.46f), dark); // asa (vertical, perspectiva)
-                    Fill(new Rect(ux + uw * 0.74f, cy - in_.height * 0.1f, uw * 0.1f, in_.height * 0.22f), dark);  // leme
+                    Fill(new Rect(ux + uw * 0.74f, cy - in_.height * 0.1f, uw * 0.1f, in_.height * 0.22f), dark); // leme
                     Fill(new Rect(ux + uw * 0.04f, cy + in_.height * 0.02f, uw * 0.12f, in_.height * 0.08f), new Color(0.6f,0.8f,0.95f)); // cabine
                     break;
                 }
@@ -883,7 +883,7 @@ namespace ProjectTerra.Sandbox
                     float wline = groundY;
                     Fill(new Rect(in_.x, wline, in_.width, in_.yMax - wline), new Color(0.20f, 0.45f, 0.75f)); // água
                     float hy = wline - in_.height * 0.14f;
-                    Fill(new Rect(ux, hy, uw, in_.height * 0.16f), body);                        // casco
+                    Fill(new Rect(ux, hy, uw, in_.height * 0.16f), body); // casco
                     Fill(new Rect(ux + uw * 0.3f, hy - in_.height * 0.16f, uw * 0.4f, in_.height * 0.16f), new Color(0.9f,0.9f,0.92f)); // cabine
                     Fill(new Rect(ux + uw * 0.36f, hy - in_.height * 0.12f, uw * 0.28f, in_.height * 0.09f), new Color(0.6f,0.8f,0.95f)); // vidro
                     break;
@@ -891,7 +891,7 @@ namespace ProjectTerra.Sandbox
                 case ShopArt.Animal:
                 {
                     float by = groundY - in_.height * 0.26f;
-                    Fill(new Rect(ux + uw * 0.2f, by, uw * 0.5f, in_.height * 0.2f), body);       // corpo
+                    Fill(new Rect(ux + uw * 0.2f, by, uw * 0.5f, in_.height * 0.2f), body); // corpo
                     Fill(new Rect(ux + uw * 0.62f, by - in_.height * 0.1f, uw * 0.18f, in_.height * 0.16f), body); // cabeça
                     // pernas
                     Fill(new Rect(ux + uw * 0.26f, by + in_.height * 0.18f, uw * 0.05f, in_.height * 0.12f), dark);
@@ -915,7 +915,7 @@ namespace ProjectTerra.Sandbox
                 }
             }
 
-            // Emoji grande como "selo" no canto, reforçando o que é.
+            // Emoji grande como "selo"no canto, reforçando o que é.
             GUI.Label(new Rect(in_.x + 2, in_.y + 2, 40, 40), it.emoji, brTitleTextStyle);
         }
 

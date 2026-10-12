@@ -9,7 +9,7 @@ namespace ProjectTerra.Sandbox
         public void SetCustomWaypoint(Vector3 pos)
         {
             CustomWaypoint = pos;
-            ShowToast("📍 Marcador de rota posicionado!", 2.5f);
+            ShowToast("Marcador de rota posicionado!", 2.5f);
         }
 
         public void ClearCustomWaypoint()
@@ -19,7 +19,7 @@ namespace ProjectTerra.Sandbox
             {
                 Destroy(waypointWorldMarker);
             }
-            ShowToast("❌ Marcador de rota removido.", 2.0f);
+            ShowToast("[X] Marcador de rota removido.", 2.0f);
         }
 
         private void UpdateWaypointVisualMarker()

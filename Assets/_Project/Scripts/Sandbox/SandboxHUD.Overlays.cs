@@ -30,14 +30,12 @@ namespace ProjectTerra.Sandbox
             // Linha 1: Região, País e Horário Solar
             string regName = activeSave != null ? activeSave.regionName : "Região";
             string country = activeSave != null ? activeSave.countryName : "Mundo";
-            float curHour = HDRPAtmosphereController.Instance != null ? HDRPAtmosphereController.Instance.timeOfDay : 12f;
-            int hInt = Mathf.FloorToInt(curHour);
-            int mInt = Mathf.FloorToInt((curHour - hInt) * 60f);
+            string timeStr = FormattedInGameTimeString;
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"🌍 {regName}, {country}", titleStyle);
+            GUILayout.Label($" {regName}, {country}", titleStyle);
             GUILayout.FlexibleSpace();
-            GUILayout.Label($"🕒 {hInt:D2}:{mInt:D2}", subtitleStyle);
+            GUILayout.Label($" {timeStr}", subtitleStyle);
             GUILayout.EndHorizontal();
 
             // Linha 2: Saldo + Time Warp compacto
@@ -51,8 +49,8 @@ namespace ProjectTerra.Sandbox
             {
                 SetTimeWarp(currentTimeWarpIdx - 1);
             }
-            GUILayout.Label($"⏩ {curMultiplier}x", timeWarpStyle, GUILayout.Width(45));
-            if (GUILayout.Button("▶", GUILayout.Width(20), GUILayout.Height(18)))
+            GUILayout.Label($" {curMultiplier}x", timeWarpStyle, GUILayout.Width(45));
+            if (GUILayout.Button("", GUILayout.Width(20), GUILayout.Height(18)))
             {
                 SetTimeWarp(currentTimeWarpIdx + 1);
             }
@@ -113,7 +111,7 @@ namespace ProjectTerra.Sandbox
                 {
                     float posX = (w * 0.5f) + (diff / 60f) * (w * 0.48f);
                     GUI.color = new Color(1f, 0.85f, 0.2f);
-                    GUI.Label(new Rect(posX - 12f, 12f, 24f, 18f), "🎯", compassLabelStyle);
+                    GUI.Label(new Rect(posX - 12f, 12f, 24f, 18f), "", compassLabelStyle);
                     GUI.color = Color.white;
                 }
             }
@@ -129,7 +127,7 @@ namespace ProjectTerra.Sandbox
                 {
                     float posX = (w * 0.5f) + (diff / 60f) * (w * 0.48f);
                     GUI.color = new Color(0.9f, 0.3f, 1f);
-                    GUI.Label(new Rect(posX - 12f, 12f, 24f, 18f), "🚩", compassLabelStyle);
+                    GUI.Label(new Rect(posX - 12f, 12f, 24f, 18f), "", compassLabelStyle);
                     GUI.color = Color.white;
                 }
             }
@@ -170,7 +168,7 @@ namespace ProjectTerra.Sandbox
             float dist = MissionManager.Instance.GetDistanceToDestination();
             string distText = dist > 1000f ? $"{(dist / 1000f):F1} km" : $"{dist:F0} m";
 
-            GUILayout.Label($"📍 {contract.destinationName} ({distText})  •  📦 {contract.cargoType}", subtitleStyle);
+            GUILayout.Label($" {contract.destinationName} ({distText}) • {contract.cargoType}", subtitleStyle);
             GUILayout.Label(contract.description, missionDescStyle);
 
             GUILayout.EndArea();
@@ -212,7 +210,7 @@ namespace ProjectTerra.Sandbox
             if (vehicle.category == VehicleCategory.Plane)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.Label($"✈️ Alt: {vehicle.currentAltitudeMeters:F0}m", subtitleStyle);
+                GUILayout.Label($"Alt: {vehicle.currentAltitudeMeters:F0}m", subtitleStyle);
                 GUILayout.FlexibleSpace();
                 GUILayout.Label($"Potência: {(vehicle.aircraftThrottle * 100f):F0}%", subtitleStyle);
                 GUILayout.EndHorizontal();
@@ -223,20 +221,20 @@ namespace ProjectTerra.Sandbox
                 var plow = PlowImplement.GetHitchedPlow(vehicle);
                 if (plow != null)
                 {
-                    string plowStatus = plow.isLowered ? "🟢 ARANDO" : "🟡 TRANSPORTE";
-                    GUILayout.Label($"🚜 Arado: {plowStatus} ({plow.totalAreaPlowedM2:F0} m²)", subtitleStyle);
+                    string plowStatus = plow.isLowered ? "[ATIVO] ARANDO" : "[STANDBY] TRANSPORTE";
+                    GUILayout.Label($"Arado: {plowStatus} ({plow.totalAreaPlowedM2:F0} m²)", subtitleStyle);
                 }
             }
 
             // Barra de Combustível com cor dinâmica
             Color fuelCol = vehicle.fuelPercent > 45f ? new Color(0.3f, 0.85f, 0.4f) :
                            (vehicle.fuelPercent > 20f ? new Color(1f, 0.8f, 0.2f) : new Color(1f, 0.3f, 0.3f));
-            DrawMiniBar("⛽ Tanque:", vehicle.fuelPercent, 100f, fuelCol);
+            DrawMiniBar("Tanque:", vehicle.fuelPercent, 100f, fuelCol);
 
             // Barra de Carga (se não for avião com altitude)
             if (vehicle.category != VehicleCategory.Plane)
             {
-                DrawMiniBar($"📦 Carga:", vehicle.cargoFillPercent, 100f, new Color(0.3f, 0.7f, 1.0f));
+                DrawMiniBar($"Carga:", vehicle.cargoFillPercent, 100f, new Color(0.3f, 0.7f, 1.0f));
             }
 
             GUILayout.EndArea();
@@ -278,7 +276,7 @@ namespace ProjectTerra.Sandbox
             {
                 if (player.currentVehicle.category == VehicleCategory.Plane)
                 {
-                    hintText = "✈️ [W/S] Picar/Cabrar (Descer/Subir)  •  [A/D] Rolar  •  [Shift/Ctrl] Potência  •  [Q/E] Leme  •  [C] Câmera  •  [E] Sair";
+                    hintText = "[W/S] Picar/Cabrar (Descer/Subir) • [A/D] Rolar • [Shift/Ctrl] Potência • [Q/E] Leme • [C] Câmera • [E] Sair";
                     borderColor = new Color(0.25f, 0.85f, 1.0f, 0.95f);
                     customWidth = 690f;
                 }
@@ -288,7 +286,7 @@ namespace ProjectTerra.Sandbox
                     if (hitchedPlow != null)
                     {
                         string modeStr = hitchedPlow.isLowered ? "ARANDO: ATIVO" : "TRANSPORTE";
-                        hintText = $"🚜 [G] Desengatar Arado  •  [X] Baixar/Levantar ({modeStr})  •  [WASD] Conduzir  •  [C] Câmera  •  [E] Sair";
+                        hintText = $"[G] Desengatar Arado • [X] Baixar/Levantar ({modeStr}) • [WASD] Conduzir • [C] Câmera • [E] Sair";
                         borderColor = hitchedPlow.isLowered ? new Color(0.3f, 1f, 0.4f, 0.95f) : new Color(1f, 0.8f, 0.2f, 0.95f);
                         customWidth = 670f;
                     }
@@ -297,25 +295,25 @@ namespace ProjectTerra.Sandbox
                         var nearPlow = PlowImplement.FindNearestPlow(player.currentVehicle.transform.position, 4.5f);
                         if (nearPlow != null && !nearPlow.isHitched)
                         {
-                            hintText = "🚜 [G] Engatar Arado Agrícola  •  [WASD] Conduzir  •  [C] Câmera  •  [E] Sair";
+                            hintText = "[G] Engatar Arado Agrícola • [WASD] Conduzir • [C] Câmera • [E] Sair";
                             borderColor = new Color(1f, 0.85f, 0.2f, 0.95f);
                             customWidth = 580f;
                         }
                         else
                         {
-                            hintText = "🎮 [WASD] Conduzir  •  [C] Câmera  •  [L] Faróis  •  [Tab] Trocar Veículo  •  [E] Desembarcar";
+                            hintText = "[WASD] Conduzir • [C] Câmera • [L] Faróis • [Tab] Trocar Veículo • [E] Desembarcar";
                             borderColor = new Color(0.2f, 0.7f, 1f, 0.8f);
                         }
                     }
                 }
                 else if (MissionManager.Instance != null && MissionManager.Instance.GetDistanceToDestination() <= MissionManager.Instance.deliveryRadius)
                 {
-                    hintText = "✅ [F/ENTER] Descarregar Entrega  •  [C] Câmera  •  [L] Faróis  •  [Tab] Trocar  •  [E] Sair";
+                    hintText = "[OK] [F/ENTER] Descarregar Entrega • [C] Câmera • [L] Faróis • [Tab] Trocar • [E] Sair";
                     borderColor = new Color(0.3f, 1f, 0.4f);
                 }
                 else
                 {
-                    hintText = "🎮 [WASD] Conduzir  •  [C] Câmera  •  [L] Faróis  •  [Tab] Trocar Veículo  •  [E] Desembarcar";
+                    hintText = "[WASD] Conduzir • [C] Câmera • [L] Faróis • [Tab] Trocar Veículo • [E] Desembarcar";
                     borderColor = new Color(0.2f, 0.7f, 1f, 0.8f);
                 }
             }
@@ -323,13 +321,13 @@ namespace ProjectTerra.Sandbox
             {
                 if (player.nearbyVehicle.category == VehicleCategory.Plane)
                 {
-                    hintText = "✈️ [E] Embarcar e Pilotar Aeronave Skylark 180  •  [Tab] Alternar";
+                    hintText = "[E] Embarcar e Pilotar Aeronave Skylark 180 • [Tab] Alternar";
                     borderColor = new Color(0.3f, 0.85f, 1f, 0.95f);
                     customWidth = 560f;
                 }
                 else
                 {
-                    hintText = $"🔑 [E] Embarcar no {player.nearbyVehicle.vehicleName}  •  [L] Lanterna  •  [Tab] Alternar";
+                    hintText = $"[E] Embarcar no {player.nearbyVehicle.vehicleName} • [L] Lanterna • [Tab] Alternar";
                     borderColor = new Color(1f, 0.85f, 0.2f);
                 }
             }
@@ -341,12 +339,12 @@ namespace ProjectTerra.Sandbox
                     var nearTractor = PlowImplement.FindNearbyTractor(nearPlow.transform.position, 4.5f);
                     if (nearTractor != null)
                     {
-                        hintText = "🚜 [G] Engatar Arado ao Trator Próximo";
+                        hintText = "[G] Engatar Arado ao Trator Próximo";
                         borderColor = new Color(1f, 0.85f, 0.2f, 0.95f);
                     }
                     else
                     {
-                        hintText = "🔧 Arado Agrícola  •  Aproxime o Trator de marcha à ré e pressione [G] para engatar";
+                        hintText = "Arado Agrícola • Aproxime o Trator de marcha à ré e pressione [G] para engatar";
                         borderColor = new Color(0.75f, 0.8f, 0.9f, 0.85f);
                         customWidth = 610f;
                     }
@@ -376,7 +374,7 @@ namespace ProjectTerra.Sandbox
             float h = 20f;
             Rect rect = new Rect(20f, Screen.height - h - 12f, w, h);
             GUI.color = new Color(0.6f, 0.75f, 0.9f, 0.85f);
-            GUI.Label(rect, "[M] Mapa  •  [P] Pintar Chão  •  [/] Console  •  [L] Faróis  •  [Tab] Veículos  •  [C] Câmera  •  [Alt] Celular", subtitleStyle);
+            GUI.Label(rect, "[M] Mapa • [P] Pintar Chão • [/] Console • [L] Faróis • [Tab] Veículos • [C] Câmera • [Alt] Celular", subtitleStyle);
             GUI.color = Color.white;
         }
 

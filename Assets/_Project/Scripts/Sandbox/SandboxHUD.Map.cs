@@ -273,7 +273,7 @@ namespace ProjectTerra.Sandbox
                         }
                         else
                         {
-                            // Só é "borda externa" quando o pixel está junto da região na horizontal
+                            // Só é "borda externa"quando o pixel está junto da região na horizontal
                             // (há vizinho dentro) e longe dela na vertical (vizinho fora).
                             // A condição anterior (A || B || !C || !D) era verdadeira para
                             // praticamente todo pixel fora da região — basta um vizinho
@@ -566,7 +566,7 @@ namespace ProjectTerra.Sandbox
             {
                 Vector2 targetPos = WorldToMapScreen(MissionManager.Instance.deliveryTargetPosition, worldW, worldL, mapImageRect);
                 GUI.color = new Color(1f, 0.85f, 0.2f);
-                GUI.Label(new Rect(targetPos.x - 12f, targetPos.y - 14f, 24f, 24f), "🎯", titleStyle);
+                GUI.Label(new Rect(targetPos.x - 12f, targetPos.y - 14f, 24f, 24f), "", titleStyle);
                 DrawTextWithShadow(new Rect(targetPos.x + 12f, targetPos.y - 10f, 140f, 20f), "ALVO DA MISSÃO", subtitleStyle, new Color(1f, 0.85f, 0.2f), Color.black);
                 GUI.color = Color.white;
             }
@@ -587,7 +587,7 @@ namespace ProjectTerra.Sandbox
                 }
 
                 GUI.color = new Color(1f, 0.25f, 0.95f);
-                GUI.Label(new Rect(wScreen.x - 10f, wScreen.y - 14f, 24f, 24f), "🚩", titleStyle);
+                GUI.Label(new Rect(wScreen.x - 10f, wScreen.y - 14f, 24f, 24f), "", titleStyle);
                 DrawTextWithShadow(new Rect(wScreen.x + 10f, wScreen.y - 10f, 120f, 20f), "DESTINO", subtitleStyle, new Color(1f, 0.45f, 1f), Color.black);
                 GUI.color = Color.white;
             }
@@ -595,7 +595,7 @@ namespace ProjectTerra.Sandbox
             // 8. Veículo Inicial
             if (rsm != null && rsm.starterVehicle != null)
             {
-                DrawMapMarker(rsm.starterVehicle.transform.position, worldW, worldL, mapImageRect, "🚜 Veículo", new Color(1f, 0.65f, 0.25f));
+                DrawMapMarker(rsm.starterVehicle.transform.position, worldW, worldL, mapImageRect, "Veículo", new Color(1f, 0.65f, 0.25f));
             }
 
             // 9. Jogador com Radar Pulsante e Seta de Rotação 360°
@@ -651,8 +651,8 @@ namespace ProjectTerra.Sandbox
             string type = region != null ? region.type : "Estado / Província";
             int area = region != null && region.realAreaKm2 > 0 ? region.realAreaKm2 : (int)((worldW * worldL) / 1000000f);
 
-            GUI.Label(new Rect(16f, 6f, 420f, 20f), $"🗺️ {regName.ToUpper()}, {country.ToUpper()}", titleStyle);
-            GUI.Label(new Rect(16f, 24f, 450f, 18f), $"{type}  •  Área: {area:N0} km²  •  Dimensão: {worldW / 1000f:F0} km × {worldL / 1000f:F0} km", subtitleStyle);
+            GUI.Label(new Rect(16f, 6f, 420f, 20f), $"️ {regName.ToUpper()}, {country.ToUpper()}", titleStyle);
+            GUI.Label(new Rect(16f, 24f, 450f, 18f), $"{type} • Área: {area:N0} km² • Dimensão: {worldW / 1000f:F0} km × {worldL / 1000f:F0} km", subtitleStyle);
 
             // Telemetria Geográfica em Tempo Real sob o Cursor do Mouse
             Vector2 mouse = Event.current.mousePosition;
@@ -692,18 +692,18 @@ namespace ProjectTerra.Sandbox
                 }
 
                 GUI.color = new Color(0.25f, 0.85f, 1f);
-                GUI.Label(new Rect(Screen.width * 0.36f, 13f, 560f, 22f), $"🌐 [{locStr}]  |  LAT: {latStr}  |  LON: {lonStr}  |  ALT: {altM:F0}m  |  DIST: {distKm:F1} km", subtitleStyle);
+                GUI.Label(new Rect(Screen.width * 0.36f, 13f, 560f, 22f), $"[{locStr}] | LAT: {latStr} | LON: {lonStr} | ALT: {altM:F0}m | DIST: {distKm:F1} km", subtitleStyle);
                 GUI.color = Color.white;
             }
             else
             {
                 GUI.color = new Color(0.6f, 0.75f, 0.9f);
-                GUI.Label(new Rect(Screen.width * 0.42f, 13f, 400f, 22f), "🌐 SISTEMA CARTOGRÁFICO MILITAR GIS 1:1 • TEMPO REAL", subtitleStyle);
+                GUI.Label(new Rect(Screen.width * 0.42f, 13f, 400f, 22f), "SISTEMA CARTOGRÁFICO MILITAR GIS 1:1 • TEMPO REAL", subtitleStyle);
                 GUI.color = Color.white;
             }
 
-            // Botão Fechar [✖]
-            if (GUI.Button(new Rect(Screen.width - 48f, 8f, 36f, 30f), "✖", menuButtonDangerStyle))
+            // Botão Fechar [[X]]
+            if (GUI.Button(new Rect(Screen.width - 48f, 8f, 36f, 30f), "[X]", menuButtonDangerStyle))
             {
                 CloseRegionalMap();
             }
@@ -723,16 +723,16 @@ namespace ProjectTerra.Sandbox
 
             GUILayout.BeginArea(panelRect);
             GUILayout.Space(6);
-            GUILayout.Label("  📡 CAMADAS GIS", titleStyle);
+            GUILayout.Label("CAMADAS GIS", titleStyle);
             GUILayout.Space(4);
 
-            showRoadsLayer = GUILayout.Toggle(showRoadsLayer, "  🛣️ Rodovias / Trilhos");
-            showRiversLayer = GUILayout.Toggle(showRiversLayer, "  🌊 Hidrografia / Rios");
-            showCitiesLayer = GUILayout.Toggle(showCitiesLayer, "  🏛️ Cidades & Sedes");
-            showDivisasLayer = GUILayout.Toggle(showDivisasLayer, "  🧭 Divisas / Vizinhos");
-            showContoursLayer = GUILayout.Toggle(showContoursLayer, "  ⛰️ Curvas de Nível");
-            showGridLayer = GUILayout.Toggle(showGridLayer, "  🌐 Grade Tática");
-            showLandmarksLayer = GUILayout.Toggle(showLandmarksLayer, "  ▲ Marcos e Serras");
+            showRoadsLayer = GUILayout.Toggle(showRoadsLayer, " ️ Rodovias / Trilhos");
+            showRiversLayer = GUILayout.Toggle(showRiversLayer, "Hidrografia / Rios");
+            showCitiesLayer = GUILayout.Toggle(showCitiesLayer, "Cidades & Sedes");
+            showDivisasLayer = GUILayout.Toggle(showDivisasLayer, "Divisas / Vizinhos");
+            showContoursLayer = GUILayout.Toggle(showContoursLayer, " ️ Curvas de Nível");
+            showGridLayer = GUILayout.Toggle(showGridLayer, "Grade Tática");
+            showLandmarksLayer = GUILayout.Toggle(showLandmarksLayer, " ▲ Marcos e Serras");
 
             GUILayout.EndArea();
         }
@@ -753,7 +753,7 @@ namespace ProjectTerra.Sandbox
             GUILayout.Space(6);
 
             // Zoom In [+]
-            if (GUILayout.Button("➕", menuButtonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
             {
                 ZoomAt(mapZoom * 1.3f, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
             }
@@ -766,21 +766,21 @@ namespace ProjectTerra.Sandbox
             GUILayout.Space(2);
 
             // Zoom Out [-]
-            if (GUILayout.Button("➖", menuButtonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
             {
                 ZoomAt(mapZoom * 0.77f, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
             }
 
             GUILayout.Space(8);
 
-            // Centralizar no Jogador [🎯]
-            if (GUILayout.Button("🎯", menuButtonStyle, GUILayout.Height(32)))
+            // Centralizar no Jogador []
+            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
             {
                 CenterOnPlayer(worldW, worldL, baseW, baseH);
             }
 
-            // Centralizar na Capital [★]
-            if (GUILayout.Button("★", menuButtonStyle, GUILayout.Height(32)))
+            // Centralizar na Capital []
+            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
             {
                 CenterOnCapital(worldW, worldL, baseW, baseH);
             }
@@ -795,7 +795,7 @@ namespace ProjectTerra.Sandbox
             if (CustomWaypoint.HasValue)
             {
                 GUILayout.Space(4);
-                if (GUILayout.Button("❌", menuButtonDangerStyle, GUILayout.Height(28)))
+                if (GUILayout.Button("[X]", menuButtonDangerStyle, GUILayout.Height(28)))
                 {
                     ClearCustomWaypoint();
                 }
@@ -823,16 +823,16 @@ namespace ProjectTerra.Sandbox
                 borderLabels = RegionNeighbors.GetBorderLabels(region);
             }
             string divisas = (borderLabels != null && borderLabels.Count > 0)
-                ? string.Join("  •  ", borderLabels)
+                ? string.Join(" • ", borderLabels)
                 : "Sem divisas terrestres imediatas (Zona Costeira/Oceano)";
 
             GUI.color = new Color(0.85f, 0.95f, 1f);
-            GUI.Label(new Rect(14f, btmRect.y + 7f, Screen.width * 0.45f, 20f), $"🧭 Divisas: {divisas}", subtitleStyle);
+            GUI.Label(new Rect(14f, btmRect.y + 7f, Screen.width * 0.45f, 20f), $"Divisas: {divisas}", subtitleStyle);
             GUI.color = Color.white;
 
             // 2. Dicas de Navegação
             GUI.color = new Color(0.7f, 0.8f, 0.9f);
-            GUI.Label(new Rect(Screen.width * 0.42f, btmRect.y + 7f, 380f, 20f), "💡 Scroll: Zoom  •  Arraste: Mover  •  Clique: Destino  •  F: Focar Jogador", subtitleStyle);
+            GUI.Label(new Rect(Screen.width * 0.42f, btmRect.y + 7f, 380f, 20f), "Scroll: Zoom • Arraste: Mover • Clique: Destino • F: Focar Jogador", subtitleStyle);
             GUI.color = Color.white;
 
             // 3. Barra de Escala Dinâmica (Metric Scale Bar)
@@ -1162,7 +1162,7 @@ namespace ProjectTerra.Sandbox
                         GUI.color = new Color(1f, 0.85f, 0.2f, 1f);
                         GUI.DrawTexture(new Rect(p.x - r * 0.5f, p.y - r * 0.5f, r, r), whiteTex);
                         GUI.color = Color.white;
-                        DrawTextWithShadow(new Rect(p.x + 8f, p.y - 10f, 160f, 20f), "★ " + c.name.ToUpper(), titleStyle, new Color(1f, 0.9f, 0.3f), Color.black);
+                        DrawTextWithShadow(new Rect(p.x + 8f, p.y - 10f, 160f, 20f), " " + c.name.ToUpper(), titleStyle, new Color(1f, 0.9f, 0.3f), Color.black);
                     }
                     else
                     {
@@ -1284,7 +1284,7 @@ namespace ProjectTerra.Sandbox
 
                 // Título em cinza claro brilhante / prata
                 GUI.color = Color.white;
-                string icon = lbl.isEdgeBadge ? "🧭 " : "🏛️ ";
+                string icon = lbl.isEdgeBadge ? " " : " ";
                 DrawTextWithShadow(new Rect(badgeRect.x + 6f, badgeRect.y + 3f, badgeRect.width - 12f, 18f),
                     $"{icon}{lbl.displayName}", titleStyle, new Color(0.92f, 0.94f, 0.98f), Color.black);
 

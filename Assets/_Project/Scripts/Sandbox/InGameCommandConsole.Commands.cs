@@ -202,13 +202,13 @@ namespace ProjectTerra.Sandbox
                         break;
 
                     default:
-                        LogMessage($"❌ Comando desconhecido: '{action}'. Digite /help para ver os comandos disponíveis.", new Color(1f, 0.4f, 0.4f));
+                        LogMessage($"[X] Comando desconhecido: '{action}'. Digite /help para ver os comandos disponíveis.", new Color(1f, 0.4f, 0.4f));
                         break;
                 }
             }
             catch (Exception ex)
             {
-                LogMessage($"⚠️ Erro ao executar comando: {ex.Message}", new Color(1f, 0.35f, 0.35f));
+                LogMessage($"[Aviso] Erro ao executar comando: {ex.Message}", new Color(1f, 0.35f, 0.35f));
             }
         }
 
@@ -224,41 +224,41 @@ namespace ProjectTerra.Sandbox
                 switch (topic)
                 {
                     case "spawn":
-                        LogMessage("📖 /spawn <tipo> [quantidade]", Color.cyan);
+                        LogMessage(" /spawn <tipo> [quantidade]", Color.cyan);
                         LogMessage("Tipos suportados: tractor, truck, plane, boat, car, sports, suv, police, ambulance, firetruck, taxi, van, speeder, all", Color.white);
                         return;
                     case "time":
-                        LogMessage("📖 /time <0-24 | day | night | noon | sunset | sunrise | cycle <on/off>>", Color.cyan);
+                        LogMessage(" /time <0-24 | day | night | noon | sunset | sunrise | cycle <on/off>>", Color.cyan);
                         LogMessage("Ajusta o horário solar ou ativa o ciclo contínuo em tempo real.", Color.white);
                         return;
                     case "tp":
-                        LogMessage("📖 /tp <town | base | market | airport | port | origin | x z | x y z>", Color.cyan);
+                        LogMessage(" /tp <town | base | market | airport | port | origin | x z | x y z>", Color.cyan);
                         LogMessage("Teleporta o jogador (e o veículo atual) para locais chave ou coordenadas exatas.", Color.white);
                         return;
                     case "road":
                     case "estrada":
-                        LogMessage("📖 /road <spawn | type | lanes | rebuild | list>", Color.cyan);
+                        LogMessage(" /road <spawn | type | lanes | rebuild | list>", Color.cyan);
                         LogMessage("Tipos: asfalto, concreto, terra, brita | Faixas: 2, 4, 6, 8", Color.white);
                         return;
                     case "paint":
                     case "chao":
-                        LogMessage("📖 /paint <textura> [raio]  |  /paint tool  |  /paint list", Color.cyan);
+                        LogMessage(" /paint <textura> [raio] | /paint tool | /paint list", Color.cyan);
                         LogMessage("Altera a textura/pintura do terreno (concreto, terra simples, asfalto, brita, etc.). Pressione [P] para o pincel 3D.", Color.white);
                         return;
                 }
             }
 
             LogMessage("═════════ LISTA DE COMANDOS DA PROVÍNCIA ═════════", Color.cyan);
-            LogMessage("🎨 <b>Pintura de Chão:</b> /paint <textura> [raio], /paint tool <i>(ou tecla [P])</i>, /paint list", Color.white);
-            LogMessage("🛣️ <b>Estradas:</b> /road spawn <tipo> <faixas>, /road type <tipo>, /road lanes <2/4/6/8>, /road rebuild", Color.white);
-            LogMessage("🚗 <b>Veículos:</b> /spawn <tipo>, /vehicles, /switch, /clearvehicles, /refuel, /repair, /unflip", Color.white);
-            LogMessage("🕒 <b>Horário & Tempo:</b> /time <h/preset>, /timescale <mult>, /weather <clima>", Color.white);
-            LogMessage("📍 <b>Navegação:</b> /tp <local/coords>, /coords", Color.white);
-            LogMessage("⚡ <b>Jogador:</b> /fly (noclip), /speed <mult>, /god, /light", Color.white);
-            LogMessage("💼 <b>Economia:</b> /money <quantia>, /setmoney <quantia>, /mission <complete/new>, /reputation <qnt>", Color.white);
-            LogMessage("🐾 <b>Fauna & Animais:</b> /animals (status/stats), /animals tp <pasture/wild>", Color.white);
-            LogMessage("🎮 <b>Interface:</b> /camera <modo>, /hud <on/off>, /map, /save, /clear", Color.white);
-            LogMessage("💡 <b>Atalhos:</b> [/] Console, [L] Lanterna/Farol, [Tab] Trocar Veículo, [C] Câmera", new Color(0.3f, 1f, 0.6f));
+            LogMessage("<b>Pintura de Chão:</b> /paint <textura> [raio], /paint tool <i>(ou tecla [P])</i>, /paint list", Color.white);
+            LogMessage("️ <b>Estradas:</b> /road spawn <tipo> <faixas>, /road type <tipo>, /road lanes <2/4/6/8>, /road rebuild", Color.white);
+            LogMessage("<b>Veículos:</b> /spawn <tipo>, /vehicles, /switch, /clearvehicles, /refuel, /repair, /unflip", Color.white);
+            LogMessage("<b>Horário & Tempo:</b> /time <h/preset>, /timescale <mult>, /weather <clima>", Color.white);
+            LogMessage("<b>Navegação:</b> /tp <local/coords>, /coords", Color.white);
+            LogMessage("<b>Jogador:</b> /fly (noclip), /speed <mult>, /god, /light", Color.white);
+            LogMessage("<b>Economia:</b> /money <quantia>, /setmoney <quantia>, /mission <complete/new>, /reputation <qnt>", Color.white);
+            LogMessage("<b>Fauna & Animais:</b> /animals (status/stats), /animals tp <pasture/wild>", Color.white);
+            LogMessage("<b>Interface:</b> /camera <modo>, /hud <on/off>, /map, /save, /clear", Color.white);
+            LogMessage("<b>Atalhos:</b> [/] Console, [L] Lanterna/Farol, [Tab] Trocar Veículo, [C] Câmera", new Color(0.3f, 1f, 0.6f));
         }
 
         private void CmdCoords(string[] args)
@@ -268,7 +268,7 @@ namespace ProjectTerra.Sandbox
             {
                 Vector3 p = player.transform.position;
                 float heading = player.transform.eulerAngles.y;
-                LogMessage($"📍 Posição do jogador: X = {p.x:F1} m, Y = {p.y:F1} m (Altitude), Z = {p.z:F1} m  •  Rumo: {heading:F0}°", Color.cyan);
+                LogMessage($"Posição do jogador: X = {p.x:F1} m, Y = {p.y:F1} m (Altitude), Z = {p.z:F1} m • Rumo: {heading:F0}°", Color.cyan);
             }
         }
 
@@ -294,13 +294,13 @@ namespace ProjectTerra.Sandbox
         private void CmdMap(string[] args)
         {
             SandboxHUD.Instance?.ToggleRegionalMap();
-            LogMessage("🗺️ Mapa tático regional alternado.", Color.cyan);
+            LogMessage("️ Mapa tático regional alternado.", Color.cyan);
         }
 
         private void CmdSave(string[] args)
         {
             SandboxHUD.Instance?.SaveCurrentGame();
-            LogMessage("💾 Partida salva com sucesso!", Color.green);
+            LogMessage("Partida salva com sucesso!", Color.green);
         }
 
         #endregion

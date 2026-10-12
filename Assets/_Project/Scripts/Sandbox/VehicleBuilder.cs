@@ -33,9 +33,15 @@ namespace ProjectTerra.Sandbox
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Tractor;
             vehicle.vehicleName = "Trator Agrícola TerraMaster 110";
-            vehicle.maxSpeedKmh = 42f;
+            vehicle.maxSpeedKmh = 32f;
+            vehicle.maxReverseSpeedKmh = 10f;
+            vehicle.accelerationRate = 1.6f;
+            vehicle.brakeDeceleration = 6.0f;
+            vehicle.throttleResponseRate = 1.4f;
             vehicle.enginePower = 3400f;
             vehicle.maxCargoCapacityKg = 2000f;
+            vehicle.steerAngleMax = 32f;
+            vehicle.steerSpeed = 3.5f;
 
             // Modelo 3D Importado ou Procedural
             var meshPrefab = Resources.Load<GameObject>("Models/Vehicles/tractor");
@@ -110,9 +116,15 @@ namespace ProjectTerra.Sandbox
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Truck;
             vehicle.vehicleName = "Caminhão de Carga Atlas Hauler";
-            vehicle.maxSpeedKmh = 85f;
+            vehicle.maxSpeedKmh = 80f;
+            vehicle.maxReverseSpeedKmh = 12f;
+            vehicle.accelerationRate = 1.8f;
+            vehicle.brakeDeceleration = 6.5f;
+            vehicle.throttleResponseRate = 1.2f;
             vehicle.enginePower = 4800f;
             vehicle.maxCargoCapacityKg = 6000f;
+            vehicle.steerAngleMax = 28f;
+            vehicle.steerSpeed = 3.0f;
 
             // Modelo 3D Importado ou Procedural
             var meshPrefab = Resources.Load<GameObject>("Models/Vehicles/truck");
@@ -180,9 +192,12 @@ namespace ProjectTerra.Sandbox
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Plane;
             vehicle.vehicleName = "Aeronave Utilitária Skylark 180";
-            vehicle.maxSpeedKmh = 210f;
+            vehicle.maxSpeedKmh = 175f;
+            vehicle.takeOffSpeedKmh = 65f;
+            vehicle.accelerationRate = 2.6f;
+            vehicle.brakeDeceleration = 4.0f;
+            vehicle.throttleResponseRate = 1.5f;
             vehicle.enginePower = 5400f;
-            vehicle.takeOffSpeedKmh = 45f;
             vehicle.maxCargoCapacityKg = 650f;
 
             // --- 1. FUSELAGEM & CABINE AERODINÂMICA ---
@@ -324,7 +339,11 @@ namespace ProjectTerra.Sandbox
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Boat;
             vehicle.vehicleName = "Traineira Costeira Mar Azul";
-            vehicle.maxSpeedKmh = 32f;
+            vehicle.maxSpeedKmh = 22f;
+            vehicle.maxReverseSpeedKmh = 10f;
+            vehicle.accelerationRate = 1.0f;
+            vehicle.brakeDeceleration = 1.8f;
+            vehicle.throttleResponseRate = 1.0f;
             vehicle.enginePower = 3800f;
             vehicle.maxCargoCapacityKg = 3000f;
 
@@ -370,7 +389,75 @@ namespace ProjectTerra.Sandbox
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = category;
             vehicle.vehicleName = displayName;
-            vehicle.maxSpeedKmh = modelName.Contains("race") || modelName.Contains("sports") ? 180f : (modelName.Contains("suv") ? 130f : 140f);
+
+            // Calibração realista de velocidades e acelerações por classe de utilitário/automóvel
+            if (modelName.Contains("race") || modelName.Contains("sports"))
+            {
+                vehicle.maxSpeedKmh = 165f;
+                vehicle.maxReverseSpeedKmh = 28f;
+                vehicle.accelerationRate = 5.0f;
+                vehicle.brakeDeceleration = 10.0f;
+                vehicle.throttleResponseRate = 3.8f;
+            }
+            else if (modelName.Contains("suv"))
+            {
+                vehicle.maxSpeedKmh = 120f;
+                vehicle.maxReverseSpeedKmh = 22f;
+                vehicle.accelerationRate = 3.2f;
+                vehicle.brakeDeceleration = 8.0f;
+                vehicle.throttleResponseRate = 2.4f;
+            }
+            else if (modelName.Contains("police"))
+            {
+                vehicle.maxSpeedKmh = 145f;
+                vehicle.maxReverseSpeedKmh = 25f;
+                vehicle.accelerationRate = 4.2f;
+                vehicle.brakeDeceleration = 9.0f;
+                vehicle.throttleResponseRate = 3.2f;
+            }
+            else if (modelName.Contains("ambulance"))
+            {
+                vehicle.maxSpeedKmh = 115f;
+                vehicle.maxReverseSpeedKmh = 20f;
+                vehicle.accelerationRate = 2.8f;
+                vehicle.brakeDeceleration = 8.0f;
+                vehicle.throttleResponseRate = 2.2f;
+            }
+            else if (modelName.Contains("firetruck"))
+            {
+                vehicle.category = VehicleCategory.Truck;
+                vehicle.maxSpeedKmh = 82f;
+                vehicle.maxReverseSpeedKmh = 12f;
+                vehicle.accelerationRate = 1.9f;
+                vehicle.brakeDeceleration = 6.5f;
+                vehicle.throttleResponseRate = 1.3f;
+            }
+            else if (modelName.Contains("van"))
+            {
+                vehicle.maxSpeedKmh = 110f;
+                vehicle.maxReverseSpeedKmh = 20f;
+                vehicle.accelerationRate = 2.5f;
+                vehicle.brakeDeceleration = 7.5f;
+                vehicle.throttleResponseRate = 2.0f;
+            }
+            else if (modelName.Contains("taxi"))
+            {
+                vehicle.maxSpeedKmh = 125f;
+                vehicle.maxReverseSpeedKmh = 25f;
+                vehicle.accelerationRate = 3.4f;
+                vehicle.brakeDeceleration = 8.5f;
+                vehicle.throttleResponseRate = 2.6f;
+            }
+            else
+            {
+                // Padrão Sedan / Urbano
+                vehicle.maxSpeedKmh = 128f;
+                vehicle.maxReverseSpeedKmh = 25f;
+                vehicle.accelerationRate = 3.5f;
+                vehicle.brakeDeceleration = 8.5f;
+                vehicle.throttleResponseRate = 2.8f;
+            }
+
             vehicle.enginePower = 4400f;
             vehicle.maxCargoCapacityKg = 500f;
 
@@ -429,7 +516,8 @@ namespace ProjectTerra.Sandbox
         public static VehicleController CreateRealisticVehicle(
             Vector3 position, string resourcePath, string displayName, VehicleCategory category,
             float visualScale, Vector3 colliderSize, Vector3 colliderCenter,
-            float maxSpeedKmh, float enginePower, float cargoKg, Vector3 visualOffset)
+            float maxSpeedKmh, float enginePower, float cargoKg, Vector3 visualOffset,
+            float maxReverseSpeedKmh = 20f, float accelerationRate = 3.0f, float brakeDeceleration = 7.5f, float throttleResponseRate = 2.5f)
         {
             var root = new GameObject($"Veiculo_{displayName}");
             root.transform.position = position;
@@ -452,6 +540,10 @@ namespace ProjectTerra.Sandbox
             vehicle.category = category;
             vehicle.vehicleName = displayName;
             vehicle.maxSpeedKmh = maxSpeedKmh;
+            vehicle.maxReverseSpeedKmh = maxReverseSpeedKmh;
+            vehicle.accelerationRate = accelerationRate;
+            vehicle.brakeDeceleration = brakeDeceleration;
+            vehicle.throttleResponseRate = throttleResponseRate;
             vehicle.enginePower = enginePower;
             vehicle.maxCargoCapacityKg = cargoKg;
 
@@ -493,7 +585,8 @@ namespace ProjectTerra.Sandbox
                 "Trator Realista PBR", VehicleCategory.Tractor,
                 visualScale: 1.0f,
                 colliderSize: new Vector3(2.2f, 2.4f, 4.0f), colliderCenter: new Vector3(0f, 1.2f, 0f),
-                maxSpeedKmh: 40f, enginePower: 3400f, cargoKg: 2000f, visualOffset: Vector3.zero);
+                maxSpeedKmh: 32f, enginePower: 3400f, cargoKg: 2000f, visualOffset: Vector3.zero,
+                maxReverseSpeedKmh: 10f, accelerationRate: 1.6f, brakeDeceleration: 6.0f, throttleResponseRate: 1.4f);
         }
 
         public static VehicleController CreateScania(Vector3 position)
@@ -503,7 +596,8 @@ namespace ProjectTerra.Sandbox
                 "Caminhão Scania PBR", VehicleCategory.Truck,
                 visualScale: 1.0f,
                 colliderSize: new Vector3(2.6f, 3.4f, 9.0f), colliderCenter: new Vector3(0f, 1.8f, 0f),
-                maxSpeedKmh: 90f, enginePower: 6000f, cargoKg: 12000f, visualOffset: Vector3.zero);
+                maxSpeedKmh: 85f, enginePower: 6000f, cargoKg: 12000f, visualOffset: Vector3.zero,
+                maxReverseSpeedKmh: 12f, accelerationRate: 1.8f, brakeDeceleration: 6.5f, throttleResponseRate: 1.2f);
         }
 
         public static VehicleController CreateRealisticCarPack(Vector3 position)
@@ -513,7 +607,8 @@ namespace ProjectTerra.Sandbox
                 "Carro Realista PBR", VehicleCategory.Car,
                 visualScale: 1.0f,
                 colliderSize: new Vector3(2.0f, 1.5f, 4.5f), colliderCenter: new Vector3(0f, 0.9f, 0f),
-                maxSpeedKmh: 150f, enginePower: 4400f, cargoKg: 500f, visualOffset: Vector3.zero);
+                maxSpeedKmh: 130f, enginePower: 4400f, cargoKg: 500f, visualOffset: Vector3.zero,
+                maxReverseSpeedKmh: 25f, accelerationRate: 3.5f, brakeDeceleration: 8.5f, throttleResponseRate: 2.8f);
         }
 
         /// <summary>
@@ -522,7 +617,7 @@ namespace ProjectTerra.Sandbox
         /// </summary>
         /// <summary>
         /// Converte para URP Lit qualquer material cujo shader não seja do Universal Render
-        /// Pipeline (tipicamente o "Standard" do Built-in, que fica magenta sob o URP),
+        /// Pipeline (tipicamente o "Standard"do Built-in, que fica magenta sob o URP),
         /// preservando a textura base, a cor e o normal map quando existentes.
         /// </summary>
         private static void EnsureURPMaterials(GameObject visual)
@@ -591,7 +686,7 @@ namespace ProjectTerra.Sandbox
 
             if (colormap != null)
             {
-                // URP Lit (não "Standard" do Built-in, que renderiza magenta sob o URP).
+                // URP Lit (não "Standard"do Built-in, que renderiza magenta sob o URP).
                 var mat = ProjectTerra.Core.URPMaterialHelper.CreateURPLitMaterial(
                     "Vehicle_Colormap_Material", Color.white, 0.2f, 0.05f);
                 if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", colormap);
