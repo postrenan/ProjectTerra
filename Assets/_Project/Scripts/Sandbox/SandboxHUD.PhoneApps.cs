@@ -27,7 +27,7 @@ namespace ProjectTerra.Sandbox
 
         private List<PhoneJob> jobMarket;
         // Regeneração adiada para o Update (fora das passagens do OnGUI, evitando
-        // mismatch de layout do GUILayout). O salt faz o botão "Atualizar" variar.
+        // mismatch de layout do GUILayout). O salt faz o botão "Atualizar"variar.
         private bool jobMarketDirty = false;
         private int jobMarketSalt = 0;
 
@@ -45,16 +45,16 @@ namespace ProjectTerra.Sandbox
         // Tabelas de carga por licença (ícone + título do frete + nomes de carga).
         private static readonly (DriverLicense lic, string icon, string[] cargos)[] CargoTable =
         {
-            (DriverLicense.Standard,     "🚙", new[] { "Paletes Industriais", "Eletrodomésticos", "Material de Construção" }),
-            (DriverLicense.Agriculture,  "🌾", new[] { "Soja a Granel", "Fardos de Feno", "Fertilizante NPK" }),
-            (DriverLicense.Refrigerated, "❄️", new[] { "Laticínios", "Carnes Resfriadas", "Lote de Vacinas" }),
-            (DriverLicense.Fragile,      "📦", new[] { "Vidros Temperados", "Peças de Cerâmica", "Painéis Solares" }),
-            (DriverLicense.Livestock,    "🐄", new[] { "Gado de Corte", "Lote de Suínos", "Aves Vivas" }),
-            (DriverLicense.Heavy,        "🏗️", new[] { "Escavadeira", "Vigas de Aço", "Transformador Elétrico" }),
-            (DriverLicense.HighValue,    "💎", new[] { "Equipamentos Médicos", "Eletrônicos Premium", "Cofre Blindado" }),
-            (DriverLicense.Hazmat,       "☢️", new[] { "Combustível", "Gás Industrial", "Produtos Químicos" }),
-            (DriverLicense.Maritime,     "⚓", new[] { "Pescado Fresco", "Frutos do Mar", "Contêiner Costeiro" }),
-            (DriverLicense.Aviation,     "🛩️", new[] { "Encomenda Aérea Expressa", "Suprimentos Remotos" }),
+            (DriverLicense.Standard, "", new[] { "Paletes Industriais", "Eletrodomésticos", "Material de Construção" }),
+            (DriverLicense.Agriculture, "", new[] { "Soja a Granel", "Fardos de Feno", "Fertilizante NPK" }),
+            (DriverLicense.Refrigerated, "", new[] { "Laticínios", "Carnes Resfriadas", "Lote de Vacinas" }),
+            (DriverLicense.Fragile, "", new[] { "Vidros Temperados", "Peças de Cerâmica", "Painéis Solares" }),
+            (DriverLicense.Livestock, "", new[] { "Gado de Corte", "Lote de Suínos", "Aves Vivas" }),
+            (DriverLicense.Heavy, "️", new[] { "Escavadeira", "Vigas de Aço", "Transformador Elétrico" }),
+            (DriverLicense.HighValue, "[Luxo]", new[] { "Equipamentos Médicos", "Eletrônicos Premium", "Cofre Blindado" }),
+            (DriverLicense.Hazmat, "[ADR]", new[] { "Combustível", "Gás Industrial", "Produtos Químicos" }),
+            (DriverLicense.Maritime, "", new[] { "Pescado Fresco", "Frutos do Mar", "Contêiner Costeiro" }),
+            (DriverLicense.Aviation, "", new[] { "Encomenda Aérea Expressa", "Suprimentos Remotos" }),
         };
 
         private void EnsureJobMarket(RegionSaveData save)
@@ -81,7 +81,7 @@ namespace ProjectTerra.Sandbox
                 string cargo = entry.cargos[rng.Next(entry.cargos.Length)];
                 float weight = Mathf.Round(rng.Next(600, 6000) / 50f) * 50f;
 
-                // Recompensa cresce com o peso e com o "nível" da licença no catálogo.
+                // Recompensa cresce com o peso e com o "nível"da licença no catálogo.
                 var info = DriverLicenseCatalog.Get(entry.lic);
                 long tierBonus = info != null ? info.cost / 3 : 0;
                 long reward = 12000 + (long)(weight * rng.Next(6, 14)) + tierBonus + rng.Next(0, 8000);
@@ -101,7 +101,7 @@ namespace ProjectTerra.Sandbox
 
         private void DrawPhoneJobs(Rect content)
         {
-            DrawAppHeader(content, "📦 Frete");
+            DrawAppHeader(content, "Frete");
             Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
             GUILayout.BeginArea(area);
             phoneScroll = GUILayout.BeginScrollView(phoneScroll);
@@ -116,8 +116,8 @@ namespace ProjectTerra.Sandbox
                 GUILayout.Label(c.title, phoneBodyStyle);
                 float dist = mm.GetDistanceToDestination();
                 string distText = dist > 1000f ? $"{(dist / 1000f):F1} km" : $"{dist:F0} m";
-                GUILayout.Label($"📍 {c.destinationName}  •  {distText}", phoneSmallStyle);
-                GUILayout.Label($"📦 {c.cargoType}  •  💰 ${c.rewardMoney:N0}", phoneSmallStyle);
+                GUILayout.Label($" {c.destinationName} • {distText}", phoneSmallStyle);
+                GUILayout.Label($" {c.cargoType} • ${c.rewardMoney:N0}", phoneSmallStyle);
             }
             else
             {
@@ -139,19 +139,19 @@ namespace ProjectTerra.Sandbox
                 var info = DriverLicenseCatalog.Get(j.required);
 
                 GUILayout.Label($"{j.icon} {j.title}", phoneBodyStyle);
-                GUILayout.Label($"⚖️ {j.weightKg:F0} kg   💰 ${j.reward:N0}   ⭐ +{j.rep}", phoneSmallStyle);
+                GUILayout.Label($" {j.weightKg:F0} kg ${j.reward:N0} +{j.rep}", phoneSmallStyle);
 
                 if (!licensed)
                 {
-                    GUILayout.Label($"🔒 Requer licença: {info.icon} {info.name}", phoneLockStyle);
+                    GUILayout.Label($"[Bloqueado] Requer licença: {info.icon} {info.name}", phoneLockStyle);
                 }
-                else if (GUILayout.Button("✅ Aceitar frete", phoneListButtonStyle, GUILayout.Height(26)))
+                else if (GUILayout.Button("[OK] Aceitar frete", phoneListButtonStyle, GUILayout.Height(26)))
                 {
                     if (mm != null)
                     {
                         mm.AcceptMarketContract(j.title, $"Transportar {j.cargo} até o destino indicado no mapa.",
                             j.cargo, j.weightKg, j.reward, j.rep);
-                        ShowToast($"📦 Frete aceito: {j.title}");
+                        ShowToast($"Frete aceito: {j.title}");
                         jobMarketDirty = true; // regenerado no próximo frame (Update)
                     }
                 }
@@ -161,7 +161,7 @@ namespace ProjectTerra.Sandbox
                 GUILayout.Space(5);
             }
 
-            if (GUILayout.Button("🔄 Atualizar ofertas", phoneListButtonStyle, GUILayout.Height(26)))
+            if (GUILayout.Button("Atualizar ofertas", phoneListButtonStyle, GUILayout.Height(26)))
             {
                 jobMarketDirty = true;
             }
@@ -176,7 +176,7 @@ namespace ProjectTerra.Sandbox
 
         private void DrawPhoneFinances(Rect content)
         {
-            DrawAppHeader(content, "💰 Finanças");
+            DrawAppHeader(content, "Finanças");
             Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
             GUILayout.BeginArea(area);
             phoneScroll = GUILayout.BeginScrollView(phoneScroll);
@@ -194,8 +194,8 @@ namespace ProjectTerra.Sandbox
             GUILayout.Label(save.GetFormattedMoney(), moneyStyle);
             long net = save.currentMoney - save.startingMoney;
             GUILayout.Label($"Capital inicial: ${save.startingMoney:N0}", phoneSmallStyle);
-            GUILayout.Label($"Resultado: {(net >= 0 ? "📈 +" : "📉 ")}${net:N0}", phoneSmallStyle);
-            GUILayout.Label($"⭐ Reputação: {save.reputation}   📦 Entregas: {save.completedDeliveries}", phoneSmallStyle);
+            GUILayout.Label($"Resultado: {(net >= 0 ? "[Alta] +" : "[Baixa] ")}${net:N0}", phoneSmallStyle);
+            GUILayout.Label($"Reputação: {save.reputation} Entregas: {save.completedDeliveries}", phoneSmallStyle);
 
             GUILayout.Space(8);
             DrawPhoneDivider();
@@ -211,18 +211,18 @@ namespace ProjectTerra.Sandbox
 
             if (save.loanDebt + loanDebtAdded <= maxDebt)
             {
-                if (GUILayout.Button($"🏦 Empréstimo +${loanAmount:N0}", phoneListButtonStyle, GUILayout.Height(28)))
+                if (GUILayout.Button($"Empréstimo +${loanAmount:N0}", phoneListButtonStyle, GUILayout.Height(28)))
                 {
                     save.currentMoney += loanAmount;
                     save.loanDebt += loanDebtAdded;
                     PersistSave();
-                    ShowToast($"🏦 Empréstimo de ${loanAmount:N0} creditado.");
+                    ShowToast($"Empréstimo de ${loanAmount:N0} creditado.");
                 }
                 GUILayout.Label("Juros de 10% sobre o valor tomado.", phoneSmallStyle);
             }
             else
             {
-                GUILayout.Label("🔒 Limite de crédito atingido.", phoneLockStyle);
+                GUILayout.Label("[Bloqueado] Limite de crédito atingido.", phoneLockStyle);
             }
 
             GUILayout.Space(4);
@@ -230,12 +230,12 @@ namespace ProjectTerra.Sandbox
             {
                 long pay = System.Math.Min(save.currentMoney, save.loanDebt);
                 bool canPay = pay > 0;
-                if (canPay && GUILayout.Button($"💳 Quitar ${pay:N0}", phoneListButtonStyle, GUILayout.Height(28)))
+                if (canPay && GUILayout.Button($"Quitar ${pay:N0}", phoneListButtonStyle, GUILayout.Height(28)))
                 {
                     save.currentMoney -= pay;
                     save.loanDebt -= pay;
                     PersistSave();
-                    ShowToast($"💳 Dívida reduzida em ${pay:N0}.");
+                    ShowToast($"Dívida reduzida em ${pay:N0}.");
                 }
                 if (!canPay) GUILayout.Label("Sem saldo para abater a dívida.", phoneSmallStyle);
             }
@@ -250,7 +250,7 @@ namespace ProjectTerra.Sandbox
 
         private void DrawPhoneLicenses(Rect content)
         {
-            DrawAppHeader(content, "🎓 Licenças");
+            DrawAppHeader(content, "Licenças");
             Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
             GUILayout.BeginArea(area);
             phoneScroll = GUILayout.BeginScrollView(phoneScroll);
@@ -264,7 +264,7 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            GUILayout.Label($"Saldo: {save.GetFormattedMoney()}  •  ⭐ {save.reputation}", phoneSmallStyle);
+            GUILayout.Label($"Saldo: {save.GetFormattedMoney()} • {save.reputation}", phoneSmallStyle);
             GUILayout.Space(6);
 
             foreach (var li in DriverLicenseCatalog.All)
@@ -275,28 +275,28 @@ namespace ProjectTerra.Sandbox
 
                 if (owned)
                 {
-                    GUILayout.Label("✅ Adquirida", phoneLinkStyle);
+                    GUILayout.Label("[OK] Adquirida", phoneLinkStyle);
                 }
                 else
                 {
-                    GUILayout.Label($"💰 ${li.cost:N0}   ⭐ req. {li.reputationRequired}", phoneSmallStyle);
+                    GUILayout.Label($" ${li.cost:N0} req. {li.reputationRequired}", phoneSmallStyle);
                     bool canRep = save.reputation >= li.reputationRequired;
                     bool canMoney = save.currentMoney >= li.cost;
 
                     if (!canRep)
                     {
-                        GUILayout.Label($"🔒 Reputação insuficiente ({save.reputation}/{li.reputationRequired})", phoneLockStyle);
+                        GUILayout.Label($"[Bloqueado] Reputação insuficiente ({save.reputation}/{li.reputationRequired})", phoneLockStyle);
                     }
                     else if (!canMoney)
                     {
-                        GUILayout.Label("🔒 Saldo insuficiente", phoneLockStyle);
+                        GUILayout.Label("[Bloqueado] Saldo insuficiente", phoneLockStyle);
                     }
-                    else if (GUILayout.Button("🎓 Adquirir licença", phoneListButtonStyle, GUILayout.Height(26)))
+                    else if (GUILayout.Button("Adquirir licença", phoneListButtonStyle, GUILayout.Height(26)))
                     {
                         save.currentMoney -= li.cost;
                         save.GrantLicense(li.id);
                         PersistSave();
-                        ShowToast($"🎓 Licença obtida: {li.name}");
+                        ShowToast($"Licença obtida: {li.name}");
                     }
                 }
 
@@ -317,17 +317,17 @@ namespace ProjectTerra.Sandbox
         {
             switch (cat)
             {
-                case VehicleCategory.Tractor: return "🚜";
-                case VehicleCategory.Truck: return "🚛";
-                case VehicleCategory.Plane: return "🛩️";
-                case VehicleCategory.Boat: return "⛵";
-                default: return "🚗";
+                case VehicleCategory.Tractor: return "";
+                case VehicleCategory.Truck: return "";
+                case VehicleCategory.Plane: return "";
+                case VehicleCategory.Boat: return "";
+                default: return "";
             }
         }
 
         private void DrawPhoneGarage(Rect content)
         {
-            DrawAppHeader(content, "🚚 Garagem");
+            DrawAppHeader(content, "Garagem");
             Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
             GUILayout.BeginArea(area);
             phoneScroll = GUILayout.BeginScrollView(phoneScroll);
@@ -351,7 +351,7 @@ namespace ProjectTerra.Sandbox
             {
                 if (v == null) continue;
                 bool isCurrent = player != null && player.currentVehicle == v;
-                string tag = isCurrent ? "  🟢 EM USO" : "";
+                string tag = isCurrent ? "[ATIVO] EM USO" : "";
                 GUILayout.Label($"{CategoryIcon(v.category)} {v.vehicleName}{tag}", phoneBodyStyle);
                 GUILayout.Space(2);
                 DrawPhoneDivider();
@@ -359,10 +359,10 @@ namespace ProjectTerra.Sandbox
             }
 
             GUILayout.Space(2);
-            if (GUILayout.Button("🔄 Alternar veículo ativo", phoneListButtonStyle, GUILayout.Height(28)))
+            if (GUILayout.Button("Alternar veículo ativo", phoneListButtonStyle, GUILayout.Height(28)))
             {
                 vm.SwitchToNextVehicle();
-                ShowToast("🔄 Veículo alternado.");
+                ShowToast("Veículo alternado.");
             }
             GUILayout.Label("Também disponível com [Tab] no jogo.", phoneSmallStyle);
 
@@ -378,25 +378,25 @@ namespace ProjectTerra.Sandbox
         {
             public string icon;
             public string name;
-            public string type;        // chave aceita por VehicleManager.SpawnVehicle
+            public string type; // chave aceita por VehicleManager.SpawnVehicle
             public long price;
             public DriverLicense required;
         }
 
         private static readonly DealerOffer[] DealerOffers =
         {
-            new DealerOffer { icon = "🚗", name = "Sedan Urbano",        type = "car",     price = 45000,  required = DriverLicense.Standard },
-            new DealerOffer { icon = "🚐", name = "Van Utilitária",      type = "van",     price = 72000,  required = DriverLicense.Standard },
-            new DealerOffer { icon = "🚛", name = "Caminhão de Carga",   type = "truck",   price = 140000, required = DriverLicense.Standard },
-            new DealerOffer { icon = "🚚", name = "Scania (Realista)",   type = "scania",  price = 210000, required = DriverLicense.Heavy },
-            new DealerOffer { icon = "🚜", name = "Trator Agrícola",     type = "tractor", price = 85000,  required = DriverLicense.Agriculture },
-            new DealerOffer { icon = "⛵", name = "Barco Pesqueiro",     type = "boat",    price = 90000,  required = DriverLicense.Maritime },
-            new DealerOffer { icon = "🛩️", name = "Aeronave Monomotor",  type = "plane",   price = 320000, required = DriverLicense.Aviation },
+            new DealerOffer { icon = "", name = "Sedan Urbano", type = "car", price = 45000, required = DriverLicense.Standard },
+            new DealerOffer { icon = "", name = "Van Utilitária", type = "van", price = 72000, required = DriverLicense.Standard },
+            new DealerOffer { icon = "", name = "Caminhão de Carga", type = "truck", price = 140000, required = DriverLicense.Standard },
+            new DealerOffer { icon = "", name = "Scania (Realista)", type = "scania", price = 210000, required = DriverLicense.Heavy },
+            new DealerOffer { icon = "", name = "Trator Agrícola", type = "tractor", price = 85000, required = DriverLicense.Agriculture },
+            new DealerOffer { icon = "", name = "Barco Pesqueiro", type = "boat", price = 90000, required = DriverLicense.Maritime },
+            new DealerOffer { icon = "", name = "Aeronave Monomotor", type = "plane", price = 320000, required = DriverLicense.Aviation },
         };
 
         private void DrawPhoneDealer(Rect content)
         {
-            DrawAppHeader(content, "🏬 Loja");
+            DrawAppHeader(content, "Loja");
             Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
             GUILayout.BeginArea(area);
             phoneScroll = GUILayout.BeginScrollView(phoneScroll);
@@ -413,17 +413,17 @@ namespace ProjectTerra.Sandbox
                 bool canMoney = save != null && save.currentMoney >= offer.price;
 
                 GUILayout.Label($"{offer.icon} {offer.name}", phoneBodyStyle);
-                GUILayout.Label($"💰 ${offer.price:N0}", phoneSmallStyle);
+                GUILayout.Label($" ${offer.price:N0}", phoneSmallStyle);
 
                 if (!licensed)
                 {
-                    GUILayout.Label($"🔒 Requer licença: {info.icon} {info.name}", phoneLockStyle);
+                    GUILayout.Label($"[Bloqueado] Requer licença: {info.icon} {info.name}", phoneLockStyle);
                 }
                 else if (!canMoney)
                 {
-                    GUILayout.Label("🔒 Saldo insuficiente", phoneLockStyle);
+                    GUILayout.Label("[Bloqueado] Saldo insuficiente", phoneLockStyle);
                 }
-                else if (GUILayout.Button("🛒 Comprar", phoneListButtonStyle, GUILayout.Height(26)))
+                else if (GUILayout.Button("Comprar", phoneListButtonStyle, GUILayout.Height(26)))
                 {
                     var vm = VehicleManager.Instance;
                     if (vm != null)
@@ -433,11 +433,11 @@ namespace ProjectTerra.Sandbox
                         {
                             save.currentMoney -= offer.price;
                             PersistSave();
-                            ShowToast($"🛒 {offer.name} adquirido!");
+                            ShowToast($" {offer.name} adquirido!");
                         }
                         else
                         {
-                            ShowToast("⚠️ Não foi possível entregar o veículo.");
+                            ShowToast("[Aviso] Não foi possível entregar o veículo.");
                         }
                     }
                 }
@@ -457,7 +457,7 @@ namespace ProjectTerra.Sandbox
 
         private void DrawPhoneStats(Rect content)
         {
-            DrawAppHeader(content, "📊 Estatísticas");
+            DrawAppHeader(content, "Estatísticas");
             Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
             GUILayout.BeginArea(area);
             phoneScroll = GUILayout.BeginScrollView(phoneScroll);
@@ -471,9 +471,9 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            string careerName = save.starterCareer == StarterCareer.Farmer ? "🌾 Agricultor" :
-                                save.starterCareer == StarterCareer.Trucker ? "🚛 Caminhoneiro" :
-                                save.starterCareer == StarterCareer.Aviator ? "🛩️ Aviador" : "🎣 Pescador";
+            string careerName = save.starterCareer == StarterCareer.Farmer ? "Agricultor" :
+                                save.starterCareer == StarterCareer.Trucker ? "Caminhoneiro" :
+                                save.starterCareer == StarterCareer.Aviator ? "Aviador" : "Pescador";
 
             GUILayout.Label("CARREIRA", phoneSectionStyle);
             GUILayout.Label(careerName, phoneBodyStyle);
@@ -484,29 +484,29 @@ namespace ProjectTerra.Sandbox
             GUILayout.Space(4);
 
             GUILayout.Label("DESEMPENHO", phoneSectionStyle);
-            GUILayout.Label($"💰 Saldo: {save.GetFormattedMoney()}", phoneBodyStyle);
+            GUILayout.Label($"Saldo: {save.GetFormattedMoney()}", phoneBodyStyle);
             long net = save.currentMoney - save.startingMoney;
-            GUILayout.Label($"📊 Resultado: {(net >= 0 ? "+" : "")}${net:N0}", phoneSmallStyle);
-            GUILayout.Label($"📦 Entregas concluídas: {save.completedDeliveries}", phoneSmallStyle);
-            GUILayout.Label($"⭐ Reputação: {save.reputation}", phoneSmallStyle);
-            GUILayout.Label($"🏦 Dívida: ${save.loanDebt:N0}", phoneSmallStyle);
+            GUILayout.Label($"Resultado: {(net >= 0 ? "+" : "")}${net:N0}", phoneSmallStyle);
+            GUILayout.Label($"Entregas concluídas: {save.completedDeliveries}", phoneSmallStyle);
+            GUILayout.Label($"Reputação: {save.reputation}", phoneSmallStyle);
+            GUILayout.Label($"Dívida: ${save.loanDebt:N0}", phoneSmallStyle);
 
             int ownedLic = 0;
             foreach (var li in DriverLicenseCatalog.All)
                 if (save.HasLicense(li.id)) ownedLic++;
-            GUILayout.Label($"🎓 Licenças: {ownedLic}/{DriverLicenseCatalog.All.Length}", phoneSmallStyle);
+            GUILayout.Label($"Licenças: {ownedLic}/{DriverLicenseCatalog.All.Length}", phoneSmallStyle);
 
             var vm = VehicleManager.Instance;
             int fleet = vm != null && vm.possessedVehicles != null ? vm.possessedVehicles.Count : 0;
-            GUILayout.Label($"🚚 Frota: {fleet} veículo(s)", phoneSmallStyle);
+            GUILayout.Label($"Frota: {fleet} veículo(s)", phoneSmallStyle);
 
             GUILayout.Space(6);
             DrawPhoneDivider();
             GUILayout.Space(4);
 
             GUILayout.Label("REGIÃO", phoneSectionStyle);
-            GUILayout.Label($"🌲 Floresta: {save.forestPercent}%   ⛏️ Minérios: {save.mineralsPercent}%", phoneSmallStyle);
-            GUILayout.Label($"🌾 Arável: {save.arablePercent}%   💧 Água: {save.waterPercent}%", phoneSmallStyle);
+            GUILayout.Label($"Floresta: {save.forestPercent}% Minérios: {save.mineralsPercent}%", phoneSmallStyle);
+            GUILayout.Label($"Arável: {save.arablePercent}% Água: {save.waterPercent}%", phoneSmallStyle);
 
             GUILayout.EndScrollView();
             GUILayout.EndArea();

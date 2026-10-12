@@ -8,10 +8,10 @@ namespace ProjectTerra.Sandbox
     public class Landmark
     {
         public string name;
-        public string type;   // volcano | mountain | plateau | waterfall | river | lake
+        public string type; // volcano | mountain | plateau | waterfall | river | lake
         public float lat;
         public float lon;
-        public float height;  // elevação do cume (m) | altura da queda (m) | raio do lago (m)
+        public float height; // elevação do cume (m) | altura da queda (m) | raio do lago (m)
     }
 
     /// <summary>Billboard de texto que sempre encara a câmera (rótulos dos marcos).</summary>
@@ -100,22 +100,22 @@ namespace ProjectTerra.Sandbox
             {
                 case "volcano":
                     labelY = DecorateVolcano(root, lm, pos);
-                    icon = "🌋"; labelColor = new Color(1f, 0.55f, 0.3f); break;
+                    icon = ""; labelColor = new Color(1f, 0.55f, 0.3f); break;
                 case "waterfall":
                     labelY = DecorateWaterfall(root, lm, pos);
-                    icon = "💧"; labelColor = new Color(0.6f, 0.9f, 1f); break;
+                    icon = ""; labelColor = new Color(0.6f, 0.9f, 1f); break;
                 case "lake":
                     labelY = DecorateLake(root, lm, pos);
-                    icon = "🏞️"; labelColor = new Color(0.55f, 0.85f, 1f); break;
+                    icon = ""; labelColor = new Color(0.55f, 0.85f, 1f); break;
                 case "river":
                     labelY = DecorateRiver(root, lm, pos);
-                    icon = "🌊"; labelColor = new Color(0.5f, 0.8f, 1f); break;
+                    icon = ""; labelColor = new Color(0.5f, 0.8f, 1f); break;
                 case "plateau":
                     labelY = pos.y + TerrainLandmarkSculptor.PlateauRise(lm) * 0.4f + 120f;
-                    icon = "🏜️"; labelColor = new Color(0.9f, 0.75f, 0.5f); break;
+                    icon = ""; labelColor = new Color(0.9f, 0.75f, 0.5f); break;
                 default: // mountain
                     labelY = pos.y + TerrainLandmarkSculptor.MountainRise(lm) * 0.5f + 150f;
-                    icon = "⛰️"; labelColor = new Color(0.9f, 0.95f, 1f); break;
+                    icon = "️"; labelColor = new Color(0.9f, 0.95f, 1f); break;
             }
 
             AddLabel(root, new Vector3(pos.x, labelY, pos.z), lm.name, labelColor);

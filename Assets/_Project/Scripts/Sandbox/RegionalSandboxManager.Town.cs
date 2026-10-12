@@ -21,7 +21,7 @@ namespace ProjectTerra.Sandbox
             // Edifício 1: Cooperativa Agrícola & Silos Regionais
             deliveryMarketPosition = townCenterPosition + new Vector3(80f, 0f, 120f);
             deliveryMarketPosition.y = GetTerrainHeight(deliveryMarketPosition);
-            CreateBuilding(townRoot.transform, deliveryMarketPosition, new Vector3(38f, 22f, 48f), new Color(0.75f, 0.78f, 0.82f), "🏢 Cooperativa & Silos Centrais");
+            CreateBuilding(townRoot.transform, deliveryMarketPosition, new Vector3(38f, 22f, 48f), new Color(0.75f, 0.78f, 0.82f), "Cooperativa & Silos Centrais");
 
             for (int i = 0; i < 4; i++)
             {
@@ -52,17 +52,17 @@ namespace ProjectTerra.Sandbox
             // Edifício 2: Centro Administrativo / Prefeitura
             Vector3 prefPos = townCenterPosition + new Vector3(-90f, 0f, 120f);
             prefPos.y = GetTerrainHeight(prefPos);
-            CreateBuilding(townRoot.transform, prefPos, new Vector3(42f, 16f, 36f), new Color(0.92f, 0.90f, 0.85f), "🏛️ Centro Administrativo & Alvarás");
+            CreateBuilding(townRoot.transform, prefPos, new Vector3(42f, 16f, 36f), new Color(0.92f, 0.90f, 0.85f), "Centro Administrativo & Alvarás");
 
             // Edifício 3: Posto Rodoviário de Combustíveis & Pátio
             Vector3 gasPos = townCenterPosition + new Vector3(-85f, 0f, -120f);
             gasPos.y = GetTerrainHeight(gasPos);
-            CreateBuilding(townRoot.transform, gasPos, new Vector3(34f, 10f, 38f), new Color(0.9f, 0.35f, 0.25f), "⛽ Posto Rodoviário & Oficina");
+            CreateBuilding(townRoot.transform, gasPos, new Vector3(34f, 10f, 38f), new Color(0.9f, 0.35f, 0.25f), "Posto Rodoviário & Oficina");
 
             // Edifício 4: Armazém Geral & Mercado Central
             Vector3 mktPos = townCenterPosition + new Vector3(90f, 0f, -120f);
             mktPos.y = GetTerrainHeight(mktPos);
-            CreateBuilding(townRoot.transform, mktPos, new Vector3(44f, 12f, 32f), new Color(0.6f, 0.65f, 0.7f), "🏪 Mercado Central & Armazém");
+            CreateBuilding(townRoot.transform, mktPos, new Vector3(44f, 12f, 32f), new Color(0.6f, 0.65f, 0.7f), "Mercado Central & Armazém");
         }
 
         private void CreateRoad(Transform parent, Vector3 pos, Vector3 size, string name)
@@ -199,7 +199,7 @@ namespace ProjectTerra.Sandbox
         /// </summary>
         private static Material CreatePrimitiveMaterial(Color color)
         {
-            // URP Lit (o shader "Standard" do Built-in renderiza magenta sob o URP).
+            // URP Lit (o shader "Standard"do Built-in renderiza magenta sob o URP).
             return ProjectTerra.Core.URPMaterialHelper.CreateURPLitMaterial(
                 "TownPrimitive", color, 0.15f, 0.0f);
         }

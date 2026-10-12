@@ -17,23 +17,23 @@ namespace ProjectTerra.Planet.TerrainStreaming
         private enum TextureMapType { Albedo, Normal, MaskMap }
 
         public const int LayerCount = 16;
-        public const int LayerGrass = 0;             // Grama Lush (Pradaria Verde)
-        public const int LayerJungle = 1;            // Selva / Floresta Tropical
-        public const int LayerSavanna = 2;           // Savana / Pasto Seco
-        public const int LayerSoil = 3;              // Solo Arado / Lavoura
-        public const int LayerSand = 4;              // Areia de Dunas / Praia
-        public const int LayerGravel = 5;            // Cascalho de Rio / Britas
-        public const int LayerRock = 6;              // Rocha de Encosta / Penhasco
-        public const int LayerSnow = 7;              // Neve Alpina / Tundra
+        public const int LayerGrass = 0; // Grama Lush (Pradaria Verde)
+        public const int LayerJungle = 1; // Selva / Floresta Tropical
+        public const int LayerSavanna = 2; // Savana / Pasto Seco
+        public const int LayerSoil = 3; // Solo Arado / Lavoura
+        public const int LayerSand = 4; // Areia de Dunas / Praia
+        public const int LayerGravel = 5; // Cascalho de Rio / Britas
+        public const int LayerRock = 6; // Rocha de Encosta / Penhasco
+        public const int LayerSnow = 7; // Neve Alpina / Tundra
         // Camadas adicionais de pintura e engenharia civil:
-        public const int LayerDirtSimple = 8;        // Terra Simples / Chão Batido
-        public const int LayerConcrete = 9;          // Concreto Urbano / Cimento
-        public const int LayerAsphalt = 10;          // Asfalto Pavimentado
-        public const int LayerCobblestone = 11;      // Paralelepípedo / Calçada de Pedra
-        public const int LayerWhiteGravel = 12;      // Pedrisco / Brita Fina
-        public const int LayerMud = 13;              // Lama Úmida / Barro
-        public const int LayerRedClay = 14;          // Argila Vermelha / Terra Roxa
-        public const int LayerDeadGrass = 15;        // Grama Queimada / Feno Seco
+        public const int LayerDirtSimple = 8; // Terra Simples / Chão Batido
+        public const int LayerConcrete = 9; // Concreto Urbano / Cimento
+        public const int LayerAsphalt = 10; // Asfalto Pavimentado
+        public const int LayerCobblestone = 11; // Paralelepípedo / Calçada de Pedra
+        public const int LayerWhiteGravel = 12; // Pedrisco / Brita Fina
+        public const int LayerMud = 13; // Lama Úmida / Barro
+        public const int LayerRedClay = 14; // Argila Vermelha / Terra Roxa
+        public const int LayerDeadGrass = 15; // Grama Queimada / Feno Seco
 
         public static TerrainLayer[] CreateTerrainLayers()
         {

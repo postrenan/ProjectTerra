@@ -77,25 +77,25 @@ namespace ProjectTerra.Sandbox
                 case VehicleCameraMode.ThirdPersonClose:
                     vehicleCameraMode = VehicleCameraMode.ThirdPersonFar;
                     ApplyCameraDistancesForMode();
-                    SandboxHUD.Instance?.ShowToast("🎥 Câmera: Terceira Pessoa (Panorâmica)", 1.8f);
+                    SandboxHUD.Instance?.ShowToast("Câmera: Terceira Pessoa (Panorâmica)", 1.8f);
                     break;
                 case VehicleCameraMode.ThirdPersonFar:
                     vehicleCameraMode = VehicleCameraMode.FirstPersonCockpit;
                     vehicleYawLook = 0f;
                     vehiclePitchLook = 0f;
-                    SandboxHUD.Instance?.ShowToast("🎥 Câmera: Cockpit (1ª Pessoa)", 1.8f);
+                    SandboxHUD.Instance?.ShowToast("Câmera: Cockpit (1ª Pessoa)", 1.8f);
                     break;
                 case VehicleCameraMode.FirstPersonCockpit:
                     vehicleCameraMode = VehicleCameraMode.BumperOrHood;
                     vehicleYawLook = 0f;
                     vehiclePitchLook = 0f;
-                    SandboxHUD.Instance?.ShowToast("🎥 Câmera: Capô / Para-choque Frontal", 1.8f);
+                    SandboxHUD.Instance?.ShowToast("Câmera: Capô / Para-choque Frontal", 1.8f);
                     break;
                 case VehicleCameraMode.BumperOrHood:
                 default:
                     vehicleCameraMode = VehicleCameraMode.ThirdPersonClose;
                     ApplyCameraDistancesForMode();
-                    SandboxHUD.Instance?.ShowToast("🎥 Câmera: Terceira Pessoa (Perto)", 1.8f);
+                    SandboxHUD.Instance?.ShowToast("Câmera: Terceira Pessoa (Perto)", 1.8f);
                     break;
             }
         }

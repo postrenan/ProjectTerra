@@ -19,11 +19,11 @@ namespace ProjectTerra.Sandbox
 
         [Header("Controle Solar")]
         public Light sunLight;
-        public float sunColorKelvin = 5800f;   // Luz solar diurna balanceada
+        public float sunColorKelvin = 5800f; // Luz solar diurna balanceada
 
         [Header("Ciclo Horário Dia/Noite")]
         [Range(0f, 24f)] public float timeOfDay = 12.0f; // Meio-dia por padrão
-        public bool autoCycleTime = false;
+        public bool autoCycleTime = true; // Ciclo automático ativado por padrão
         public float dayCycleDurationMinutes = 20.0f; // 20 min reais para 24h in-game
 
         [Header("Neblina (URP Volume)")]
@@ -40,8 +40,8 @@ namespace ProjectTerra.Sandbox
 
         [Header("Nuvens Procedurais")]
         public bool enableClouds = true;
-        [Range(0f, 1f)] public float cloudCoverage = 0.5f;      // Quantidade de nuvens
-        [Range(0f, 1f)] public float cloudDensity = 0.5f;       // Densidade/opacidade
+        [Range(0f, 1f)] public float cloudCoverage = 0.5f; // Quantidade de nuvens
+        [Range(0f, 1f)] public float cloudDensity = 0.5f; // Densidade/opacidade
         [Range(1000f, 50000f)] public float cloudAltitude = 6000f; // Altitude da camada de nuvens (metros)
         [Range(1000f, 100000f)] public float cloudLayerRadius = 50000f; // Raio horizontal da camada
         public float cloudWindSpeed = 2.0f; // Velocidade do vento (m/s)

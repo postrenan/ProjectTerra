@@ -109,7 +109,7 @@ namespace ProjectTerra.Sandbox
             whiteTex.SetPixel(0, 0, Color.white);
             whiteTex.Apply();
 
-            LogMessage("🌍 Bem-vindo ao Console de Comandos de Project Terra!", new Color(0.3f, 0.85f, 1.0f));
+            LogMessage("Bem-vindo ao Console de Comandos de Project Terra!", new Color(0.3f, 0.85f, 1.0f));
             LogMessage("Pressione [/] a qualquer momento para abrir ou digite /help para a lista completa.", new Color(0.85f, 0.85f, 0.85f));
         }
 

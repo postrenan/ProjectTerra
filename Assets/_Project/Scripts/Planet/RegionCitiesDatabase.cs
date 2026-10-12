@@ -17,7 +17,7 @@ namespace ProjectTerra.Planet
         public float lat;
         public float lon;
         public int population;
-        public int rank;            // 0 = maior cidade da região
+        public int rank; // 0 = maior cidade da região
         public bool isCapital;
         public float economicWeight; // 0.1..1.0 — peso relativo na economia regional
     }

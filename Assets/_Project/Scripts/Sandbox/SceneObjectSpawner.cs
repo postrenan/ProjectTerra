@@ -51,14 +51,14 @@ namespace ProjectTerra.Sandbox
 
             // Carregar prefabs 3D de recursos — caminhos relativos à pasta Resources/Models/
             // Árvores: disponíveis em Resources/Models/Nature/Trees/
-            GameObject treeDefault  = LoadModel("Models/Nature/Trees/tree_default");   // Árvore folhosa genérica
-            GameObject treeDetailed = LoadModel("Models/Nature/Trees/tree_detailed");  // Árvore folhosa detalhada
-            GameObject treeCone     = LoadModel("Models/Nature/Trees/tree_cone");      // Pinheiro cônico
+            GameObject treeDefault = LoadModel("Models/Nature/Trees/tree_default"); // Árvore folhosa genérica
+            GameObject treeDetailed = LoadModel("Models/Nature/Trees/tree_detailed"); // Árvore folhosa detalhada
+            GameObject treeCone = LoadModel("Models/Nature/Trees/tree_cone"); // Pinheiro cônico
 
             // Rochas: disponíveis em Resources/Models/Nature/Rocks/
             GameObject rockLarge = LoadModel("Models/Nature/Rocks/rock_largeA");
             GameObject rockSmall = LoadModel("Models/Nature/Rocks/rock_smallA");
-            GameObject rockTall  = LoadModel("Models/Nature/Rocks/rock_tallA");
+            GameObject rockTall = LoadModel("Models/Nature/Rocks/rock_tallA");
 
             GameObject cowModel = LoadModel("Models/Animals/Farm/Cow");
             GameObject horseModel = LoadModel("Models/Animals/Farm/Horse");

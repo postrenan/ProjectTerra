@@ -80,8 +80,8 @@ namespace ProjectTerra.Sandbox
                 flat.Add(new Vector2(local.x, local.z));
             }
 
-            float wh = Mathf.Max(5f, river.width * 0.5f);         // meia-largura da lâmina d'água
-            float bank = Mathf.Max(6f, river.width * 0.5f);       // barranco lateral
+            float wh = Mathf.Max(5f, river.width * 0.5f); // meia-largura da lâmina d'água
+            float bank = Mathf.Max(6f, river.width * 0.5f); // barranco lateral
             float depth = Mathf.Clamp(river.width * 0.5f, 3f, 12f); // profundidade da calha
 
             float clearance = wh + bank + 1f;
@@ -219,7 +219,7 @@ namespace ProjectTerra.Sandbox
             if (roadOwnedCount > 0) RoadMaskSegments.RemoveRange(roadMaskMark, roadOwnedCount);
 
             // Após o RemoveRange a lista termina exatamente em roadMaskMark, então os novos
-            // segmentos de estrada passam a ser a "cauda" proprietária.
+            // segmentos de estrada passam a ser a "cauda"proprietária.
             BuildRegionalRoadNetwork();
             roadMaskMark = RoadMaskSegments.Count;
         }
@@ -296,7 +296,7 @@ namespace ProjectTerra.Sandbox
                         break;
                     case RoadClass.SecondaryHighway:
                         surface = RoadSurfaceType.Asphalt;
-                        lanes = RoadLaneCount.TwoLanes;  // 2 faixas para rodovia secundária
+                        lanes = RoadLaneCount.TwoLanes; // 2 faixas para rodovia secundária
                         break;
                     case RoadClass.Connector:
                         // Conectores vicinais: alternância orgânica entre Terra batida e Britas

@@ -5,11 +5,11 @@ namespace ProjectTerra.Sandbox
 {
     /// <summary>
     /// Povoa o cenário com vegetação adaptada organicamente ao bioma:
-    ///  - GRAMA: campo denso ou esparso que acompanha o jogador (<see cref="PlayerFollowGrass"/>),
-    ///    com densidade e coloração adaptadas: verdejante em vales/planícies, dourada em savanas,
-    ///    e MUITO ESPARSA e seca em desertos/dunas.
-    ///  - FOLHAGEM: arbustos e moitas espalhados como GameObjects perto da base (renderizados
-    ///    a curta distância pelo culling de <see cref="WorldStreaming"/>), reduzidos e ressecados no deserto.
+    /// - GRAMA: campo denso ou esparso que acompanha o jogador (<see cref="PlayerFollowGrass"/>),
+    /// com densidade e coloração adaptadas: verdejante em vales/planícies, dourada em savanas,
+    /// e MUITO ESPARSA e seca em desertos/dunas.
+    /// - FOLHAGEM: arbustos e moitas espalhados como GameObjects perto da base (renderizados
+    /// a curta distância pelo culling de <see cref="WorldStreaming"/>), reduzidos e ressecados no deserto.
     /// </summary>
     public static class GrassFoliageSpawner
     {

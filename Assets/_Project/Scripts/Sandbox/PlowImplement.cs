@@ -11,7 +11,7 @@ namespace ProjectTerra.Sandbox
     /// Componente do implemento agrícola: Arado Subsolador de Discos.
     /// Permite engatar e desengatar [G] da traseira do trator,
     /// levantar e abaixar os discos [X] (Modo Transporte vs Modo Aração),
-    /// e arar o terreno em tempo real (pintando a camada "Solo Arado" e suprimindo grama alta)
+    /// e arar o terreno em tempo real (pintando a camada "Solo Arado"e suprimindo grama alta)
     /// com partículas de terra e telemetria de área arada.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
@@ -31,10 +31,10 @@ namespace ProjectTerra.Sandbox
         public float totalAreaPlowedM2 = 0f;
 
         [Header("Referências Visuais")]
-        public Transform tongueCouplerPoint;   // Ponta do olhal de engate triangular
-        public Transform discGangPivot;        // Sub-estrutura que tomba os discos para baixo
-        public Transform[] discBlades;         // Lâminas de disco que giram ao rodar
-        public ParticleSystem dirtParticles;   // Partículas de poeira e torrões de terra revolvida
+        public Transform tongueCouplerPoint; // Ponta do olhal de engate triangular
+        public Transform discGangPivot; // Sub-estrutura que tomba os discos para baixo
+        public Transform[] discBlades; // Lâminas de disco que giram ao rodar
+        public ParticleSystem dirtParticles; // Partículas de poeira e torrões de terra revolvida
 
         private Rigidbody rb;
         private Collider mainCollider;
@@ -169,7 +169,7 @@ namespace ProjectTerra.Sandbox
             rb.isKinematic = true; // No reboque controlado, movimento cinemático garante estabilidade absoluta sem oscilação
             if (mainCollider != null) mainCollider.enabled = false;
 
-            SandboxHUD.Instance?.ShowToast("🚜 Arado ENGATADO ao trator! Pressione [X] para abaixar os discos e arar.", 3.0f);
+            SandboxHUD.Instance?.ShowToast("Arado ENGATADO ao trator! Pressione [X] para abaixar os discos e arar.", 3.0f);
             Debug.Log($"[PlowImplement] Arado engatado com sucesso ao trator '{tractor.vehicleName}'.");
         }
 
@@ -190,7 +190,7 @@ namespace ProjectTerra.Sandbox
             // Limpar todos os sulcos criados para evitar vazamento de GameObjects na cena
             furrowManager?.ClearAll();
 
-            SandboxHUD.Instance?.ShowToast("🚜 Arado DESENGATADO no local.", 2.5f);
+            SandboxHUD.Instance?.ShowToast("Arado DESENGATADO no local.", 2.5f);
             Debug.Log("[PlowImplement] Arado desengatado.");
         }
 
@@ -202,11 +202,11 @@ namespace ProjectTerra.Sandbox
 
             if (isLowered)
             {
-                SandboxHUD.Instance?.ShowToast("🌱 Arado ABAIXADO — Modo de Aração ATIVADO! Ande com o trator para arar o solo.", 3.0f);
+                SandboxHUD.Instance?.ShowToast("Arado ABAIXADO — Modo de Aração ATIVADO! Ande com o trator para arar o solo.", 3.0f);
             }
             else
             {
-                SandboxHUD.Instance?.ShowToast("🚜 Arado LEVANTADO — Modo de Transporte.", 2.2f);
+                SandboxHUD.Instance?.ShowToast("Arado LEVANTADO — Modo de Transporte.", 2.2f);
                 if (dirtParticles != null && dirtParticles.isPlaying)
                 {
                     dirtParticles.Stop();
@@ -299,7 +299,7 @@ namespace ProjectTerra.Sandbox
             {
                 // Os discos ficam em Y local negativo dentro do pivô (cerca de -0.47).
                 // Uma rotação de +currentPivotAngle em torno de +X levanta um ponto em
-                // -Y, então o sinal estava invertido e "abaixar os discos" erguia o
+                // -Y, então o sinal estava invertido e "abaixar os discos"erguia o
                 // conjunto em ~3 cm. O ângulo precisa ser negativo.
                 discGangPivot.localRotation = Quaternion.Euler(-currentPivotAngle, 0f, 0f);
             }

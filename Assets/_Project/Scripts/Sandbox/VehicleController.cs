@@ -62,15 +62,22 @@ namespace ProjectTerra.Sandbox
             return transform.position + transform.up * 1.5f;
         }
 
-        [Header("Especificações de Motor & Movimento")]
+        [Header("Especificações de Motor & Movimento Realistas")]
         public float maxSpeedKmh = 45f;
+        public float maxReverseSpeedKmh = 18f;
+        public float accelerationRate = 3.0f; // Aceleração base máxima em m/s²
+        public float brakeDeceleration = 7.5f; // Desaceleração de frenagem em m/s²
+        public float throttleResponseRate = 2.5f; // Taxa de subida suave da aceleração / inércia do motor
         public float enginePower = 2500f;
         public float brakePower = 3500f;
         public float steerAngleMax = 35f;
         public float steerSpeed = 4f;
 
+        // Inércia de entrada / resposta progressiva do acelerador
+        public float smoothedThrottle { get; private set; } = 0f;
+
         [Header("Específico para Avião")]
-        public float takeOffSpeedKmh = 45f;
+        public float takeOffSpeedKmh = 65f;
         public float liftCoefficient = 1.8f;
         public float pitchRate = 45f;
         public float rollRate = 60f;
@@ -112,12 +119,16 @@ namespace ProjectTerra.Sandbox
         public Transform rearLeftWheel;
         public Transform rearRightWheel;
 
+        // Áudio do Motor
+        private AudioSource engineAudioSource;
+
         private void Awake()
         {
             rb = GetComponent<Rigidbody>();
             // Pode já vir com a categoria atribuída por Initialize() (o builder chama
             // Initialize antes de AddComponent em alguns caminhos); senão usa o default.
             ConfigureRigidbodyForCategory();
+            SetupEngineAudio();
         }
 
         /// <summary>
@@ -135,19 +146,19 @@ namespace ProjectTerra.Sandbox
                 case VehicleCategory.Tractor:
                     rb.mass = 3800f;
                     rb.linearDamping = 0.4f;
-                    rb.angularDamping = 2.0f;
-                    rb.centerOfMass = new Vector3(0f, -0.4f, 0f);
+                    rb.angularDamping = 2.5f;
+                    rb.centerOfMass = new Vector3(0f, -0.45f, 0f);
                     break;
                 case VehicleCategory.Truck:
                     rb.mass = 4500f;
                     rb.linearDamping = 0.3f;
-                    rb.angularDamping = 2.2f;
-                    rb.centerOfMass = new Vector3(0f, -0.3f, 0.2f);
+                    rb.angularDamping = 2.5f;
+                    rb.centerOfMass = new Vector3(0f, -0.35f, 0.2f);
                     break;
                 case VehicleCategory.Car:
                     rb.mass = 1600f;
                     rb.linearDamping = 0.25f;
-                    rb.angularDamping = 2.0f;
+                    rb.angularDamping = 2.2f;
                     rb.centerOfMass = new Vector3(0f, -0.4f, 0.1f);
                     break;
                 case VehicleCategory.Plane:
@@ -191,6 +202,7 @@ namespace ProjectTerra.Sandbox
             }
 
             UpdateVisuals();
+            UpdateEngineAudio();
         }
 
         private void ReadInputs()
@@ -237,7 +249,7 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            float vertical = TerraInput.GetAxis("Vertical");   // W/S ou Seta Cima/Baixo
+            float vertical = TerraInput.GetAxis("Vertical"); // W/S ou Seta Cima/Baixo
             float horizontal = TerraInput.GetAxis("Horizontal"); // A/D ou Seta Esq/Dir
 
             currentThrottle = vertical;
@@ -286,5 +298,75 @@ namespace ProjectTerra.Sandbox
                 transform.position += Vector3.up * 1.0f;
             }
         }
+
+        #region Áudio do Veículo
+
+        private void SetupEngineAudio()
+        {
+            engineAudioSource = GetComponent<AudioSource>();
+            if (engineAudioSource == null)
+            {
+                engineAudioSource = gameObject.AddComponent<AudioSource>();
+            }
+
+            if (category == VehicleCategory.Tractor)
+            {
+                engineAudioSource.clip = ProjectTerra.Audio.TerraAudioService.TractorEngineLoop;
+            }
+
+            engineAudioSource.loop = true;
+            engineAudioSource.spatialBlend = 1.0f; // 3D
+            engineAudioSource.minDistance = 2.5f;
+            engineAudioSource.maxDistance = 55f;
+            engineAudioSource.rolloffMode = AudioRolloffMode.Logarithmic;
+            engineAudioSource.dopplerLevel = 0.4f;
+            engineAudioSource.playOnAwake = false;
+        }
+
+        private void UpdateEngineAudio()
+        {
+            if (engineAudioSource == null || engineAudioSource.clip == null) return;
+
+            // Motor afogado ou sem combustível
+            if (isEngineFlooded || (fuelPercent <= 0f && !infiniteFuel))
+            {
+                if (engineAudioSource.isPlaying)
+                {
+                    engineAudioSource.volume = Mathf.MoveTowards(engineAudioSource.volume, 0f, Time.deltaTime * 3f);
+                    if (engineAudioSource.volume <= 0.01f) engineAudioSource.Stop();
+                }
+                return;
+            }
+
+            if (isPlayerDriven)
+            {
+                if (!engineAudioSource.isPlaying)
+                {
+                    engineAudioSource.volume = 0.2f;
+                    engineAudioSource.pitch = 0.85f;
+                    engineAudioSource.Play();
+                }
+
+                float throttleNorm = Mathf.Abs(currentThrottle);
+                float speedNorm = Mathf.Clamp01(currentSpeedKmh / Mathf.Max(15f, maxSpeedKmh));
+
+                // Modulação realista de pitch e volume
+                float targetPitch = Mathf.Lerp(0.85f, 1.4f, speedNorm * 0.6f + throttleNorm * 0.4f);
+                float targetVol = Mathf.Lerp(0.4f, 0.9f, throttleNorm * 0.7f + speedNorm * 0.3f);
+
+                engineAudioSource.pitch = Mathf.Lerp(engineAudioSource.pitch, targetPitch, Time.deltaTime * 6f);
+                engineAudioSource.volume = Mathf.Lerp(engineAudioSource.volume, targetVol, Time.deltaTime * 7f);
+            }
+            else
+            {
+                if (engineAudioSource.isPlaying)
+                {
+                    engineAudioSource.volume = Mathf.MoveTowards(engineAudioSource.volume, 0f, Time.deltaTime * 1.5f);
+                    if (engineAudioSource.volume <= 0.01f) engineAudioSource.Stop();
+                }
+            }
+        }
+
+        #endregion
     }
 }

@@ -68,6 +68,8 @@ namespace ProjectTerra.UI
         private GUIStyle percentStyle;
         private GUIStyle quoteStyle;
         private GUIStyle dossierCardStyle;
+        private GUIStyle dossierHeadingStyle;
+        private GUIStyle dossierBodyStyle;
         private GUIStyle enterButtonStyle;
         private bool stylesInitialized = false;
 

@@ -50,7 +50,24 @@ namespace ProjectTerra.UI
             };
             quoteStyle.normal.textColor = new Color(0.85f, 0.88f, 0.92f, 0.85f);
 
-            dossierCardStyle = new GUIStyle(GUI.skin.box);
+            dossierCardStyle = new GUIStyle(GUI.skin.box)
+            {
+                // Margem interna generosa do card do dossiê
+                padding = new RectOffset(26, 26, 24, 24)
+            };
+
+            // Título de seção do dossiê (fonte maior que o subtítulo padrão)
+            dossierHeadingStyle = new GUIStyle(subtitleStyle)
+            {
+                fontSize = 19
+            };
+
+            // Corpo de texto do dossiê (fonte maior que a citação padrão)
+            dossierBodyStyle = new GUIStyle(quoteStyle)
+            {
+                fontSize = 17,
+                fontStyle = FontStyle.Normal
+            };
 
             enterButtonStyle = new GUIStyle(GUI.skin.button)
             {
@@ -115,8 +132,8 @@ namespace ProjectTerra.UI
 
             // 3. Cabeçalho Principal (Top-Left)
             GUILayout.BeginArea(new Rect(40, 30, sw - 540, 130));
-            string themeTag = currentTheme == LoadingTheme.Plantation ? "🌾 ZONA DE PRODUÇÃO AGRÍCOLA & PLANTAÇÕES GLOBAIS" :
-                             (currentTheme == LoadingTheme.Metropolis ? "🏙️ METRÓPOLE GLOBAL & CENTRO ECONÔMICO-FINANCEIRO" : "⚓ POLO LOGÍSTICO PORTUÁRIO & LITORAL");
+            string themeTag = currentTheme == LoadingTheme.Plantation ? "ZONA DE PRODUÇÃO AGRÍCOLA & PLANTAÇÕES GLOBAIS" :
+                             (currentTheme == LoadingTheme.Metropolis ? "METRÓPOLE GLOBAL & CENTRO ECONÔMICO-FINANCEIRO" : "POLO LOGÍSTICO PORTUÁRIO & LITORAL");
             GUILayout.Label(themeTag, subtitleStyle);
             GUILayout.Space(2);
             string displayTitle = currentSave != null && !string.IsNullOrEmpty(currentSave.saveName) ?
@@ -130,13 +147,13 @@ namespace ProjectTerra.UI
             GUILayout.EndArea();
 
             // 4. Painel de Dossiê Regional e Econômico (Top-Right Glassmorphism)
-            GUILayout.BeginArea(new Rect(sw - 450, 40, 410, sh - 280));
+            GUILayout.BeginArea(new Rect(sw - 470, 36, 448, sh - 260));
             GUI.color = new Color(0.05f, 0.1f, 0.18f, 0.88f * screenAlpha);
             GUILayout.BeginVertical(dossierCardStyle, GUILayout.ExpandHeight(true));
             GUI.color = new Color(1f, 1f, 1f, screenAlpha);
 
-            GUILayout.Label("📊 DOSSIÊ ESTRATÉGICO REGIONAL", subtitleStyle);
-            GUILayout.Space(6);
+            DrawDossierIconHeading(TerraIcon.Analytics, "DOSSIÊ ESTRATÉGICO REGIONAL");
+            GUILayout.Space(8);
 
             // Divisor
             GUI.color = new Color(0.3f, 0.7f, 1f, 0.35f * screenAlpha);
@@ -146,7 +163,7 @@ namespace ProjectTerra.UI
 
             // Orçamento Inicial
             string budgetStr = currentSave != null ? currentSave.GetFormattedMoney() : "$500,000";
-            GUILayout.Label("💰 Orçamento de Tesouro Inicial:", quoteStyle);
+            DrawDossierIconLabel(TerraIcon.Wallet, "Orçamento de Tesouro Inicial:", dossierBodyStyle);
             GUI.color = new Color(0.3f, 1.0f, 0.5f);
             GUILayout.Label(budgetStr, percentStyle);
             GUI.color = new Color(1f, 1f, 1f, screenAlpha);
@@ -155,34 +172,34 @@ namespace ProjectTerra.UI
             // Indicadores de Recursos
             if (currentRegion != null)
             {
-                DrawDossierStat("🌾 Terras Aráveis & Plantações", currentRegion.arablePercent, new Color(1f, 0.88f, 0.3f));
-                DrawDossierStat("🌲 Cobertura Florestal", currentRegion.forestPercent, new Color(0.2f, 0.85f, 0.35f));
-                DrawDossierStat("⛏️ Potencial Mineral e Geológico", currentRegion.mineralsPercent, new Color(1f, 0.65f, 0.25f));
-                DrawDossierStat("💧 Recursos Hídricos e Aquíferos", currentRegion.waterPercent, new Color(0.25f, 0.75f, 1f));
+                DrawDossierStat("Terras Aráveis & Plantações", currentRegion.arablePercent, new Color(1f, 0.88f, 0.3f), TerraIcon.Crops);
+                DrawDossierStat("Cobertura Florestal", currentRegion.forestPercent, new Color(0.2f, 0.85f, 0.35f), TerraIcon.Forest);
+                DrawDossierStat("Potencial Mineral e Geológico", currentRegion.mineralsPercent, new Color(1f, 0.65f, 0.25f), TerraIcon.Mining);
+                DrawDossierStat("Recursos Hídricos e Aquíferos", currentRegion.waterPercent, new Color(0.25f, 0.75f, 1f), TerraIcon.WaterDrop);
 
                 GUILayout.Space(8);
                 var infra = RegionInfrastructureDatabase.GetInfrastructure(currentRegion.id, currentRegion);
                 if (infra != null)
                 {
                     GUI.color = new Color(0.45f, 0.85f, 1f, 0.95f * screenAlpha);
-                    GUILayout.Label($"📍 {infra.environmentCategory}", quoteStyle);
+                    DrawDossierIconLabel(TerraIcon.LocationPin, infra.environmentCategory, dossierBodyStyle);
                     GUI.color = new Color(0.85f, 0.92f, 1f, 0.9f * screenAlpha);
-                    GUILayout.Label($"🌊 {infra.waterBodyName}", quoteStyle);
-                    GUILayout.Label($"⚓ {infra.portName}", quoteStyle);
-                    GUILayout.Label($"🛫 {infra.airportName}", quoteStyle);
+                    DrawDossierIconLabel(TerraIcon.WaterDrop, infra.waterBodyName, dossierBodyStyle);
+                    DrawDossierIconLabel(TerraIcon.Harbor, infra.portName, dossierBodyStyle);
+                    DrawDossierIconLabel(TerraIcon.Airport, infra.airportName, dossierBodyStyle);
                     GUI.color = new Color(1f, 1f, 1f, screenAlpha);
                 }
             }
 
             GUILayout.Space(16);
-            GUILayout.Label("💡 DIRETRIZ DE GESTÃO DO TERRITÓRIO:", subtitleStyle);
-            GUILayout.Space(4);
+            DrawDossierIconHeading(TerraIcon.Info, "DIRETRIZ DE GESTÃO DO TERRITÓRIO:");
+            GUILayout.Space(6);
             string tipText = currentTheme == LoadingTheme.Plantation ?
                 "O cultivo sustentável em grande escala garante a segurança alimentar e insumos industriais vitais. O relevo suave e os aquíferos locais facilitam irrigação pivotante de alta produtividade." :
                 (currentTheme == LoadingTheme.Metropolis ?
                 "Áreas urbanas concentram os maiores mercados consumidores e pólos tecnológicos do planeta. Gerencie a matriz energética e zoneamentos industriais para maximizar a arrecadação fiscal." :
                 "A infraestrutura portuária conecta a produção agrícola e mineral aos mercados mundiais. Preserve os ecossistemas marinhos enquanto expande a capacidade de escoamento logístico.");
-            GUILayout.Label(tipText, quoteStyle);
+            GUILayout.Label(tipText, dossierBodyStyle);
 
             GUILayout.EndVertical();
             GUILayout.EndArea();
@@ -219,7 +236,7 @@ namespace ProjectTerra.UI
             {
                 float pulse = 0.85f + 0.15f * Mathf.Sin(Time.time * 5.0f);
                 GUI.color = new Color(0.2f, 0.8f, 0.4f, pulse * screenAlpha);
-                if (GUILayout.Button("▶ ENTRAR NO TERRITÓRIO [ENTER]", enterButtonStyle, GUILayout.Height(40), GUILayout.Width(340)))
+                if (GUILayout.Button("ENTRAR NO TERRITÓRIO [ENTER]", enterButtonStyle, GUILayout.Height(40), GUILayout.Width(340)))
                 {
                     StartFadeOut();
                 }
@@ -237,15 +254,20 @@ namespace ProjectTerra.UI
             GUI.color = prevColor;
         }
 
-        private void DrawDossierStat(string label, float percent, Color barColor)
+        private void DrawDossierStat(string label, float percent, Color barColor, TerraIcon icon)
         {
-            GUILayout.Space(4);
+            GUILayout.Space(6);
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, quoteStyle, GUILayout.Width(240));
-            GUILayout.Label($"{percent:F0}%", quoteStyle);
+            Rect iconRect = GUILayoutUtility.GetRect(18, 18, GUILayout.Width(18), GUILayout.Height(18));
+            if (Event.current.type == EventType.Repaint)
+                TerraIcons.Draw(iconRect, icon, barColor);
+            GUILayout.Space(4);
+            GUILayout.Label(label, dossierBodyStyle, GUILayout.Width(280));
+            GUILayout.FlexibleSpace();
+            GUILayout.Label($"{percent:F0}%", dossierBodyStyle);
             GUILayout.EndHorizontal();
 
-            Rect bgRect = GUILayoutUtility.GetRect(380, 6);
+            Rect bgRect = GUILayoutUtility.GetRect(360, 7, GUILayout.ExpandWidth(true));
             GUI.color = new Color(0.1f, 0.15f, 0.22f, 0.8f);
             GUI.DrawTexture(bgRect, whiteTexture);
 
@@ -254,6 +276,30 @@ namespace ProjectTerra.UI
             GUI.DrawTexture(fillRect, whiteTexture);
             GUI.color = Color.white;
             GUILayout.Space(2);
+        }
+
+        /// <summary>Desenha um ícone grande seguido de um título de seção do dossiê.</summary>
+        private void DrawDossierIconHeading(TerraIcon icon, string text)
+        {
+            GUILayout.BeginHorizontal();
+            Rect iconRect = GUILayoutUtility.GetRect(22, 22, GUILayout.Width(22), GUILayout.Height(22));
+            if (Event.current.type == EventType.Repaint)
+                TerraIcons.Draw(iconRect, icon, dossierHeadingStyle.normal.textColor);
+            GUILayout.Space(6);
+            GUILayout.Label(text, dossierHeadingStyle);
+            GUILayout.EndHorizontal();
+        }
+
+        /// <summary>Desenha um ícone seguido de uma linha de corpo de texto do dossiê.</summary>
+        private void DrawDossierIconLabel(TerraIcon icon, string text, GUIStyle style)
+        {
+            GUILayout.BeginHorizontal();
+            Rect iconRect = GUILayoutUtility.GetRect(18, 18, GUILayout.Width(18), GUILayout.Height(18));
+            if (Event.current.type == EventType.Repaint)
+                TerraIcons.Draw(iconRect, icon, style.normal.textColor);
+            GUILayout.Space(4);
+            GUILayout.Label(text, style);
+            GUILayout.EndHorizontal();
         }
     }
 }

@@ -7,8 +7,8 @@ namespace ProjectTerra.Planet
     /// do setor sandbox 1:1, usando a bounding box da região.
     ///
     /// Convenção do mundo (igual a SandboxHUD.WorldToMapScreen e ao waypoint):
-    ///   terreno centralizado na origem, abrangendo [-worldW/2, +worldW/2] em X (Oeste→Leste)
-    ///   e [-worldL/2, +worldL/2] em Z (Sul→Norte). +X = Leste (lon maior), +Z = Norte (lat maior).
+    /// terreno centralizado na origem, abrangendo [-worldW/2, +worldW/2] em X (Oeste→Leste)
+    /// e [-worldL/2, +worldL/2] em Z (Sul→Norte). +X = Leste (lon maior), +Z = Norte (lat maior).
     /// </summary>
     public static class RegionGeoProjection
     {

@@ -9,9 +9,9 @@ namespace ProjectTerra.Sandbox
 {
     public enum GrassTier
     {
-        Lush,       // Verde temperado / tropical
-        Savanna,    // Dourado / oliva seco
-        Desert      // Palha seca de deserto / ocre árido
+        Lush, // Verde temperado / tropical
+        Savanna, // Dourado / oliva seco
+        Desert // Palha seca de deserto / ocre árido
     }
 
     /// <summary>
@@ -30,20 +30,20 @@ namespace ProjectTerra.Sandbox
         public bool isDesertRegion = false;
 
         [Header("Campo")]
-        public float radius = 95f;           // Raio coberto ao redor do jogador
-        public float spacing = 0.9f;         // Distância base entre células da grade
-        public float rebuildThreshold = 8f;  // Recentraliza a grade quando o jogador anda isto
-        public float maxSlopeDegrees = 36f;  // Acima disso não nasce grama (escarpa íngreme)
-        public float minGroundY = 1.0f;      // Abaixo disso (água/leito) não nasce grama
+        public float radius = 95f; // Raio coberto ao redor do jogador
+        public float spacing = 0.9f; // Distância base entre células da grade
+        public float rebuildThreshold = 8f; // Recentraliza a grade quando o jogador anda isto
+        public float maxSlopeDegrees = 36f; // Acima disso não nasce grama (escarpa íngreme)
+        public float minGroundY = 1.0f; // Abaixo disso (água/leito) não nasce grama
 
         [Header("Tufos - Dimensões")]
         public Vector2 widthRange = new Vector2(0.8f, 1.5f);
         public Vector2 heightRange = new Vector2(0.4f, 0.8f);
 
         [Header("Coloração por Bioma")]
-        public Color lushColor = new Color(0.38f, 0.58f, 0.24f);       // Verde vibrante
-        public Color savannaColor = new Color(0.66f, 0.60f, 0.32f);    // Dourado / oliva seco
-        public Color desertColor = new Color(0.79f, 0.72f, 0.46f);     // Palha seca de deserto / ocre
+        public Color lushColor = new Color(0.38f, 0.58f, 0.24f); // Verde vibrante
+        public Color savannaColor = new Color(0.66f, 0.60f, 0.32f); // Dourado / oliva seco
+        public Color desertColor = new Color(0.79f, 0.72f, 0.46f); // Palha seca de deserto / ocre
 
         private Mesh mesh;
         private Texture2D sharedBladeTexture;
@@ -260,7 +260,7 @@ namespace ProjectTerra.Sandbox
 
             // Se o jogador/câmera estiver voando alto (> 35 metros acima do solo),
             // a grama fina de 40cm é imperceptível a olho nu. Não renderiza nem recalcula,
-            // poupando GPU/CPU e eliminando completamente a cintilação / "flip" da imagem no avião.
+            // poupando GPU/CPU e eliminando completamente a cintilação / "flip"da imagem no avião.
             if (altitudeAboveGround > 35f)
             {
                 return;

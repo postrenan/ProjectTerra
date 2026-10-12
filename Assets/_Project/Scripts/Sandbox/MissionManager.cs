@@ -59,7 +59,7 @@ namespace ProjectTerra.Sandbox
             switch (career)
             {
                 case StarterCareer.Farmer:
-                    currentContract.title = "🌾 Primeira Safra: Grãos para a Cooperativa";
+                    currentContract.title = "Primeira Safra: Grãos para a Cooperativa";
                     currentContract.description = "Engate a carga de soja colhida no trator e transporte até os Silos da Cooperativa Central da Cidade.";
                     currentContract.cargoType = "Soja em Grãos";
                     currentContract.cargoWeightKg = 1200f;
@@ -71,7 +71,7 @@ namespace ProjectTerra.Sandbox
                     break;
 
                 case StarterCareer.Trucker:
-                    currentContract.title = "🚛 Frete Rodoviário: Carga de Maquinário";
+                    currentContract.title = "Frete Rodoviário: Carga de Maquinário";
                     currentContract.description = "Carregue o palete de peças industriais no seu caminhão e faça a entrega rápida no Centro Comercial da Cidade.";
                     currentContract.cargoType = "Peças Industriais";
                     currentContract.cargoWeightKg = 2500f;
@@ -83,7 +83,7 @@ namespace ProjectTerra.Sandbox
                     break;
 
                 case StarterCareer.Aviator:
-                    currentContract.title = "🛩️ Voo de Inspeção & Encomenda Aérea";
+                    currentContract.title = "Voo de Inspeção & Encomenda Aérea";
                     currentContract.description = "Decole com o monomotor, sobrevoe a antena repetidora da cidade e pouse na pista para entregar a mala postal expressa.";
                     currentContract.cargoType = "Malote Postal Expresso";
                     currentContract.cargoWeightKg = 200f;
@@ -95,7 +95,7 @@ namespace ProjectTerra.Sandbox
                     break;
 
                 case StarterCareer.Fisherman:
-                    currentContract.title = "🎣 Pesca Inicial: Peixes Frescos do Litoral";
+                    currentContract.title = "Pesca Inicial: Peixes Frescos do Litoral";
                     currentContract.description = "Navegue pelo canal até a boia oceânica, capture a cota de pescada e descarregue no Entreposto do Mercado Municipal.";
                     currentContract.cargoType = "Pescado Fresco";
                     currentContract.cargoWeightKg = 850f;
@@ -169,7 +169,7 @@ namespace ProjectTerra.Sandbox
                 Debug.Log($"[MissionManager] Contrato concluído! Saldo atual: {save.GetFormattedMoney()}. Entregas: {save.completedDeliveries}");
             }
 
-            completionBannerMessage = $"🎉 CONTRATO CONCLUÍDO!\n+{currentContract.rewardMoney:C0} creditados • +{currentContract.rewardReputation} Reputação";
+            completionBannerMessage = $"CONTRATO CONCLUÍDO!\n+{currentContract.rewardMoney:C0} creditados • +{currentContract.rewardReputation} Reputação";
             completionBannerTimer = 5.0f;
 
             // Gerar próximo contrato após 3 segundos
@@ -186,7 +186,7 @@ namespace ProjectTerra.Sandbox
             currentContract = new CommercialContract
             {
                 isCompleted = false,
-                title = $"📦 Contrato Comercial #{SaveManager.Instance.ActiveSave.completedDeliveries + 1}",
+                title = $"Contrato Comercial #{SaveManager.Instance.ActiveSave.completedDeliveries + 1}",
                 description = "Transporte de remessa regional de alta prioridade.",
                 cargoType = "Carga Comercial",
                 cargoWeightKg = UnityEngine.Random.Range(800f, 3000f),

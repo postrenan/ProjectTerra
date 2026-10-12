@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectTerra.Gameplay;
+using ProjectTerra.UI;
 
 namespace ProjectTerra.Planet
 {
@@ -12,7 +13,7 @@ namespace ProjectTerra.Planet
 
             // Cabeçalho
             GUILayout.Label(selectedRegion.name, headerTitleStyle);
-            GUILayout.Label($"{selectedRegion.country} • {selectedRegion.type}", headerSubtitleStyle);
+            GUILayout.Label($"{selectedRegion.country} - {selectedRegion.type}", headerSubtitleStyle);
             GUILayout.Space(4);
 
             // Divisória
@@ -22,10 +23,10 @@ namespace ProjectTerra.Planet
             GUILayout.Space(4);
 
             // Barras de Recursos com percentuais
-            DrawResourceBar("🌲 Cobertura Florestal", selectedRegion.forestPercent, new Color(0.2f, 0.85f, 0.3f));
-            DrawResourceBar("⛏️ Potencial Mineral", selectedRegion.mineralsPercent, new Color(1.0f, 0.65f, 0.2f));
-            DrawResourceBar("🌾 Terras Aráveis", selectedRegion.arablePercent, new Color(0.95f, 0.85f, 0.25f));
-            DrawResourceBar("💧 Recursos Hídricos", selectedRegion.waterPercent, new Color(0.25f, 0.7f, 1.0f));
+            DrawResourceBar("Cobertura Florestal", selectedRegion.forestPercent, new Color(0.2f, 0.85f, 0.3f), TerraIcon.Forest);
+            DrawResourceBar("Potencial Mineral", selectedRegion.mineralsPercent, new Color(1.0f, 0.65f, 0.2f), TerraIcon.Mining);
+            DrawResourceBar("Terras Aráveis", selectedRegion.arablePercent, new Color(0.95f, 0.85f, 0.25f), TerraIcon.Crops);
+            DrawResourceBar("Recursos Hídricos", selectedRegion.waterPercent, new Color(0.25f, 0.7f, 1.0f), TerraIcon.WaterDrop);
 
             GUILayout.Space(6);
 
@@ -35,16 +36,33 @@ namespace ProjectTerra.Planet
             GUI.color = Color.white;
 
             GUI.color = new Color(0.45f, 0.85f, 1.0f);
-            GUILayout.Label($"📍 Bioma: {infra.environmentCategory}", headerSubtitleStyle);
+            DrawIconLabel(TerraIcon.LocationPin, $"Bioma: {infra.environmentCategory}", headerSubtitleStyle);
             GUI.color = new Color(0.85f, 0.92f, 1.0f);
-            GUILayout.Label($"🌊 Hidrografia: {infra.waterBodyName}", headerSubtitleStyle);
-            GUILayout.Label($"⚓ Portos: {infra.portName}", headerSubtitleStyle);
-            GUILayout.Label($"🛫 Aeroportos: {infra.airportName}", headerSubtitleStyle);
+            DrawIconLabel(TerraIcon.WaterDrop, $"Hidrografia: {infra.waterBodyName}", headerSubtitleStyle);
+            DrawIconLabel(TerraIcon.Harbor, $"Portos: {infra.portName}", headerSubtitleStyle);
+            DrawIconLabel(TerraIcon.Airport, $"Aeroportos: {infra.airportName}", headerSubtitleStyle);
 
-            // Resumo de Aptidão
-            string fishTag = infra.isFishingViable ? "<color=#4ade80>🎣 Pesca Viável</color>" : "<color=#f87171>🎣 Pesca Indisponível</color>";
-            string agriTag = infra.isAgricultureViable ? "<color=#4ade80>🌾 Agricultura Viável</color>" : "<color=#f87171>🌾 Agricultura Inviável</color>";
-            GUILayout.Label($"{agriTag}  •  {fishTag}", headerSubtitleStyle);
+            // Resumo de Aptidão (agricultura e pesca)
+            GUILayout.BeginHorizontal();
+            Color agriColor = infra.isAgricultureViable ? new Color(0.29f, 0.87f, 0.5f) : new Color(0.97f, 0.44f, 0.44f);
+            Color fishColor = infra.isFishingViable ? new Color(0.29f, 0.87f, 0.5f) : new Color(0.97f, 0.44f, 0.44f);
+            string agriTag = infra.isAgricultureViable ? "Agricultura Viável" : "Agricultura Inviável";
+            string fishTag = infra.isFishingViable ? "Pesca Viável" : "Pesca Indisponível";
+
+            Rect agriIconRect = GUILayoutUtility.GetRect(16, 16, GUILayout.Width(16), GUILayout.Height(16));
+            if (Event.current.type == EventType.Repaint)
+                ProjectTerra.UI.TerraIcons.Draw(agriIconRect, TerraIcon.Crops, agriColor);
+            GUI.color = agriColor;
+            GUILayout.Label(agriTag, headerSubtitleStyle);
+            GUILayout.Space(6);
+            Rect fishIconRect = GUILayoutUtility.GetRect(16, 16, GUILayout.Width(16), GUILayout.Height(16));
+            if (Event.current.type == EventType.Repaint)
+                ProjectTerra.UI.TerraIcons.Draw(fishIconRect, TerraIcon.Fish, fishColor);
+            GUI.color = fishColor;
+            GUILayout.Label(fishTag, headerSubtitleStyle);
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            GUI.color = Color.white;
 
             GUILayout.EndVertical();
             GUI.color = Color.white;
@@ -57,14 +75,14 @@ namespace ProjectTerra.Planet
                     SaveManager.Instance.GetSavesForRegion(selectedRegion.id) : new List<RegionSaveData>();
 
                 GUILayout.BeginHorizontal();
-                if (GUILayout.Button("🎮 Novo Jogo", primaryButtonStyle, GUILayout.Height(28)))
+                if (IconButtonLayout("Novo Jogo", TerraIcon.Flag, primaryButtonStyle, GUILayout.Height(28)))
                 {
                     currentCardMode = CardMode.NewGamePrompt;
                     newGameSaveName = $"Governo de {selectedRegion.name}";
                 }
 
-                string loadBtnLabel = saves.Count > 0 ? $"💾 Carregar ({saves.Count})" : "💾 Carregar (0)";
-                if (GUILayout.Button(loadBtnLabel, buttonStyle, GUILayout.Height(28)))
+                string loadBtnLabel = saves.Count > 0 ? $"Carregar ({saves.Count})" : "Carregar (0)";
+                if (IconButtonLayout(loadBtnLabel, TerraIcon.Historic, buttonStyle, GUILayout.Height(28)))
                 {
                     currentCardMode = CardMode.LoadGameList;
                 }
@@ -81,25 +99,32 @@ namespace ProjectTerra.Planet
                 GUILayout.Space(2);
             }
 
-            // Rodapé: Retomar rotação e Fechar
+            // Rodapé: Fechar
+            if (IconButtonLayout("Fechar", TerraIcon.CancelCross, buttonStyle, GUILayout.Height(26)))
+            {
+                CloseRegionDetails();
+            }
+        }
+
+        /// <summary>Desenha um ícone TerraIcons seguido de um Label em linha.</summary>
+        private void DrawIconLabel(TerraIcon icon, string text, GUIStyle style)
+        {
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("▶ Retomar Rotação", buttonStyle, GUILayout.Height(24)))
-            {
-                ResumeRotation();
-            }
-            if (GUILayout.Button("✖ Fechar", buttonStyle, GUILayout.Width(70), GUILayout.Height(24)))
-            {
-                hasSelection = false;
-                lastCardRect = Rect.zero;
-                SetTerrainHighlight(0);
-            }
+            Rect iconRect = GUILayoutUtility.GetRect(16, 16, GUILayout.Width(16), GUILayout.Height(16));
+            if (Event.current.type == EventType.Repaint)
+                ProjectTerra.UI.TerraIcons.Draw(iconRect, icon, style.normal.textColor);
+            GUILayout.Label(text, style);
             GUILayout.EndHorizontal();
         }
 
-        private void DrawResourceBar(string title, int percent, Color barColor)
+        private void DrawResourceBar(string title, int percent, Color barColor, TerraIcon icon)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(title, labelStyle, GUILayout.Width(170));
+            Rect iconRect = GUILayoutUtility.GetRect(16, 16, GUILayout.Width(16), GUILayout.Height(16));
+            if (Event.current.type == EventType.Repaint)
+                ProjectTerra.UI.TerraIcons.Draw(iconRect, icon, barColor);
+            GUILayout.Label(title, labelStyle, GUILayout.Width(150));
+            GUILayout.FlexibleSpace();
             GUILayout.Label($"{percent}%", valueStyle);
             GUILayout.EndHorizontal();
 

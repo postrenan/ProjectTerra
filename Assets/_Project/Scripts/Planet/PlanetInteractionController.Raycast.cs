@@ -52,52 +52,5 @@ namespace ProjectTerra.Planet
                 }
             }
         }
-
-        private RegionData GenerateOceanRegion(float lat, float lon)
-        {
-            string oceanName = "Oceano Global";
-            if (lat > 65.0f)
-            {
-                oceanName = "Oceano Ártico";
-            }
-            else if (lat < -60.0f)
-            {
-                oceanName = "Oceano Antártico";
-            }
-            else if (lat >= 30.0f && lat <= 46.0f && lon >= -6.0f && lon <= 36.0f)
-            {
-                oceanName = "Mar Mediterrâneo";
-            }
-            else if (lat >= 53.0f && lat <= 66.0f && lon >= 10.0f && lon <= 30.0f)
-            {
-                oceanName = "Mar Báltico";
-            }
-            else if (lon >= -75.0f && lon <= 20.0f)
-            {
-                oceanName = lat >= 0 ? "Oceano Atlântico Norte" : "Oceano Atlântico Sul";
-            }
-            else if (lon > 20.0f && lon <= 100.0f && lat <= 30.0f)
-            {
-                oceanName = "Oceano Índico";
-            }
-            else
-            {
-                oceanName = lat >= 0 ? "Oceano Pacífico Norte" : "Oceano Pacífico Sul";
-            }
-
-            return new RegionData
-            {
-                id = 0,
-                name = oceanName,
-                country = "Águas Internacionais",
-                type = "Zona Marítima",
-                centerLat = lat,
-                centerLon = lon,
-                forestPercent = 0,
-                mineralsPercent = 40,
-                arablePercent = 0,
-                waterPercent = 100
-            };
-        }
     }
 }

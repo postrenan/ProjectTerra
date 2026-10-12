@@ -11,7 +11,7 @@ namespace ProjectTerra.Planet
     {
         private void DrawLoadGameUI()
         {
-            GUILayout.Label("💾 Carregar Partida Salva", headerTitleStyle);
+            GUILayout.Label("Carregar Partida Salva", headerTitleStyle);
             GUILayout.Label($"Região: {selectedRegion.name} ({selectedRegion.country})", headerSubtitleStyle);
             GUILayout.Space(6);
 
@@ -42,16 +42,16 @@ namespace ProjectTerra.Planet
 
                     // Título do save, Carreira e Verba
                     GUILayout.BeginHorizontal();
-                    string icon = save.starterCareer == StarterCareer.Farmer ? "🌾" :
-                                  save.starterCareer == StarterCareer.Trucker ? "🚛" :
-                                  save.starterCareer == StarterCareer.Aviator ? "🛩️" : "🎣";
-                    GUILayout.Label($"{icon} {save.saveName}", labelStyle);
+                    var careerIcon = GetCareerIcon(save.starterCareer);
+                    Rect careerIconRect = GUILayoutUtility.GetRect(18, 18, GUILayout.Width(18), GUILayout.Height(18));
+                    ProjectTerra.UI.TerraIcons.Draw(careerIconRect, careerIcon, Color.white);
+                    GUILayout.Label(save.saveName, labelStyle);
                     GUILayout.Label(save.GetFormattedMoney(), valueStyle);
                     GUILayout.EndHorizontal();
 
                     // Data e Hora
                     GUI.color = new Color(0.7f, 0.85f, 1f, 0.8f);
-                    GUILayout.Label($"📅 Salvo em: {save.lastSavedDate}", headerSubtitleStyle);
+                    GUILayout.Label($"Salvo em: {save.lastSavedDate}", headerSubtitleStyle);
 
                     // Status / Alterações regionais
                     string statusSummary = save.GetStatChangesSummary();
@@ -61,11 +61,11 @@ namespace ProjectTerra.Planet
 
                     // Botões Carregar e Excluir
                     GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("▶ Carregar & Entrar", primaryButtonStyle, GUILayout.Height(22)))
+                    if (GUILayout.Button("Carregar & Entrar", primaryButtonStyle, GUILayout.Height(22)))
                     {
                         LoadSaveGame(save);
                     }
-                    if (GUILayout.Button("🗑 Excluir", dangerButtonStyle, GUILayout.Width(70), GUILayout.Height(22)))
+                    if (IconButtonLayout("Excluir", ProjectTerra.UI.TerraIcon.Trash, dangerButtonStyle, GUILayout.Width(86), GUILayout.Height(22)))
                     {
                         if (SaveManager.Instance != null)
                         {
@@ -82,7 +82,7 @@ namespace ProjectTerra.Planet
             }
 
             GUILayout.Space(6);
-            if (GUILayout.Button("↩ Voltar aos Detalhes", buttonStyle, GUILayout.Height(26)))
+            if (GUILayout.Button("Voltar aos Detalhes", buttonStyle, GUILayout.Height(26)))
             {
                 currentCardMode = CardMode.RegionDetails;
             }

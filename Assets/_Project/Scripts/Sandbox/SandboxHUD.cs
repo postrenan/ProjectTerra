@@ -23,7 +23,12 @@ namespace ProjectTerra.Sandbox
 
         // Estados de Telas
         public bool IsRegionalMapOpen { get; private set; } = false;
-        public bool IsOptionsMenuOpen { get; private set; } = false;
+        /// <summary>Celular aberto ([Alt Esquerdo]).</summary>
+        public bool IsPhoneOpen { get; private set; } = false;
+        /// <summary>Menu de configurações aberto ([Esc]).</summary>
+        public bool IsSettingsOpen { get; private set; } = false;
+        /// <summary>True se o celular ou as configurações estiverem abertos (bloqueia o input de gameplay).</summary>
+        public bool IsOptionsMenuOpen => IsPhoneOpen || IsSettingsOpen;
         public bool IsHudVisible { get; private set; } = true;
         public bool ShowCompass { get; private set; } = true;
         public bool ShowMissionTracker { get; private set; } = true;
@@ -83,6 +88,50 @@ namespace ProjectTerra.Sandbox
         private GUIStyle phoneBodyStyle;
         private GUIStyle phoneSmallStyle;
         private GUIStyle phoneLockStyle;
+        private GUIStyle phoneStatusRightStyle;
+        private GUIStyle phoneClockWidgetStyle;
+        private GUIStyle phoneClockSubStyle;
+
+        #region Sincronização de Horário In-Game / Celular
+
+        /// <summary>
+        /// Horário solar do jogo sincronizado com o HDRPAtmosphereController.
+        /// Valor em horas de 0.0f a 24.0f (padrão 12.0f se não instanciado).
+        /// </summary>
+        public static float InGameTimeOfDay
+        {
+            get
+            {
+                if (HDRPAtmosphereController.Instance != null)
+                {
+                    return HDRPAtmosphereController.Instance.timeOfDay;
+                }
+                var atmos = UnityEngine.Object.FindAnyObjectByType<HDRPAtmosphereController>();
+                return atmos != null ? atmos.timeOfDay : 12.0f;
+            }
+        }
+
+        public static (int hour, int minute) FormattedInGameHours
+        {
+            get
+            {
+                float t = InGameTimeOfDay;
+                int h = Mathf.FloorToInt(t);
+                int m = Mathf.FloorToInt((t - h) * 60f);
+                return (h, m);
+            }
+        }
+
+        public static string FormattedInGameTimeString
+        {
+            get
+            {
+                var (h, m) = FormattedInGameHours;
+                return $"{h:D2}:{m:D2}";
+            }
+        }
+
+        #endregion
 
         private bool stylesReady = false;
 
@@ -110,7 +159,7 @@ namespace ProjectTerra.Sandbox
             HandleKeyInputs();
 
             // Anima o celular deslizando para cima/baixo (independente do timeScale).
-            float phoneTarget = IsOptionsMenuOpen ? 1f : 0f;
+            float phoneTarget = IsPhoneOpen ? 1f : 0f;
             phoneAnim = Mathf.MoveTowards(phoneAnim, phoneTarget, Time.unscaledDeltaTime * 6.5f);
 
             // Regeneração adiada do mercado de fretes (fora do OnGUI).
@@ -151,13 +200,22 @@ namespace ProjectTerra.Sandbox
 
             // Atalho [Alt Esquerdo]: Saca/guarda o celular. Com o celular aberto dentro
             // de um app, o atalho volta primeiro para a tela inicial (como o botão home).
-            if (TerraInput.GetKeyDown(Key.LeftAlt) || (TerraInput.GetKeyDown(Key.Escape) && !IsRegionalMapOpen))
+            if (TerraInput.GetKeyDown(Key.LeftAlt) && !IsSettingsOpen)
             {
                 PhoneBack();
             }
-            else if (TerraInput.GetKeyDown(Key.Escape) && IsRegionalMapOpen)
+
+            // Atalho [Esc]: fecha o mapa; senão abre/fecha o menu de configurações.
+            if (TerraInput.GetKeyDown(Key.Escape))
             {
-                CloseRegionalMap();
+                if (IsRegionalMapOpen)
+                {
+                    CloseRegionalMap();
+                }
+                else
+                {
+                    ToggleSettingsMenu();
+                }
             }
 
             // Atalho [H]: Alterna visibilidade do HUD
@@ -230,11 +288,11 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            bool phoneActive = IsOptionsMenuOpen || phoneAnim > 0.001f;
+            bool phoneActive = IsPhoneOpen || phoneAnim > 0.001f;
 
             // 2. HUD In-Game Moderno (se visível via [H]). O celular ocupa apenas o
-            //    canto inferior direito, então o HUD do topo permanece. Os elementos
-            //    do rodapé/direita são ocultados para não colidir com o aparelho.
+            // canto inferior direito, então o HUD do topo permanece. Os elementos
+            // do rodapé/direita são ocultados para não colidir com o aparelho.
             if (IsHudVisible)
             {
                 DrawTopLeftStatusPill();
@@ -255,6 +313,12 @@ namespace ProjectTerra.Sandbox
             }
 
             DrawToastNotification();
+
+            // 4. Menu de configurações [Esc] por cima de tudo.
+            if (IsSettingsOpen)
+            {
+                DrawSettingsMenu();
+            }
         }
     }
 }

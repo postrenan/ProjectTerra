@@ -98,6 +98,9 @@ namespace ProjectTerra.Sandbox
         private float lastAwarenessCheckTime = 0f;
         private const float AWARENESS_CHECK_INTERVAL = 0.35f;
 
+        // Áudio de vocalização periódica
+        private float nextVocalizationTime = 10f;
+
         public void Initialize(AnimalSpecies animalSpecies, Terrain sceneTerrain, string resourcePath, Vector3 home, float radius)
         {
             species = animalSpecies;
@@ -429,6 +432,14 @@ namespace ProjectTerra.Sandbox
         {
             stateTimer -= dt;
 
+            // Vocalização periódica e orgânica dos animais
+            nextVocalizationTime -= dt;
+            if (nextVocalizationTime <= 0f)
+            {
+                nextVocalizationTime = UnityEngine.Random.Range(20f, 60f);
+                TriggerSpeciesSound();
+            }
+
             switch (currentState)
             {
                 case AnimalState.Idle:
@@ -712,6 +723,18 @@ namespace ProjectTerra.Sandbox
                 // Respiração sutil em repouso
                 float idleBob = Mathf.Sin(breathPhase) * 0.005f;
                 transform.position += transform.up * idleBob;
+            }
+        }
+
+        private void TriggerSpeciesSound()
+        {
+            if (species == AnimalSpecies.Cow)
+            {
+                ProjectTerra.Audio.TerraAudioService.PlayCowMoo(transform.position, 0.8f);
+            }
+            else if (species == AnimalSpecies.Sheep)
+            {
+                ProjectTerra.Audio.TerraAudioService.PlaySheepBaa(transform.position, 0.75f);
             }
         }
 

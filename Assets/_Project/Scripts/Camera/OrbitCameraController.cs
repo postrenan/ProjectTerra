@@ -104,8 +104,8 @@ namespace ProjectTerra.Cameras
                 float mouseX = TerraInput.GetAxis("Mouse X");
                 float mouseY = TerraInput.GetAxis("Mouse Y");
 
-                targetYaw += mouseX * activeRotationSpeed * Time.deltaTime * 50f;
-                targetPitch -= mouseY * activeRotationSpeed * Time.deltaTime * 50f;
+                targetYaw += mouseX * activeRotationSpeed * Time.deltaTime * 18f;
+                targetPitch -= mouseY * activeRotationSpeed * Time.deltaTime * 18f;
                 targetPitch = Mathf.Clamp(targetPitch, -89.0f, 89.0f);
             }
 

@@ -10,7 +10,7 @@ namespace ProjectTerra.Sandbox
         {
             if (args.Length == 0)
             {
-                LogMessage("Uso: /spawn <tipo>  |  Ex: /spawn truck, /spawn car, /spawn plane, /spawn tractor, /spawn all", new Color(1f, 0.8f, 0.2f));
+                LogMessage("Uso: /spawn <tipo> | Ex: /spawn truck, /spawn car, /spawn plane, /spawn tractor, /spawn all", new Color(1f, 0.8f, 0.2f));
                 LogMessage("Realistas (PBR): /spawn tractor2, /spawn scania, /spawn carpack", new Color(0.6f, 0.85f, 1f));
                 return;
             }
@@ -32,8 +32,8 @@ namespace ProjectTerra.Sandbox
                     VehicleManager.Instance?.SpawnVehicle(fleet[i], pos, Quaternion.LookRotation(fwd, Vector3.up));
                 }
 
-                LogMessage($"✅ Frota de {fleet.Length} veículos instanciada com sucesso!", Color.green);
-                SandboxHUD.Instance?.ShowToast("🚗 Frota de veículos criada ao seu redor!");
+                LogMessage($"[OK] Frota de {fleet.Length} veículos instanciada com sucesso!", Color.green);
+                SandboxHUD.Instance?.ShowToast("Frota de veículos criada ao seu redor!");
                 return;
             }
 
@@ -46,20 +46,20 @@ namespace ProjectTerra.Sandbox
                 if (RegionalSandboxManager.Instance != null) spawnPos.y = RegionalSandboxManager.Instance.GetTerrainHeight(spawnPos) + 0.35f;
 
                 PlowBuilder.CreatePlow(spawnPos, Quaternion.LookRotation(fwd, Vector3.up));
-                LogMessage("✅ Implemento agrícola 'Arado Subsolador TerraMaster' instanciado à sua frente!", Color.green);
-                SandboxHUD.Instance?.ShowToast("🚜 Arado Agrícola criado!");
+                LogMessage("[OK] Implemento agrícola 'Arado Subsolador TerraMaster' instanciado à sua frente!", Color.green);
+                SandboxHUD.Instance?.ShowToast("Arado Agrícola criado!");
                 return;
             }
 
             var spawned = VehicleManager.Instance?.SpawnVehicle(type);
             if (spawned != null)
             {
-                LogMessage($"✅ Veículo '{spawned.vehicleName}' criado e adicionado à sua posse!", Color.green);
-                SandboxHUD.Instance?.ShowToast($"🚗 Veículo criado: {spawned.vehicleName}");
+                LogMessage($"[OK] Veículo '{spawned.vehicleName}' criado e adicionado à sua posse!", Color.green);
+                SandboxHUD.Instance?.ShowToast($"Veículo criado: {spawned.vehicleName}");
             }
             else
             {
-                LogMessage($"❌ Tipo de veículo desconhecido: '{type}'. Use /help spawn para a lista.", new Color(1f, 0.4f, 0.4f));
+                LogMessage($"[X] Tipo de veículo desconhecido: '{type}'. Use /help spawn para a lista.", new Color(1f, 0.4f, 0.4f));
             }
         }
 
@@ -69,8 +69,8 @@ namespace ProjectTerra.Sandbox
             if (player != null && player.isDriving && player.currentVehicle != null)
             {
                 player.currentVehicle.Refuel(100f);
-                LogMessage($"⛽ Tanque de {player.currentVehicle.vehicleName} abastecido a 100%!", Color.green);
-                SandboxHUD.Instance?.ShowToast("⛽ Tanque cheio (100%)!");
+                LogMessage($"Tanque de {player.currentVehicle.vehicleName} abastecido a 100%!", Color.green);
+                SandboxHUD.Instance?.ShowToast("Tanque cheio (100%)!");
             }
             else if (VehicleManager.Instance != null && VehicleManager.Instance.possessedVehicles.Count > 0)
             {
@@ -78,12 +78,12 @@ namespace ProjectTerra.Sandbox
                 {
                     if (v != null) v.Refuel(100f);
                 }
-                LogMessage("⛽ Todos os veículos da frota foram totalmente abastecidos!", Color.green);
-                SandboxHUD.Instance?.ShowToast("⛽ Frota totalmente abastecida!");
+                LogMessage("Todos os veículos da frota foram totalmente abastecidos!", Color.green);
+                SandboxHUD.Instance?.ShowToast("Frota totalmente abastecida!");
             }
             else
             {
-                LogMessage("⚠️ Nenhum veículo encontrado para abastecer.", Color.yellow);
+                LogMessage("[Aviso] Nenhum veículo encontrado para abastecer.", Color.yellow);
             }
         }
 
@@ -101,8 +101,8 @@ namespace ProjectTerra.Sandbox
             {
                 targetVehicle.Refuel(100f);
                 targetVehicle.ResetOrientation();
-                LogMessage($"🔧 Veículo '{targetVehicle.vehicleName}' reparado e desvirado com sucesso!", Color.green);
-                SandboxHUD.Instance?.ShowToast($"🔧 {targetVehicle.vehicleName} Reparado!");
+                LogMessage($"Veículo '{targetVehicle.vehicleName}' reparado e desvirado com sucesso!", Color.green);
+                SandboxHUD.Instance?.ShowToast($" {targetVehicle.vehicleName} Reparado!");
             }
         }
 
@@ -112,13 +112,13 @@ namespace ProjectTerra.Sandbox
             if (player != null && player.currentVehicle != null)
             {
                 player.currentVehicle.ResetOrientation();
-                LogMessage("🔄 Veículo descapotado e alinhado ao terreno.", Color.green);
+                LogMessage("Veículo descapotado e alinhado ao terreno.", Color.green);
             }
             else if (VehicleManager.Instance != null && VehicleManager.Instance.possessedVehicles.Count > 0)
             {
                 var v = VehicleManager.Instance.possessedVehicles[VehicleManager.Instance.currentVehicleIndex];
                 if (v != null) v.ResetOrientation();
-                LogMessage("🔄 Veículo descapotado.", Color.green);
+                LogMessage("Veículo descapotado.", Color.green);
             }
         }
 
@@ -127,7 +127,7 @@ namespace ProjectTerra.Sandbox
             var player = PlayerCharacterController.Instance;
             if (player == null || !player.isDriving || player.currentVehicle == null)
             {
-                LogMessage("⚠️ Você precisa estar conduzindo um veículo para gerenciar a carga.", Color.yellow);
+                LogMessage("[Aviso] Você precisa estar conduzindo um veículo para gerenciar a carga.", Color.yellow);
                 return;
             }
 
@@ -135,15 +135,15 @@ namespace ProjectTerra.Sandbox
             if (args.Length == 0 || args[0].ToLower() == "unload" || args[0].ToLower() == "clear")
             {
                 float unloaded = vehicle.UnloadCargo();
-                LogMessage($"📦 Carga descarregada: {unloaded:F0} kg.", Color.green);
-                SandboxHUD.Instance?.ShowToast($"📦 Caçamba esvaziada");
+                LogMessage($"Carga descarregada: {unloaded:F0} kg.", Color.green);
+                SandboxHUD.Instance?.ShowToast($"Caçamba esvaziada");
             }
             else
             {
                 string itemName = args.Length > 1 ? args[1] : "Carga Geral";
                 vehicle.LoadCargo(itemName, vehicle.maxCargoCapacityKg);
-                LogMessage($"📦 Veículo carregado com {vehicle.maxCargoCapacityKg:F0} kg de {itemName} (100%).", Color.green);
-                SandboxHUD.Instance?.ShowToast($"📦 Carregado com {itemName}!");
+                LogMessage($"Veículo carregado com {vehicle.maxCargoCapacityKg:F0} kg de {itemName} (100%).", Color.green);
+                SandboxHUD.Instance?.ShowToast($"Carregado com {itemName}!");
             }
         }
 
@@ -159,14 +159,14 @@ namespace ProjectTerra.Sandbox
             var player = PlayerCharacterController.Instance;
             Vector3 pPos = player != null ? player.transform.position : Vector3.zero;
 
-            LogMessage($"📋 <b>FROTA DO JOGADOR ({list.Count} veículos):</b>", Color.cyan);
+            LogMessage($"<b>FROTA DO JOGADOR ({list.Count} veículos):</b>", Color.cyan);
             for (int i = 0; i < list.Count; i++)
             {
                 var v = list[i];
                 if (v == null) continue;
                 float dist = Vector3.Distance(pPos, v.transform.position);
-                string activeTag = (player != null && player.currentVehicle == v) ? " <color=#00FF7F>[CONDUZINDO]</color>" : "";
-                LogMessage($"  #{i + 1}: <b>{v.vehicleName}</b> ({dist:F0}m de distância, {v.fuelPercent:F0}% combustível){activeTag}", Color.white);
+                string activeTag = (player != null && player.currentVehicle == v) ? "<color=#00FF7F>[CONDUZINDO]</color>" : "";
+                LogMessage($" #{i + 1}: <b>{v.vehicleName}</b> ({dist:F0}m de distância, {v.fuelPercent:F0}% combustível){activeTag}", Color.white);
             }
         }
 
@@ -185,21 +185,21 @@ namespace ProjectTerra.Sandbox
                     {
                         if (player.isDriving) player.ExitVehicle();
                         player.EnterVehicle(list[idx - 1]);
-                        LogMessage($"🚗 Assumiu o controle do veículo #{idx}: {list[idx - 1].vehicleName}", Color.green);
+                        LogMessage($"Assumiu o controle do veículo #{idx}: {list[idx - 1].vehicleName}", Color.green);
                         return;
                     }
                 }
             }
 
             VehicleManager.Instance.SwitchToNextVehicle();
-            LogMessage("🚗 Alternou para o próximo veículo.", Color.green);
+            LogMessage("Alternou para o próximo veículo.", Color.green);
         }
 
         private void CmdClearVehicles(string[] args)
         {
             int removed = VehicleManager.Instance != null ? VehicleManager.Instance.ClearSpawnedVehicles() : 0;
-            LogMessage($"🧹 {removed} veículos extras foram removidos do mundo.", Color.green);
-            SandboxHUD.Instance?.ShowToast($"🧹 {removed} veículos removidos");
+            LogMessage($" {removed} veículos extras foram removidos do mundo.", Color.green);
+            SandboxHUD.Instance?.ShowToast($" {removed} veículos removidos");
         }
 
         #endregion

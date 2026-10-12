@@ -16,10 +16,10 @@ namespace ProjectTerra.Sandbox
     public struct WaterInfo
     {
         public bool isInWater;
-        public float surfaceY;       // Altura da superfície da água no ponto (com ondas)
-        public float baseWaterY;     // Altura média estática da água
-        public float depth;          // Profundidade do leito até a superfície
-        public float submersion;     // Profundidade do ponto consultado abaixo da superfície (surfaceY - queryY)
+        public float surfaceY; // Altura da superfície da água no ponto (com ondas)
+        public float baseWaterY; // Altura média estática da água
+        public float depth; // Profundidade do leito até a superfície
+        public float submersion; // Profundidade do ponto consultado abaixo da superfície (surfaceY - queryY)
         public Vector3 flowVelocity; // Velocidade vetorial da correnteza (m/s)
         public WaterBodyType bodyType;
         public string bodyName;

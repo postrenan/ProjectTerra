@@ -130,7 +130,7 @@ namespace ProjectTerra.Sandbox
 
         /// <summary>
         /// Configura o material do terreno para URP.
-        /// No URP, usamos o shader "Universal Render Pipeline/Terrain/Lit" que suporta
+        /// No URP, usamos o shader "Universal Render Pipeline/Terrain/Lit"que suporta
         /// TerrainLayers com splat mapping e normal maps.
         /// </summary>
         private void EnsureTerrainMaterial(Terrain terrain)
@@ -274,7 +274,7 @@ namespace ProjectTerra.Sandbox
 
                 // O Y do Bounds precisa cobrir toda a coluna d'água, não uma faixa de 200 m:
                 // Bounds.Contains é 3D, então um casco afundado mais de 100 m abaixo de
-                // seaY era classificado como "sem água" e perdia o empuxo.
+                // seaY era classificado como "sem água"e perdia o empuxo.
                 Bounds oceanBounds = new Bounds(oceanPos, new Vector3(worldWidthMeters, activeTerrainData.size.y + Mathf.Abs(seaY) * 2f, worldLengthMeters * 0.5f));
                 waterSys.RegisterOcean(seaY, oceanBounds, infra != null && !string.IsNullOrEmpty(infra.waterBodyName) ? infra.waterBodyName : "Oceano Costeiro");
                 Debug.Log($"[RegionalSandbox] Litoral oceânico construído com plataforma marítima costeira e ondas dinâmicas.");

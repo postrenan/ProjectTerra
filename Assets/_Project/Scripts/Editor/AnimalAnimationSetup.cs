@@ -144,7 +144,7 @@ namespace ProjectTerra.Editor
                 }
 
                 newClips.Add(clip);
-                Debug.Log($"   -> Configurado clip: '{clip.name}' (take: '{clip.takeName}', frames: {clip.firstFrame}-{clip.lastFrame}, loop: {clip.loopTime})");
+                Debug.Log($" -> Configurado clip: '{clip.name}' (take: '{clip.takeName}', frames: {clip.firstFrame}-{clip.lastFrame}, loop: {clip.loopTime})");
             }
 
             importer.clipAnimations = newClips.ToArray();
@@ -165,7 +165,7 @@ namespace ProjectTerra.Editor
                 if (a is AnimationClip c && !c.name.StartsWith("__preview__"))
                 {
                     clips[c.name] = c;
-                    Debug.Log($"   Encontrado sub-clip '{c.name}' no asset {fbxPath}");
+                    Debug.Log($"Encontrado sub-clip '{c.name}' no asset {fbxPath}");
                 }
             }
 
@@ -184,7 +184,7 @@ namespace ProjectTerra.Editor
             controller.AddParameter("IsMoving", AnimatorControllerParameterType.Bool);
             // IsRunning e IsGrazing sao escritos todo frame por AnimalController.cs
             // (graze e corrida). Sem declara-los aqui, o Unity loga "parameter not
-            // found" e o estado de pastoreio nunca fica expressavel no grafo.
+            // found"e o estado de pastoreio nunca fica expressavel no grafo.
             controller.AddParameter("IsRunning", AnimatorControllerParameterType.Bool);
             controller.AddParameter("IsGrazing", AnimatorControllerParameterType.Bool);
             controller.AddParameter("Jump", AnimatorControllerParameterType.Trigger);
@@ -196,7 +196,7 @@ namespace ProjectTerra.Editor
 
             // Passe 1: resolve walk por nome especifico. O matcher anterior aceitava "run"
             // aqui, entao se o Run fosse enumerado primeiro ele virava o clip de
-            // caminhada -- e o estado "Run" deixava de existir, porque runClip
+            // caminhada -- e o estado "Run"deixava de existir, porque runClip
             // acabava igual a walkClip. Resultado no Cow.controller commitado:
             // o estado Walk apontava para o clip Run e todos os animais galopavam.
             foreach (var kvp in clips)

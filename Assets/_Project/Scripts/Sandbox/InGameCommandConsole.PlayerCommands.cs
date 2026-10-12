@@ -19,15 +19,15 @@ namespace ProjectTerra.Sandbox
             {
                 player.walkSpeed = 4.5f * mult;
                 player.sprintSpeed = 8.0f * mult;
-                LogMessage($"⚡ Multiplicador de velocidade definido para {mult:F1}x.", Color.green);
-                SandboxHUD.Instance?.ShowToast($"⚡ Velocidade: {mult:F1}x");
+                LogMessage($"Multiplicador de velocidade definido para {mult:F1}x.", Color.green);
+                SandboxHUD.Instance?.ShowToast($"Velocidade: {mult:F1}x");
             }
         }
 
         private void CmdFly(string[] args)
         {
-            LogMessage("🕊️ Modo voo acionado.", Color.cyan);
-            SandboxHUD.Instance?.ShowToast("🕊️ Modo Voo Alternado");
+            LogMessage("️ Modo voo acionado.", Color.cyan);
+            SandboxHUD.Instance?.ShowToast("️ Modo Voo Alternado");
         }
 
         private void CmdGod(string[] args)
@@ -38,13 +38,13 @@ namespace ProjectTerra.Sandbox
                 player.currentVehicle.infiniteFuel = !player.currentVehicle.infiniteFuel;
                 player.currentVehicle.Refuel(100f);
                 string status = player.currentVehicle.infiniteFuel ? "ATIVADO (Combustível infinito)" : "DESATIVADO";
-                LogMessage($"🛡️ God Mode: {status}", Color.yellow);
-                SandboxHUD.Instance?.ShowToast($"🛡️ God Mode: {status}");
+                LogMessage($"God Mode: {status}", Color.yellow);
+                SandboxHUD.Instance?.ShowToast($"God Mode: {status}");
             }
             else
             {
-                LogMessage("🛡️ God Mode ativado para a partida.", Color.yellow);
-                SandboxHUD.Instance?.ShowToast("🛡️ God Mode Ativado");
+                LogMessage("God Mode ativado para a partida.", Color.yellow);
+                SandboxHUD.Instance?.ShowToast("God Mode Ativado");
             }
         }
 
@@ -54,12 +54,12 @@ namespace ProjectTerra.Sandbox
             if (player != null && player.isDriving && player.currentVehicle != null)
             {
                 player.currentVehicle.ToggleHeadlights();
-                LogMessage("💡 Faróis do veículo alternados.", Color.white);
+                LogMessage("Faróis do veículo alternados.", Color.white);
             }
             else if (player != null && !player.isDriving)
             {
                 player.ToggleFlashlight();
-                LogMessage($"🔦 Lanterna do jogador: {(player.isFlashlightOn ? "Ligada" : "Desligada")}.", Color.white);
+                LogMessage($"Lanterna do jogador: {(player.isFlashlightOn ? "Ligada" : "Desligada")}.", Color.white);
             }
         }
 
@@ -69,11 +69,11 @@ namespace ProjectTerra.Sandbox
             if (player != null && player.isDriving)
             {
                 player.CycleVehicleCameraMode();
-                LogMessage($"🎥 Modo de câmera do veículo: {player.vehicleCameraMode}", Color.cyan);
+                LogMessage($"Modo de câmera do veículo: {player.vehicleCameraMode}", Color.cyan);
             }
             else
             {
-                LogMessage("⚠️ O controle de câmera veicular está disponível ao conduzir um veículo.", Color.yellow);
+                LogMessage("[Aviso] O controle de câmera veicular está disponível ao conduzir um veículo.", Color.yellow);
             }
         }
 

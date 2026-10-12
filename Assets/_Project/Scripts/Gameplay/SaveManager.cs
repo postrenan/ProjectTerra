@@ -54,8 +54,7 @@ namespace ProjectTerra.Gameplay
             {
                 try
                 {
-                    string target = tmp.Substring(0, tmp.Length - 4); // remove ".tmp"
-                    if (File.Exists(target)) continue; // save definitivo ja existe, .tmp e lixo
+                    string target = tmp.Substring(0, tmp.Length - 4); // remove ".tmp"if (File.Exists(target)) continue; // save definitivo ja existe, .tmp e lixo
                     File.Move(tmp, target);
                     Debug.LogWarning($"[SaveManager] Save recuperado de ficheiro temporário: {Path.GetFileName(target)}");
                 }
@@ -86,7 +85,7 @@ namespace ProjectTerra.Gameplay
                         }
                         else
                         {
-                            // Antes era um "if" silencioso: um save corrompido sumia sem
+                            // Antes era um "if"silencioso: um save corrompido sumia sem
                             // deixar rasto. Agora o arquivo orfao e preservado e logado.
                             Debug.LogWarning($"[SaveManager] Assinatura inválida em '{Path.GetFileName(file)}' (magic 0x{magic:X8}). Arquivo preservado em disco; se o save era importante, restaura-lo de um backup.");
                         }

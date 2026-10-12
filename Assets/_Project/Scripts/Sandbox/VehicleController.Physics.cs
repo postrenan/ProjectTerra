@@ -53,7 +53,7 @@ namespace ProjectTerra.Sandbox
                             isEngineFlooded = true;
                             if (isPlayerDriven)
                             {
-                                SandboxHUD.Instance?.ShowToast("⚠️ Atenção: Motor inundado pela água profunda!", 3.0f);
+                                SandboxHUD.Instance?.ShowToast("[Aviso] Atenção: Motor inundado pela água profunda!", 3.0f);
                             }
                         }
                         activeThrottle = 0f; // Corta potência do motor inundado
@@ -90,36 +90,168 @@ namespace ProjectTerra.Sandbox
                 currentSubmersion = 0f;
             }
 
-            // Força de tração com alto torque (garante superar atrito estático e puxar implementos/cargas)
-            if (Mathf.Abs(activeThrottle) > 0.02f)
+            // Inércia e resposta progressiva do acelerador (evita arrancadas instantâneas)
+            float responseSpeed = (Mathf.Abs(activeThrottle) < Mathf.Abs(smoothedThrottle)) ? throttleResponseRate * 1.8f : throttleResponseRate;
+            smoothedThrottle = Mathf.MoveTowards(smoothedThrottle, activeThrottle, Time.fixedDeltaTime * responseSpeed);
+
+            float forwardSpeed = Vector3.Dot(rb.linearVelocity, transform.forward);
+            float forwardSpeedKmh = forwardSpeed * 3.6f;
+
+            // Tração com curva de torque progressiva, frenagem ativa e marcha à ré realista
+            if (activeThrottle > 0.02f)
             {
-                if (currentSpeedKmh < maxSpeedKmh || Mathf.Sign(activeThrottle) != Mathf.Sign(Vector3.Dot(rb.linearVelocity, transform.forward)))
+                // Comando para frente (Acelerador)
+                if (forwardSpeed < -0.5f)
                 {
-                    float accelFactor = category == VehicleCategory.Tractor ? 0.0038f : 0.0032f;
-                    Vector3 force = transform.forward * (activeThrottle * enginePower * accelFactor);
-                    rb.AddForce(force, ForceMode.Acceleration);
+                    // Se o veículo estiver rolando para trás, 'W' atua como FREIO
+                    float brakeForce = brakeDeceleration * Mathf.Abs(activeThrottle);
+                    rb.AddForce(transform.forward * brakeForce, ForceMode.Acceleration);
+                }
+                else
+                {
+                    // Aceleração para frente com curva de torque que decai realisticamente com a velocidade
+                    float targetMax = Mathf.Max(5f, maxSpeedKmh);
+                    float speedRatio = Mathf.Clamp01(forwardSpeedKmh / targetMax);
+
+                    // Curva de torque: força máxima em baixa velocidade, atenuando conforme atinge a velocidade máxima
+                    float torqueCurve = Mathf.Clamp01(1.0f - Mathf.Pow(speedRatio, 1.4f));
+
+                    // Assistência de torque em subidas íngremes para tratores e caminhões pesados
+                    float slopeAssist = 0f;
+                    if (category == VehicleCategory.Tractor || category == VehicleCategory.Truck)
+                    {
+                        float slope = -transform.forward.y;
+                        if (slope > 0.04f && speedRatio < 0.65f)
+                        {
+                            slopeAssist = slope * 3.2f * (1.0f - speedRatio);
+                        }
+                    }
+
+                    float netAccel = (accelerationRate * torqueCurve + slopeAssist) * Mathf.Max(0.05f, smoothedThrottle);
+
+                    if (forwardSpeedKmh < maxSpeedKmh)
+                    {
+                        rb.AddForce(transform.forward * netAccel, ForceMode.Acceleration);
+                    }
+                    else
+                    {
+                        // Resistência do ar / limitador natural quando ultrapassa a velocidade de cruzeiro máxima
+                        float overSpeed = forwardSpeedKmh - maxSpeedKmh;
+                        rb.AddForce(-transform.forward * Mathf.Min(overSpeed * 0.4f, 3.5f), ForceMode.Acceleration);
+                    }
+                }
+            }
+            else if (activeThrottle < -0.02f)
+            {
+                // Comando de ré / freio
+                if (forwardSpeed > 0.5f)
+                {
+                    // Se o veículo estiver em movimento para frente, 'S' atua como FREIO ativo
+                    float brakeForce = brakeDeceleration * Mathf.Abs(activeThrottle);
+                    rb.AddForce(-transform.forward * brakeForce, ForceMode.Acceleration);
+                }
+                else
+                {
+                    // Veículo parado ou em ré: marcha à ré com velocidade limitada e aceleração suave
+                    float revSpeedKmh = -forwardSpeedKmh;
+                    float targetRevMax = Mathf.Max(3f, maxReverseSpeedKmh);
+                    float revRatio = Mathf.Clamp01(revSpeedKmh / targetRevMax);
+                    float revTorqueCurve = Mathf.Clamp01(1.0f - (revRatio * revRatio));
+
+                    float revAccel = (accelerationRate * 0.55f * revTorqueCurve) * Mathf.Abs(smoothedThrottle);
+
+                    if (revSpeedKmh < targetRevMax)
+                    {
+                        rb.AddForce(-transform.forward * revAccel, ForceMode.Acceleration);
+                    }
+                    else
+                    {
+                        float overRev = revSpeedKmh - targetRevMax;
+                        rb.AddForce(transform.forward * Mathf.Min(overRev * 0.4f, 2.5f), ForceMode.Acceleration);
+                    }
                 }
             }
             else
             {
-                // Freio motor / atrito de rolamento
-                // Vector3.Lerp não clampa t; usar decaimento exponencial para time warp seguro.
-                float rollDampT = 1f - Mathf.Exp(-0.4f * Time.fixedDeltaTime);
+                // Sem acelerador nem freio: Freio motor gradual e atrito de rolamento
+                float coastDamping = (category == VehicleCategory.Tractor || category == VehicleCategory.Truck) ? 0.65f : 0.45f;
+                float rollDampT = 1f - Mathf.Exp(-coastDamping * Time.fixedDeltaTime);
                 rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, rollDampT);
             }
 
-            // Esterçamento adaptativo com a velocidade
-            float steerFactor = Mathf.Clamp01(1.0f - (currentSpeedKmh / (maxSpeedKmh * 1.5f)));
-            currentSteerAngle = Mathf.Lerp(currentSteerAngle, currentSteer * steerAngleMax * Mathf.Max(steerFactor, 0.4f), Time.fixedDeltaTime * steerSpeed);
+            // Checagem de contato com o solo para aplicação de atrito de direção e tração
+            bool isGrounded = true;
+            if (Physics.Raycast(transform.position + Vector3.up * 0.6f, Vector3.down, out RaycastHit groundHit, 2.2f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                isGrounded = true;
+            }
+            else if (RegionalSandboxManager.Instance != null)
+            {
+                float terrainY = RegionalSandboxManager.Instance.GetTerrainHeight(transform.position);
+                isGrounded = (transform.position.y - terrainY) < 1.9f;
+            }
+
+            // Esterçamento adaptativo com a velocidade (evita sobre-esterço brusco em alta velocidade)
+            float steerFactor = Mathf.Clamp01(1.0f - (currentSpeedKmh / (maxSpeedKmh * 1.6f)));
+            float targetAngle = currentSteer * steerAngleMax * Mathf.Max(steerFactor, 0.45f);
+            currentSteerAngle = Mathf.Lerp(currentSteerAngle, targetAngle, Time.fixedDeltaTime * steerSpeed);
 
             // Permite esterçar em movimento e também manobrar em marcha lenta / saída
-            if (Mathf.Abs(currentSteer) > 0.05f && (currentSpeedKmh > 0.2f || Mathf.Abs(activeThrottle) > 0.05f))
+            if (isGrounded && Mathf.Abs(currentSteer) > 0.04f && (currentSpeedKmh > 0.15f || Mathf.Abs(activeThrottle) > 0.05f))
             {
-                float turnDir = Mathf.Abs(activeThrottle) > 0.05f ? Mathf.Sign(activeThrottle) : (Vector3.Dot(rb.linearVelocity, transform.forward) >= 0 ? 1f : -1f);
-                float speedMultiplier = Mathf.Clamp(currentSpeedKmh / 15f, 0.45f, 1.0f);
-                float yawDelta = (currentSteerAngle / steerAngleMax) * 50f * turnDir * speedMultiplier;
+                // Sentido da curva: se ré, inverte guinada para comportamento natural de esterçamento
+                float turnDir = (forwardSpeed < -0.3f || (activeThrottle < -0.05f && forwardSpeed < 0.3f)) ? -1f : 1f;
+
+                // Modulação de velocidade: parado sem acelerador não gira feito pião
+                float minTurnMult = Mathf.Abs(activeThrottle) > 0.05f ? 0.35f : 0f;
+                float speedMultiplier = Mathf.Clamp(currentSpeedKmh / 12f, minTurnMult, 1.0f);
+
+                // Taxa máxima de guinada calibrada por categoria (trator mais sólido e pesado)
+                float maxYawRate = category == VehicleCategory.Tractor ? 38f : (category == VehicleCategory.Truck ? 32f : 48f);
+
+                float yawDelta = (currentSteerAngle / steerAngleMax) * maxYawRate * turnDir * speedMultiplier;
                 Quaternion deltaRotation = Quaternion.Euler(0f, yawDelta * Time.fixedDeltaTime, 0f);
                 rb.MoveRotation(rb.rotation * deltaRotation);
+            }
+            else if (Mathf.Abs(currentSteer) < 0.04f)
+            {
+                // Alinhamento reto: amortece velocidade angular residual em Y para travar oscilações
+                Vector3 angVel = rb.angularVelocity;
+                angVel.y = Mathf.MoveTowards(angVel.y, 0f, Time.fixedDeltaTime * 8f);
+                rb.angularVelocity = angVel;
+            }
+
+            // -------------------------------------------------------------------------
+            // SISTEMA ANTI-DRIFT & ADERÊNCIA LATERAL DOS PNEUS (TIRE LATERAL GRIP)
+            // Cancela completamente o deslizamento lateral nas curvas (efeito "sabão"/drift)
+            // e converte a inércia suavemente para a direção frontal da curva.
+            // -------------------------------------------------------------------------
+            if (isGrounded)
+            {
+                Vector3 localVel = transform.InverseTransformDirection(rb.linearVelocity);
+                float curForward = localVel.z;
+                float curLateral = localVel.x;
+                float curVertical = localVel.y;
+
+                float baseGrip = category == VehicleCategory.Tractor ? 36f : (category == VehicleCategory.Truck ? 28f : 24f);
+                float effectiveGrip = isInWater ? baseGrip * 0.5f : baseGrip;
+                float redirectionRatio = category == VehicleCategory.Tractor ? 0.95f : (category == VehicleCategory.Truck ? 0.90f : 0.85f);
+
+                // Velocidade horizontal total combinada
+                float totalHorizSpeed = Mathf.Sqrt(curLateral * curLateral + curForward * curForward);
+                float targetForward = (curForward >= -0.2f ? 1f : -1f) * totalHorizSpeed;
+
+                // Anula a componente lateral (drift) com decaimento suave e instantâneo
+                float lateralDamp = 1f - Mathf.Exp(-effectiveGrip * Time.fixedDeltaTime);
+                localVel.x = Mathf.Lerp(curLateral, 0f, lateralDamp);
+
+                // Redireciona o vetor de velocidade para acompanhar a frente do veículo na curva
+                localVel.z = Mathf.Lerp(curForward, targetForward, redirectionRatio * lateralDamp);
+
+                // Preserva rigorosamente a velocidade vertical Y (relevo, aclives, gravidade, saltos)
+                localVel.y = curVertical;
+
+                rb.linearVelocity = transform.TransformDirection(localVel);
             }
 
             // Estabilização vertical contra tombamento
@@ -132,22 +264,39 @@ namespace ProjectTerra.Sandbox
         {
             float activeThrottle = fuelPercent > 0f ? Mathf.Max(0f, currentThrottle) : 0f;
 
-            // Empuxo do motor frontal (Thrust proporcional à potência de 5200)
-            Vector3 thrust = transform.forward * (activeThrottle * enginePower * 3.8f);
+            // Suavização do manete de aceleração
+            smoothedThrottle = Mathf.MoveTowards(smoothedThrottle, activeThrottle, Time.fixedDeltaTime * throttleResponseRate);
+
+            // Empuxo do motor frontal proporcional à potência e velocidade no ar
+            float forwardSpeed = Vector3.Dot(rb.linearVelocity, transform.forward);
+            float forwardSpeedKmh = forwardSpeed * 3.6f;
+            float totalSpeed = rb.linearVelocity.magnitude;
+            float vTakeoff = Mathf.Max(5f, takeOffSpeedKmh / 3.6f); // ~18.0 m/s (65 km/h)
+
+            float airSpeedRatio = Mathf.Clamp01(forwardSpeedKmh / Mathf.Max(20f, maxSpeedKmh));
+            float thrustFalloff = Mathf.Clamp01(1.0f - Mathf.Pow(airSpeedRatio, 1.5f));
+
+            // Aceleração máxima realista do empuxo da hélice (~2.6 m/s² na rolagem de pista)
+            float effectiveThrustAccel = accelerationRate * smoothedThrottle * Mathf.Max(0.12f, thrustFalloff);
+            Vector3 thrust = transform.forward * (effectiveThrustAccel * rb.mass);
             rb.AddForce(thrust, ForceMode.Force);
 
-            float forwardSpeed = Vector3.Dot(rb.linearVelocity, transform.forward);
-            float totalSpeed = rb.linearVelocity.magnitude;
-            float vTakeoff = Mathf.Max(5f, takeOffSpeedKmh / 3.6f); // ~12.5 m/s (45 km/h)
+            // Freio de rodas no solo durante táxi/rolamento (se throttle estiver zerado)
+            if (currentAltitudeMeters < 1.0f && smoothedThrottle < 0.05f && forwardSpeed > 0.4f)
+            {
+                bool brakePressed = TerraInput.GetKey(Key.LeftCtrl) || TerraInput.GetKey(Key.S) || TerraInput.GetKey(Key.C);
+                float brakeStrength = brakePressed ? brakeDeceleration : 0.6f;
+                rb.AddForce(-transform.forward * (brakeStrength * rb.mass), ForceMode.Force);
+            }
 
             // Sustentação Aerodinâmica (Lift):
-            // Na velocidade de decolagem (vTakeoff), o perfil alar gera sustentação positiva (1.25x peso)
+            // Na velocidade de decolagem (vTakeoff), o perfil alar gera sustentação positiva (~1.05x peso)
             // permitindo que o avião decole naturalmente e suba suavemente
             if (forwardSpeed > 2.0f)
             {
                 float speedRatio = forwardSpeed / vTakeoff;
                 float baseWeight = rb.mass * Physics.gravity.magnitude;
-                float liftMagnitude = baseWeight * Mathf.Min(4.0f, speedRatio * speedRatio * 1.25f);
+                float liftMagnitude = baseWeight * Mathf.Min(3.2f, speedRatio * speedRatio * 1.05f);
 
                 // Efeito do ângulo de ataque (cabrar/empinar o nariz aumenta a sustentação alar)
                 float pitchBonus = 1.0f + Mathf.Clamp(transform.forward.y, -0.3f, 0.85f) * 1.4f;
@@ -168,8 +317,8 @@ namespace ProjectTerra.Sandbox
             if (!inputBlocked && isPlayerDriven)
             {
                 float controlAuth = Mathf.Clamp01(forwardSpeed / (vTakeoff * 0.45f));
-                float vertInput = TerraInput.GetAxis("Vertical");     // W=+1 (picar/descer), S=-1 (cabrar/subir)
-                bool spaceClimb = TerraInput.GetKey(Key.Space);       // Barra de Espaço também sobe / decola
+                float vertInput = TerraInput.GetAxis("Vertical"); // W=+1 (picar/descer), S=-1 (cabrar/subir)
+                bool spaceClimb = TerraInput.GetKey(Key.Space); // Barra de Espaço também sobe / decola
 
                 if (spaceClimb && vertInput >= -0.1f)
                 {
@@ -181,8 +330,8 @@ namespace ProjectTerra.Sandbox
                 // Torque positivo em torno de transform.right (rotação para +Y depois -Z)
                 // LEVA O NARIZ PARA BAIXO: em Unity uma rotação positiva sobre +X leva
                 // +Z (frente) até -Y. Logo o sinal tem de ser:
-                //   W (+1) -> torque positivo -> nariz para baixo (picar)
-                //   S/Espaço (-1) -> torque negativo -> nariz para cima (cabrar)
+                // W (+1) -> torque positivo -> nariz para baixo (picar)
+                // S/Espaço (-1) -> torque negativo -> nariz para cima (cabrar)
                 // Com o sinal anterior (-vertInput) era o contrário: W subia e o
                 // Espaço ("sobe/decola") mergulhava o nariz.
                 pitch = vertInput * pitchRate * controlAuth;
@@ -193,7 +342,7 @@ namespace ProjectTerra.Sandbox
 
                 // Leme de cauda (Yaw) via , e .
                 // NÃO pode usar E: PlayerCharacterController.Vehicle.cs trata Key.E
-                // como "desembarcar" e roda no mesmo frame, então tocar o leme
+                // como "desembarcar"e roda no mesmo frame, então tocar o leme
                 // direito por um único frame expulsava o piloto e o deixava caindo
                 // de 800 m no vazio. Virgula/ponto é o par natural de guinada e
                 // estava livre (o warp de tempo usa [ e ] como teclas primárias).
@@ -266,7 +415,7 @@ namespace ProjectTerra.Sandbox
                 // Empuxo hidrostático de Arquimedes com amortecimento adaptativo.
                 // ForceMode.Acceleration JÁ é independente de massa: o argumento É a
                 // aceleração em m/s². Multiplicar por rb.mass (3200 no barco) não
-                // "compensa" a massa, eleva o empuxo 3200x -> ~22.000 m/s² e o barco
+                // "compensa"a massa, eleva o empuxo 3200x -> ~22.000 m/s² e o barco
                 // era arremessado para fora da água. Aqui o empuxo é uma aceleração
                 // real, com teto logo acima da gravidade para o casco flutuar em
                 // equilíbrio (aprofundamento de projeto) em vez de ser catapultado.
@@ -306,11 +455,41 @@ namespace ProjectTerra.Sandbox
                 }
             }
 
-            // Propulsão a hélice marítima
-            if (Mathf.Abs(activeThrottle) > 0.02f)
+            // Suavização do comando do manete marítimo
+            smoothedThrottle = Mathf.MoveTowards(smoothedThrottle, activeThrottle, Time.fixedDeltaTime * throttleResponseRate);
+
+            // Propulsão marítima com curva de arrasto hidrodinâmico e ré realista
+            if (activeThrottle > 0.02f)
             {
-                Vector3 marineThrust = transform.forward * (activeThrottle * enginePower * 0.75f);
-                rb.AddForce(marineThrust, ForceMode.Acceleration);
+                float speedRatio = Mathf.Clamp01(currentSpeedKmh / Mathf.Max(5f, maxSpeedKmh));
+                float thrustFactor = Mathf.Clamp01(1.0f - (speedRatio * speedRatio));
+                float boatAccel = accelerationRate * smoothedThrottle * thrustFactor;
+
+                if (currentSpeedKmh < maxSpeedKmh)
+                {
+                    rb.AddForce(transform.forward * boatAccel, ForceMode.Acceleration);
+                }
+            }
+            else if (activeThrottle < -0.02f)
+            {
+                float forwardSpeed = Vector3.Dot(rb.linearVelocity, transform.forward);
+                if (forwardSpeed > 0.4f)
+                {
+                    // Passo reverso da hélice atua como freio hidrodinâmico na água
+                    rb.AddForce(-transform.forward * (brakeDeceleration * Mathf.Abs(smoothedThrottle)), ForceMode.Acceleration);
+                }
+                else
+                {
+                    float revSpeedKmh = -forwardSpeed * 3.6f;
+                    float revRatio = Mathf.Clamp01(revSpeedKmh / Mathf.Max(3f, maxReverseSpeedKmh));
+                    float revFactor = Mathf.Clamp01(1.0f - (revRatio * revRatio));
+                    float revAccel = (accelerationRate * 0.5f) * Mathf.Abs(smoothedThrottle) * revFactor;
+
+                    if (revSpeedKmh < maxReverseSpeedKmh)
+                    {
+                        rb.AddForce(-transform.forward * revAccel, ForceMode.Acceleration);
+                    }
+                }
             }
 
             // Leme e estabilização contra capotamento, fundidos em UMA única chamada.

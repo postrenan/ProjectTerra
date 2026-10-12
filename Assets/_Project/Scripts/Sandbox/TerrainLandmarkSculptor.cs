@@ -19,7 +19,7 @@ namespace ProjectTerra.Sandbox
     /// </summary>
     public static class TerrainLandmarkSculptor
     {
-        private const int MaxPerRegion = 36;       // teto total de marcos por região
+        private const int MaxPerRegion = 36; // teto total de marcos por região
         private const int MaxTerrainFeatures = 26; // teto de montanhas/chapadas (o resto são especiais)
 
         // ------------------------------------------------------------------
@@ -46,7 +46,7 @@ namespace ProjectTerra.Sandbox
         public static float LakeDepth(Landmark lm) => Mathf.Clamp(LakeRadius(lm) * 0.03f, 6f, 90f);
 
         // ==================================================================
-        //  LEITURA + SELEÇÃO
+        // LEITURA + SELEÇÃO
         // ==================================================================
 
         private static string TypeName(byte b)
@@ -66,7 +66,7 @@ namespace ProjectTerra.Sandbox
             if (region == null) return chosen;
 
             var specials = new List<Landmark>(); // vulcões, quedas, rios, lagos
-            var terrainy = new List<Landmark>();  // montanhas, chapadas (relevo)
+            var terrainy = new List<Landmark>(); // montanhas, chapadas (relevo)
 
             string p = Path.Combine(Application.streamingAssetsPath, "landmarks.bin");
             if (!File.Exists(p)) { Debug.LogWarning("[Landmarks] landmarks.bin não encontrado."); return chosen; }
@@ -133,7 +133,7 @@ namespace ProjectTerra.Sandbox
         }
 
         // ==================================================================
-        //  ESCULTURA DO RELEVO (opera no array normalizado 0..1 do heightmap)
+        // ESCULTURA DO RELEVO (opera no array normalizado 0..1 do heightmap)
         // ==================================================================
 
         /// <summary>
@@ -290,13 +290,13 @@ namespace ProjectTerra.Sandbox
 
             ForEachCellInRadius(heights, res, cx, cy, R, mX, mY, (x, y, t, dx, dy) =>
             {
-                float along = dy / R;    // -1 montante .. +1 jusante (eixo Z)
+                float along = dy / R; // -1 montante .. +1 jusante (eixo Z)
                 float lateral = Mathf.Abs(dx) / R;
                 if (lateral > 1f) return;
 
                 // Degrau: +meia-queda a montante, -meia-queda a jusante, transição estreita em along=0.
                 float step = Mathf.SmoothStep(-band, band, along); // 0 montante .. 1 jusante
-                float delta = (0.5f - step) * dropN;               // + a montante / - a jusante
+                float delta = (0.5f - step) * dropN; // + a montante / - a jusante
 
                 // Suaviza nas laterais e nas pontas do corredor; ruído dá textura à parede.
                 float fadeLat = 1f - Mathf.SmoothStep(0.6f, 1f, lateral);

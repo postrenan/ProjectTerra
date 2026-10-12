@@ -14,7 +14,7 @@ namespace ProjectTerra.Sandbox
                 float curTime = HDRPAtmosphereController.Instance != null ? HDRPAtmosphereController.Instance.timeOfDay : 12f;
                 int h = Mathf.FloorToInt(curTime);
                 int m = Mathf.FloorToInt((curTime - h) * 60f);
-                LogMessage($"🕒 Horário atual da província: {h:D2}:{m:D2}. Uso: /time <0-24 | day | night | noon | sunset | cycle on/off>", Color.yellow);
+                LogMessage($"Horário atual da província: {h:D2}:{m:D2}. Uso: /time <0-24 | day | night | noon | sunset | cycle on/off>", Color.yellow);
                 return;
             }
 
@@ -25,12 +25,12 @@ namespace ProjectTerra.Sandbox
                 if (args.Length > 1 && (args[1] == "off" || args[1] == "desligar" || args[1] == "0"))
                 {
                     if (HDRPAtmosphereController.Instance != null) HDRPAtmosphereController.Instance.autoCycleTime = false;
-                    LogMessage("⏸️ Ciclo automático de dia/noite desativado.", Color.yellow);
+                    LogMessage("Ciclo automático de dia/noite desativado.", Color.yellow);
                 }
                 else
                 {
                     if (HDRPAtmosphereController.Instance != null) HDRPAtmosphereController.Instance.autoCycleTime = true;
-                    LogMessage("▶️ Ciclo automático de dia/noite ativado!", Color.green);
+                    LogMessage("Ciclo automático de dia/noite ativado!", Color.green);
                 }
                 return;
             }
@@ -74,7 +74,7 @@ namespace ProjectTerra.Sandbox
                     }
                     else if (!float.TryParse(sub, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out targetHour))
                     {
-                        LogMessage($"❌ Formato de horário inválido: '{sub}'. Exemplos: /time 14, /time 08:30, /time day, /time night", new Color(1f, 0.4f, 0.4f));
+                        LogMessage($"[X] Formato de horário inválido: '{sub}'. Exemplos: /time 14, /time 08:30, /time day, /time night", new Color(1f, 0.4f, 0.4f));
                         return;
                     }
                     break;
@@ -85,7 +85,7 @@ namespace ProjectTerra.Sandbox
                 HDRPAtmosphereController.Instance.SetTimeOfDay(targetHour);
                 int h = Mathf.FloorToInt(targetHour);
                 int m = Mathf.FloorToInt((targetHour - h) * 60f);
-                LogMessage($"☀️ Horário solar alterado para {h:D2}:{m:D2}.", Color.green);
+                LogMessage($"Horário solar alterado para {h:D2}:{m:D2}.", Color.green);
             }
         }
 
@@ -102,8 +102,8 @@ namespace ProjectTerra.Sandbox
                 scale = Mathf.Clamp(scale, 0.05f, 20f);
                 Time.timeScale = scale;
                 Time.fixedDeltaTime = 0.02f * scale;
-                LogMessage($"⏩ Velocidade da simulação ajustada para {scale:F1}x.", Color.green);
-                SandboxHUD.Instance?.ShowToast($"⏩ Simulação: {scale:F1}x");
+                LogMessage($"Velocidade da simulação ajustada para {scale:F1}x.", Color.green);
+                SandboxHUD.Instance?.ShowToast($"Simulação: {scale:F1}x");
             }
         }
 
@@ -116,7 +116,7 @@ namespace ProjectTerra.Sandbox
             }
 
             HDRPAtmosphereController.Instance?.SetWeather(args[0]);
-            LogMessage($"🌤️ Clima alterado para '{args[0]}'.", Color.green);
+            LogMessage($"Clima alterado para '{args[0]}'.", Color.green);
         }
 
         private void CmdTeleport(string[] args)
@@ -199,7 +199,7 @@ namespace ProjectTerra.Sandbox
 
                         if (!coordsParsed)
                         {
-                            LogMessage($"❌ Destino ou coordenadas inválidas: '{key}'.", new Color(1f, 0.4f, 0.4f));
+                            LogMessage($"[X] Destino ou coordenadas inválidas: '{key}'.", new Color(1f, 0.4f, 0.4f));
                             return;
                         }
                     }
@@ -228,8 +228,8 @@ namespace ProjectTerra.Sandbox
                     player.transform.position = targetPos;
                 }
 
-                LogMessage($"🚀 Teleportado para {destName}!", Color.green);
-                SandboxHUD.Instance?.ShowToast($"🚀 Teleportado para: {destName}");
+                LogMessage($"Teleportado para {destName}!", Color.green);
+                SandboxHUD.Instance?.ShowToast($"Teleportado para: {destName}");
             }
         }
 
@@ -237,7 +237,7 @@ namespace ProjectTerra.Sandbox
         {
             if (args.Length == 0 || !long.TryParse(args[0], out long amount))
             {
-                LogMessage($"Uso: {(isSet ? "/setmoney" : "/money")} <quantia>  (ex: /money 500000)", Color.yellow);
+                LogMessage($"Uso: {(isSet ? "/setmoney" : "/money")} <quantia> (ex: /money 500000)", Color.yellow);
                 return;
             }
 
@@ -248,8 +248,8 @@ namespace ProjectTerra.Sandbox
                 else save.currentMoney += amount;
 
                 SaveManager.Instance.SaveToFile(save);
-                LogMessage($"💰 Saldo atualizado com sucesso: {save.GetFormattedMoney()}", Color.green);
-                SandboxHUD.Instance?.ShowToast($"💰 Saldo: {save.GetFormattedMoney()}");
+                LogMessage($"Saldo atualizado com sucesso: {save.GetFormattedMoney()}", Color.green);
+                SandboxHUD.Instance?.ShowToast($"Saldo: {save.GetFormattedMoney()}");
             }
         }
 
@@ -261,11 +261,11 @@ namespace ProjectTerra.Sandbox
             if (sub == "complete" || sub == "concluir")
             {
                 MissionManager.Instance.CompleteActiveContract();
-                LogMessage("🎯 Contrato de entrega concluído via comando!", Color.green);
+                LogMessage("Contrato de entrega concluído via comando!", Color.green);
             }
             else
             {
-                LogMessage("🎯 Gerando nova missão regional...", Color.cyan);
+                LogMessage("Gerando nova missão regional...", Color.cyan);
                 MissionManager.Instance.CompleteActiveContract();
             }
         }
@@ -277,8 +277,8 @@ namespace ProjectTerra.Sandbox
                 if (SaveManager.Instance != null && SaveManager.Instance.ActiveSave != null)
                 {
                     SaveManager.Instance.ActiveSave.reputation += rep;
-                    LogMessage($"⭐ Reputação atual: {SaveManager.Instance.ActiveSave.reputation}", Color.green);
-                    SandboxHUD.Instance?.ShowToast($"⭐ Reputação: +{rep}");
+                    LogMessage($"Reputação atual: {SaveManager.Instance.ActiveSave.reputation}", Color.green);
+                    SandboxHUD.Instance?.ShowToast($"Reputação: +{rep}");
                 }
             }
         }
@@ -322,7 +322,7 @@ namespace ProjectTerra.Sandbox
                     if (targetAnimal != null && PlayerCharacterController.Instance != null)
                     {
                         PlayerCharacterController.Instance.TeleportTo(targetAnimal.transform.position + Vector3.back * 4f + Vector3.up * 1f);
-                        LogMessage($"📍 Teleportado para perto de {targetAnimal.name} ({targetAnimal.species})!", Color.green);
+                        LogMessage($"Teleportado para perto de {targetAnimal.name} ({targetAnimal.species})!", Color.green);
                         return;
                     }
                 }
@@ -353,9 +353,9 @@ namespace ProjectTerra.Sandbox
                 }
             }
 
-            LogMessage($"🐾 Fauna Ativa ({animals.Length} animais): {cows} Vacas, {horses} Cavalos, {sheep} Ovelhas, {foxes} Raposas, {wolves} Lobos.", Color.cyan);
-            LogMessage($"📊 Animações Atuais: {grazeCount} Pastando, {walkCount} Caminhando, {idleCount} Em Repouso/Observando, {runCount} Correndo.", Color.white);
-            LogMessage("💡 Dica: use '/animals tp pasture' ou '/animals tp wild' para ir até os animais.", Color.gray);
+            LogMessage($"Fauna Ativa ({animals.Length} animais): {cows} Vacas, {horses} Cavalos, {sheep} Ovelhas, {foxes} Raposas, {wolves} Lobos.", Color.cyan);
+            LogMessage($"Animações Atuais: {grazeCount} Pastando, {walkCount} Caminhando, {idleCount} Em Repouso/Observando, {runCount} Correndo.", Color.white);
+            LogMessage("Dica: use '/animals tp pasture' ou '/animals tp wild' para ir até os animais.", Color.gray);
         }
 
         #endregion

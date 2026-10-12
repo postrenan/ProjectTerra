@@ -40,7 +40,7 @@ namespace ProjectTerra.Planet
             // TODO chamador reentrava no lock, refazia File.Exists + Log e relia os
             // 16 MB. O mapa tático chama isto 2x por pixel (512x512 = 524.288 vezes por
             // abertura), o que travava o jogo por minutos e inundava o console.
-            // A tentativa é marcada como "feita" antes de ler: o ficheiro em
+            // A tentativa é marcada como "feita"antes de ler: o ficheiro em
             // StreamingAssets é imutável em runtime, então não há ganho em repetir.
             if (loadAttempted) return;
 

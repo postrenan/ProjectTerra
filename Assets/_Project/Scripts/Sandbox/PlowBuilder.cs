@@ -109,7 +109,7 @@ namespace ProjectTerra.Sandbox
             // 5 Discos de corte espaçados diagonalmente
             var discTransforms = new List<Transform>();
             float[] xOffsets = { -1.0f, -0.5f, 0.0f, 0.5f, 1.0f };
-            float[] zOffsets = {  0.35f,  0.18f, 0.0f, -0.18f, -0.35f };
+            float[] zOffsets = { 0.35f, 0.18f, 0.0f, -0.18f, -0.35f };
 
             for (int i = 0; i < 5; i++)
             {
@@ -179,7 +179,7 @@ namespace ProjectTerra.Sandbox
             psShape.scale = new Vector3(2.4f, 0.2f, 0.4f);
 
             var psRenderer = dustObj.GetComponent<ParticleSystemRenderer>();
-            // URP: o "Particles/Standard Unlit" do Built-in fica magenta sob o URP.
+            // URP: o "Particles/Standard Unlit"do Built-in fica magenta sob o URP.
             Shader partShader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
                              ?? Shader.Find("Universal Render Pipeline/Particles/Lit")
                              ?? ProjectTerra.Core.URPMaterialHelper.URPUnlitShader;

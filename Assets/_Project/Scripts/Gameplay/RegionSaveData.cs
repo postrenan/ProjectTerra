@@ -5,10 +5,10 @@ namespace ProjectTerra.Gameplay
 {
     public enum StarterCareer
     {
-        Farmer = 0,     // 🌾 Agricultor
-        Trucker = 1,    // 🚛 Motorista de Carga
-        Aviator = 2,    // 🛩️ Aviador Particular
-        Fisherman = 3   // 🎣 Pescador
+        Farmer = 0, // Agricultor
+        Trucker = 1, // Motorista de Carga
+        Aviator = 2, // Aviador Particular
+        Fisherman = 3 // Pescador
     }
 
     [Serializable]
@@ -79,22 +79,22 @@ namespace ProjectTerra.Gameplay
             if (forestPercent != originalForestPercent)
             {
                 int diff = forestPercent - originalForestPercent;
-                parts.Add($"🌲 Floresta: {forestPercent}% ({(diff > 0 ? "+" : "")}{diff}%)");
+                parts.Add($"Floresta: {forestPercent}% ({(diff > 0 ? "+" : "")}{diff}%)");
             }
             if (mineralsPercent != originalMineralsPercent)
             {
                 int diff = mineralsPercent - originalMineralsPercent;
-                parts.Add($"⛏️ Minérios: {mineralsPercent}% ({(diff > 0 ? "+" : "")}{diff}%)");
+                parts.Add($"Minérios: {mineralsPercent}% ({(diff > 0 ? "+" : "")}{diff}%)");
             }
             if (arablePercent != originalArablePercent)
             {
                 int diff = arablePercent - originalArablePercent;
-                parts.Add($"🌾 Arável: {arablePercent}% ({(diff > 0 ? "+" : "")}{diff}%)");
+                parts.Add($"Arável: {arablePercent}% ({(diff > 0 ? "+" : "")}{diff}%)");
             }
             if (waterPercent != originalWaterPercent)
             {
                 int diff = waterPercent - originalWaterPercent;
-                parts.Add($"💧 Água: {waterPercent}% ({(diff > 0 ? "+" : "")}{diff}%)");
+                parts.Add($" Água: {waterPercent}% ({(diff > 0 ? "+" : "")}{diff}%)");
             }
 
             return string.Join(" • ", parts);

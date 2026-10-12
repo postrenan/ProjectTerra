@@ -70,7 +70,7 @@ namespace ProjectTerra.Sandbox
 
             if (possessedVehicles.Count == 0)
             {
-                SandboxHUD.Instance?.ShowToast("⚠️ Você não possui veículos na província. Use /spawn para criar um!");
+                SandboxHUD.Instance?.ShowToast("[Aviso] Você não possui veículos na província. Use /spawn para criar um!");
                 return;
             }
 
@@ -92,7 +92,7 @@ namespace ProjectTerra.Sandbox
                 player.ExitVehicle();
                 player.EnterVehicle(nextVehicle);
 
-                SandboxHUD.Instance?.ShowToast($"🚗 Alternou veículo: {nextVehicle.vehicleName} ({currentVehicleIndex + 1}/{possessedVehicles.Count})", 2.2f);
+                SandboxHUD.Instance?.ShowToast($"Alternou veículo: {nextVehicle.vehicleName} ({currentVehicleIndex + 1}/{possessedVehicles.Count})", 2.2f);
             }
             else
             {
@@ -101,7 +101,7 @@ namespace ProjectTerra.Sandbox
                 var targetVehicle = possessedVehicles[currentVehicleIndex];
 
                 player.EnterVehicle(targetVehicle);
-                SandboxHUD.Instance?.ShowToast($"🚗 Assumiu o controle: {targetVehicle.vehicleName} ({currentVehicleIndex + 1}/{possessedVehicles.Count})", 2.2f);
+                SandboxHUD.Instance?.ShowToast($"Assumiu o controle: {targetVehicle.vehicleName} ({currentVehicleIndex + 1}/{possessedVehicles.Count})", 2.2f);
             }
         }
 
@@ -193,7 +193,7 @@ namespace ProjectTerra.Sandbox
                 case "firetruck":
                 case "bombeiro":
                 case "bombeiros":
-                    vehicle = VehicleBuilder.CreateCar(spawnPos, "firetruck", "Caminhão de Bombeiros");
+                    vehicle = VehicleBuilder.CreateCar(spawnPos, "firetruck", "Caminhão de Bombeiros", VehicleCategory.Truck);
                     break;
                 case "taxi":
                     vehicle = VehicleBuilder.CreateCar(spawnPos, "taxi", "Táxi Urbano");

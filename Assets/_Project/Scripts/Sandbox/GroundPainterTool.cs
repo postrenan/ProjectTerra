@@ -18,8 +18,8 @@ namespace ProjectTerra.Sandbox
         [Header("Configurações do Pincel")]
         public bool isToolActive = false;
         public int selectedLayerIndex = TerrainPBRFactory.LayerConcrete; // Padrão: Concreto Urbano (9)
-        public float brushRadius = 16f;        // Raio em metros (2m a 80m)
-        public float brushStrength = 0.85f;    // Intensidade de mistura (0.1 a 1.0)
+        public float brushRadius = 16f; // Raio em metros (2m a 80m)
+        public float brushStrength = 0.85f; // Intensidade de mistura (0.1 a 1.0)
 
         private Terrain activeTerrain;
         private LineRenderer brushRingRenderer;
@@ -80,18 +80,18 @@ namespace ProjectTerra.Sandbox
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
-                SandboxHUD.Instance?.ShowToast($"🎨 Pincel Ativado: {GetSelectedInfo().displayName} (Raio: {brushRadius:F0}m)");
+                SandboxHUD.Instance?.ShowToast($"Pincel Ativado: {GetSelectedInfo().displayName} (Raio: {brushRadius:F0}m)");
             }
             else
             {
                 hasHitTerrain = false;
-                SandboxHUD.Instance?.ShowToast("🎨 Pincel de Terreno Desativado");
+                SandboxHUD.Instance?.ShowToast("Pincel de Terreno Desativado");
             }
         }
 
         private void Update()
         {
-            // O IMGUI não consome o teclado do Input System: digitar qualquer "p" no
+            // O IMGUI não consome o teclado do Input System: digitar qualquer "p"no
             // console (ex: /spawn plane) chegava em Keyboard.current.wasPressedThisFrame
             // e abria o pincel 3D, destravando o cursor com o console ainda em foco.
             // Os outros sistemas (PlowImplement, VehicleController) já checam IsInputBlocked.
@@ -165,16 +165,16 @@ namespace ProjectTerra.Sandbox
 
         private void HandleQuickSelectKeys()
         {
-            if (TerraInput.GetKeyDown(Key.Digit1) || TerraInput.GetKeyDown(Key.Numpad1)) SelectLayer(TerrainPBRFactory.LayerConcrete);    // 1: Concreto
-            if (TerraInput.GetKeyDown(Key.Digit2) || TerraInput.GetKeyDown(Key.Numpad2)) SelectLayer(TerrainPBRFactory.LayerDirtSimple);  // 2: Terra Simples
-            if (TerraInput.GetKeyDown(Key.Digit3) || TerraInput.GetKeyDown(Key.Numpad3)) SelectLayer(TerrainPBRFactory.LayerAsphalt);     // 3: Asfalto
-            if (TerraInput.GetKeyDown(Key.Digit4) || TerraInput.GetKeyDown(Key.Numpad4)) SelectLayer(TerrainPBRFactory.LayerGrass);       // 4: Grama Lush
-            if (TerraInput.GetKeyDown(Key.Digit5) || TerraInput.GetKeyDown(Key.Numpad5)) SelectLayer(TerrainPBRFactory.LayerGravel);      // 5: Cascalho / Britas
+            if (TerraInput.GetKeyDown(Key.Digit1) || TerraInput.GetKeyDown(Key.Numpad1)) SelectLayer(TerrainPBRFactory.LayerConcrete); // 1: Concreto
+            if (TerraInput.GetKeyDown(Key.Digit2) || TerraInput.GetKeyDown(Key.Numpad2)) SelectLayer(TerrainPBRFactory.LayerDirtSimple); // 2: Terra Simples
+            if (TerraInput.GetKeyDown(Key.Digit3) || TerraInput.GetKeyDown(Key.Numpad3)) SelectLayer(TerrainPBRFactory.LayerAsphalt); // 3: Asfalto
+            if (TerraInput.GetKeyDown(Key.Digit4) || TerraInput.GetKeyDown(Key.Numpad4)) SelectLayer(TerrainPBRFactory.LayerGrass); // 4: Grama Lush
+            if (TerraInput.GetKeyDown(Key.Digit5) || TerraInput.GetKeyDown(Key.Numpad5)) SelectLayer(TerrainPBRFactory.LayerGravel); // 5: Cascalho / Britas
             if (TerraInput.GetKeyDown(Key.Digit6) || TerraInput.GetKeyDown(Key.Numpad6)) SelectLayer(TerrainPBRFactory.LayerCobblestone); // 6: Paralelepípedo
-            if (TerraInput.GetKeyDown(Key.Digit7) || TerraInput.GetKeyDown(Key.Numpad7)) SelectLayer(TerrainPBRFactory.LayerSand);        // 7: Areia
-            if (TerraInput.GetKeyDown(Key.Digit8) || TerraInput.GetKeyDown(Key.Numpad8)) SelectLayer(TerrainPBRFactory.LayerSoil);        // 8: Solo Arado
-            if (TerraInput.GetKeyDown(Key.Digit9) || TerraInput.GetKeyDown(Key.Numpad9)) SelectLayer(TerrainPBRFactory.LayerMud);         // 9: Lama Úmida
-            if (TerraInput.GetKeyDown(Key.Digit0) || TerraInput.GetKeyDown(Key.Numpad0)) SelectLayer(TerrainPBRFactory.LayerRedClay);     // 0: Argila Vermelha
+            if (TerraInput.GetKeyDown(Key.Digit7) || TerraInput.GetKeyDown(Key.Numpad7)) SelectLayer(TerrainPBRFactory.LayerSand); // 7: Areia
+            if (TerraInput.GetKeyDown(Key.Digit8) || TerraInput.GetKeyDown(Key.Numpad8)) SelectLayer(TerrainPBRFactory.LayerSoil); // 8: Solo Arado
+            if (TerraInput.GetKeyDown(Key.Digit9) || TerraInput.GetKeyDown(Key.Numpad9)) SelectLayer(TerrainPBRFactory.LayerMud); // 9: Lama Úmida
+            if (TerraInput.GetKeyDown(Key.Digit0) || TerraInput.GetKeyDown(Key.Numpad0)) SelectLayer(TerrainPBRFactory.LayerRedClay); // 0: Argila Vermelha
         }
 
         public void SelectLayer(int layerIdx)
@@ -187,7 +187,7 @@ namespace ProjectTerra.Sandbox
                 {
                     brushRingRenderer.sharedMaterial.color = new Color(info.swatchColor.r, info.swatchColor.g, info.swatchColor.b, 0.9f);
                 }
-                SandboxHUD.Instance?.ShowToast($"🖌️ Selecionado: {info.displayName}");
+                SandboxHUD.Instance?.ShowToast($"Selecionado: {info.displayName}");
             }
         }
 
@@ -210,7 +210,7 @@ namespace ProjectTerra.Sandbox
                 TerrainGroundPainter.PaintGroundAtWorldPos(activeTerrain, pos, layerIdx, radius, 1.0f, updateGrass: true);
                 var info = (layerIdx >= 0 && layerIdx < TerrainGroundPainter.AvailableTextures.Length) 
                     ? TerrainGroundPainter.AvailableTextures[layerIdx] : default;
-                SandboxHUD.Instance?.ShowToast($"🎨 Área pintada: {info.displayName} (R={radius:F0}m)");
+                SandboxHUD.Instance?.ShowToast($" Área pintada: {info.displayName} (R={radius:F0}m)");
             }
         }
 
@@ -260,7 +260,7 @@ namespace ProjectTerra.Sandbox
             isMouseOverGui = paletteRect.Contains(Event.current.mousePosition);
 
             GUI.skin.window.fontSize = 12;
-            paletteRect = GUI.Window(8891, paletteRect, DrawPaletteWindow, "🎨 Pincel de Terreno (Pressione [P] p/ Fechar)");
+            paletteRect = GUI.Window(8891, paletteRect, DrawPaletteWindow, "Pincel de Terreno (Pressione [P] p/ Fechar)");
         }
 
         private void DrawPaletteWindow(int windowId)
@@ -308,7 +308,7 @@ namespace ProjectTerra.Sandbox
                 GUILayout.Box("", GUILayout.Width(18), GUILayout.Height(18));
                 GUI.color = isSelected ? Color.cyan : c;
 
-                string btnText = isSelected ? $"<b>▶ {t.displayName}</b>" : t.displayName;
+                string btnText = isSelected ? $"<b> {t.displayName}</b>" : t.displayName;
                 if (GUILayout.Button(btnText, GUILayout.Height(22)))
                 {
                     SelectLayer(i);
