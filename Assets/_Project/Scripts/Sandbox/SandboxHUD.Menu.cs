@@ -288,6 +288,10 @@ namespace ProjectTerra.Sandbox
                         CloseOptionsMenu();
                         ToggleRegionalMap();
                     }
+                    else if (HomeTargets[i] == PhoneApp.Dealer) // Loja: abre o navegador retrô em tela cheia
+                    {
+                        OpenVehicleBrowser();
+                    }
                     else
                     {
                         OpenApp(HomeTargets[i]);
@@ -346,9 +350,9 @@ namespace ProjectTerra.Sandbox
                 GUILayout.Space(4);
                 if (GUILayout.Button("🚜  Mercado Agrícola", phoneListButtonStyle, GUILayout.Height(30))) internetPage = "market";
                 GUILayout.Space(4);
-                if (GUILayout.Button("🚗  Concessionária Online", phoneListButtonStyle, GUILayout.Height(30)))
+                if (GUILayout.Button("🛒  Lojas TerraNet (Veículos, Terrenos, Animais)", phoneListButtonStyle, GUILayout.Height(30)))
                 {
-                    ShowToast("🚗 Concessionária: use o comando de spawn de veículos.");
+                    OpenVehicleBrowser();
                 }
                 GUILayout.Space(4);
                 if (GUILayout.Button("🗺️  Guia de Rodovias", phoneListButtonStyle, GUILayout.Height(30))) internetPage = "roads";

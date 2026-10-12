@@ -133,6 +133,12 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
+            // Navegador da loja em tela cheia: consome o input e bloqueia os demais atalhos.
+            if (HandleBrowserInput())
+            {
+                return;
+            }
+
             // Atalho [M]: Abre/Fecha o Mapa Regional Tático
             if (TerraInput.GetKeyDown(Key.M))
             {
@@ -207,6 +213,14 @@ namespace ProjectTerra.Sandbox
         private void OnGUI()
         {
             InitStyles();
+
+            // 0. Navegador da loja em tela cheia (por cima de tudo).
+            if (IsBrowserOpen)
+            {
+                DrawBrowser();
+                DrawToastNotification();
+                return;
+            }
 
             // 1. Mapa Regional Tático GIS [M] (tela cheia)
             if (IsRegionalMapOpen)
