@@ -136,7 +136,10 @@ namespace ProjectTerra.Sandbox
 
             cloudMaterial = new Material(cloudShader);
             cloudMaterial.name = "CloudMaterial_Procedural";
-            cloudMaterial.renderQueue = 2450; // Antes do skybox (2500), depois de geometria opaca
+            // Transparente (3000): precisa ser desenhado DEPOIS do skybox (2500), senão o
+            // céu procedural é pintado por cima e as nuvens somem. A geometria opaca do
+            // mundo (terreno) grava profundidade e oclui o dome corretamente.
+            cloudMaterial.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
 
             // Gerar textura de ruído para as nuvens
             Texture2D noiseTex = GenerateCloudNoiseTexture(256, 256);

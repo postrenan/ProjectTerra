@@ -47,18 +47,19 @@ namespace ProjectTerra.Sandbox
 
         private Mesh mesh;
         private Texture2D sharedBladeTexture;
-        private Material lushMaterial;
-        private Material savannaMaterial;
-        private Material desertMaterial;
+
+        // Cada bioma tem algumas variantes tonais para quebrar a "cor única":
+        // materiais e lotes são indexados por (int)tier * Variants + variant.
+        private const int Variants = 3;
+        private const int TierCount = 3;
+        private Material[] grassMaterials;
 
         private Transform player;
         private Vector3 lastBuildCenter = new Vector3(1e9f, 1e9f, 1e9f);
         private bool forceRebuild;
 
         private const int BatchMax = 1023;
-        private List<Matrix4x4[]> lushBatches = new List<Matrix4x4[]>();
-        private List<Matrix4x4[]> savannaBatches = new List<Matrix4x4[]>();
-        private List<Matrix4x4[]> desertBatches = new List<Matrix4x4[]>();
+        private List<Matrix4x4[]>[] grassBatches;
 
         // Cache de leitura rápida do splatmap (512x512x8)
         private float[,,] splatCache;
@@ -122,11 +123,36 @@ namespace ProjectTerra.Sandbox
             mesh = BuildCrossQuadMesh();
             sharedBladeTexture = GenerateBladeTexture();
 
-            lushMaterial = BuildGrassMaterial(lushColor, "Lush", lushColor * 0.16f);
-            savannaMaterial = BuildGrassMaterial(savannaColor, "Savanna", savannaColor * 0.18f);
-            desertMaterial = BuildGrassMaterial(desertColor, "Desert", new Color(0.24f, 0.20f, 0.12f));
+            grassMaterials = new Material[TierCount * Variants];
+            BuildTierVariants(GrassTier.Lush, lushColor, lushColor * 0.16f);
+            BuildTierVariants(GrassTier.Savanna, savannaColor, savannaColor * 0.18f);
+            BuildTierVariants(GrassTier.Desert, desertColor, new Color(0.24f, 0.20f, 0.12f));
+
+            grassBatches = new List<Matrix4x4[]>[TierCount * Variants];
+            for (int i = 0; i < grassBatches.Length; i++) grassBatches[i] = new List<Matrix4x4[]>();
 
             EnsureSplatmapLoaded();
+        }
+
+        private void BuildTierVariants(GrassTier tier, Color baseColor, Color emission)
+        {
+            for (int v = 0; v < Variants; v++)
+            {
+                Color c = MakeVariantColor(baseColor, v);
+                grassMaterials[(int)tier * Variants + v] = BuildGrassMaterial(c, $"{tier}_{v}", emission);
+            }
+        }
+
+        /// <summary>Gera uma variação tonal natural (brilho + leve matiz) por tufo.</summary>
+        private static Color MakeVariantColor(Color baseC, int variant)
+        {
+            float t = Variants <= 1 ? 0f : variant / (float)(Variants - 1); // 0..1
+            float bright = Mathf.Lerp(0.80f, 1.15f, t);
+            float hueJitter = (t - 0.5f) * 0.10f;
+            float r = baseC.r * bright + hueJitter * 0.4f;
+            float g = baseC.g * bright + hueJitter;
+            float b = baseC.b * bright;
+            return new Color(Mathf.Clamp01(r), Mathf.Clamp01(g), Mathf.Clamp01(b), 1f);
         }
 
         private void OnEnable() { FloatingOrigin.OnOriginRebased += OnOriginRebased; }
@@ -251,31 +277,30 @@ namespace ProjectTerra.Sandbox
                 forceRebuild = false;
             }
 
-            // Renderiza cada grupo com seu material e cor respectivos
-            for (int i = 0; i < lushBatches.Count; i++)
+            // Renderiza cada bioma/variante com seu material e cor respectivos
+            if (grassBatches == null) return;
+            for (int b = 0; b < grassBatches.Length; b++)
             {
-                Graphics.DrawMeshInstanced(mesh, 0, lushMaterial, lushBatches[i], lushBatches[i].Length,
-                    null, ShadowCastingMode.Off, false);
-            }
-
-            for (int i = 0; i < savannaBatches.Count; i++)
-            {
-                Graphics.DrawMeshInstanced(mesh, 0, savannaMaterial, savannaBatches[i], savannaBatches[i].Length,
-                    null, ShadowCastingMode.Off, false);
-            }
-
-            for (int i = 0; i < desertBatches.Count; i++)
-            {
-                Graphics.DrawMeshInstanced(mesh, 0, desertMaterial, desertBatches[i], desertBatches[i].Length,
-                    null, ShadowCastingMode.Off, false);
+                var mat = grassMaterials[b];
+                var list = grassBatches[b];
+                for (int i = 0; i < list.Count; i++)
+                {
+                    Graphics.DrawMeshInstanced(mesh, 0, mat, list[i], list[i].Length,
+                        null, ShadowCastingMode.Off, false);
+                }
             }
         }
 
         private void Rebuild(Vector3 center)
         {
-            var newLush = new List<Matrix4x4[]>();
-            var newSavanna = new List<Matrix4x4[]>();
-            var newDesert = new List<Matrix4x4[]>();
+            int buckets = TierCount * Variants;
+            var newBatches = new List<Matrix4x4[]>[buckets];
+            var cur = new List<Matrix4x4>[buckets];
+            for (int i = 0; i < buckets; i++)
+            {
+                newBatches[i] = new List<Matrix4x4[]>();
+                cur[i] = new List<Matrix4x4>(BatchMax);
+            }
 
             Vector3 tPos = terrain.transform.position;
             Vector3 tSize = terrain.terrainData.size;
@@ -297,10 +322,6 @@ namespace ProjectTerra.Sandbox
             int cellRadius = Mathf.CeilToInt(radius / spacing);
             long centerCellX = Mathf.RoundToInt(center.x / spacing);
             long centerCellZ = Mathf.RoundToInt(center.z / spacing);
-
-            var curLush = new List<Matrix4x4>(BatchMax);
-            var curSavanna = new List<Matrix4x4>(BatchMax);
-            var curDesert = new List<Matrix4x4>(BatchMax);
 
             for (long cx = centerCellX - cellRadius; cx <= centerCellX + cellRadius; cx++)
             {
@@ -388,45 +409,27 @@ namespace ProjectTerra.Sandbox
 
                     var trs = Matrix4x4.TRS(new Vector3(wx, y, wz), Quaternion.Euler(0f, yaw, 0f), new Vector3(w, hh, w));
 
-                    // Adiciona ao lote correto do bioma
-                    switch (tier)
+                    // Variante tonal estável por célula (bits altos do hash) quebra a cor única
+                    int variant = (int)((h >> 28) & 0x3);
+                    if (variant >= Variants) variant = Variants - 1;
+                    int bucket = (int)tier * Variants + variant;
+
+                    cur[bucket].Add(trs);
+                    if (cur[bucket].Count == BatchMax)
                     {
-                        case GrassTier.Desert:
-                            curDesert.Add(trs);
-                            if (curDesert.Count == BatchMax)
-                            {
-                                newDesert.Add(curDesert.ToArray());
-                                curDesert = new List<Matrix4x4>(BatchMax);
-                            }
-                            break;
-                        case GrassTier.Savanna:
-                            curSavanna.Add(trs);
-                            if (curSavanna.Count == BatchMax)
-                            {
-                                newSavanna.Add(curSavanna.ToArray());
-                                curSavanna = new List<Matrix4x4>(BatchMax);
-                            }
-                            break;
-                        default:
-                            curLush.Add(trs);
-                            if (curLush.Count == BatchMax)
-                            {
-                                newLush.Add(curLush.ToArray());
-                                curLush = new List<Matrix4x4>(BatchMax);
-                            }
-                            break;
+                        newBatches[bucket].Add(cur[bucket].ToArray());
+                        cur[bucket] = new List<Matrix4x4>(BatchMax);
                     }
                 }
             }
 
-            if (curLush.Count > 0) newLush.Add(curLush.ToArray());
-            if (curSavanna.Count > 0) newSavanna.Add(curSavanna.ToArray());
-            if (curDesert.Count > 0) newDesert.Add(curDesert.ToArray());
+            for (int i = 0; i < buckets; i++)
+            {
+                if (cur[i].Count > 0) newBatches[i].Add(cur[i].ToArray());
+            }
 
             // Troca atômica dos lotes: elimina qualquer frame em branco ou cintilação visual
-            lushBatches = newLush;
-            savannaBatches = newSavanna;
-            desertBatches = newDesert;
+            grassBatches = newBatches;
         }
 
         private bool IsOnRoad(float wx, float wz)

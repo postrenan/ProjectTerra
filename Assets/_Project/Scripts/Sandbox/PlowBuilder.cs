@@ -179,11 +179,19 @@ namespace ProjectTerra.Sandbox
             psShape.scale = new Vector3(2.4f, 0.2f, 0.4f);
 
             var psRenderer = dustObj.GetComponent<ParticleSystemRenderer>();
-            Shader partShader = Shader.Find("Particles/Standard Unlit") ?? Shader.Find("Mobile/Particles/Alpha Blended") ?? Shader.Find("Unlit/Color");
+            // URP: o "Particles/Standard Unlit" do Built-in fica magenta sob o URP.
+            Shader partShader = Shader.Find("Universal Render Pipeline/Particles/Unlit")
+                             ?? Shader.Find("Universal Render Pipeline/Particles/Lit")
+                             ?? ProjectTerra.Core.URPMaterialHelper.URPUnlitShader;
             if (partShader != null)
             {
-                psRenderer.sharedMaterial = new Material(partShader);
-                psRenderer.sharedMaterial.color = new Color(0.38f, 0.27f, 0.18f, 0.7f);
+                var dustColor = new Color(0.38f, 0.27f, 0.18f, 0.7f);
+                var dustMat = new Material(partShader);
+                if (dustMat.HasProperty("_BaseColor")) dustMat.SetColor("_BaseColor", dustColor);
+                else if (dustMat.HasProperty("_Color")) dustMat.SetColor("_Color", dustColor);
+                dustMat.color = dustColor;
+                ProjectTerra.Core.URPMaterialHelper.SetupTransparentBlend(dustMat);
+                psRenderer.sharedMaterial = dustMat;
             }
 
             plow.dirtParticles = ps;

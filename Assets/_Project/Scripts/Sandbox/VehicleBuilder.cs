@@ -286,10 +286,8 @@ namespace ProjectTerra.Sandbox
             spinner.transform.localPosition = Vector3.zero;
             spinner.transform.localScale = new Vector3(0.42f, 0.42f, 0.65f);
             Object.Destroy(spinner.GetComponent<Collider>());
-            var spinMat = new Material(Shader.Find("Standard") ?? Shader.Find("Diffuse"));
-            spinMat.color = new Color(0.85f, 0.87f, 0.90f);
-            if (spinMat.HasProperty("_Metallic")) spinMat.SetFloat("_Metallic", 0.9f);
-            if (spinMat.HasProperty("_Glossiness")) spinMat.SetFloat("_Glossiness", 0.85f);
+            var spinMat = ProjectTerra.Core.URPMaterialHelper.CreateURPLitMaterial(
+                "Spinner_Ogiva", new Color(0.85f, 0.87f, 0.90f), 0.85f, 0.9f);
             spinner.GetComponent<Renderer>().sharedMaterial = spinMat;
 
             // 3 Pás em compósito de carbono com pontas amarelas de aviso
@@ -465,7 +463,10 @@ namespace ProjectTerra.Sandbox
                 visual.transform.localPosition = visualOffset;
                 visual.transform.localRotation = Quaternion.identity;
                 visual.transform.localScale = Vector3.one * visualScale;
-                // IMPORTANTE: não aplica colormap — mantém os materiais PBR importados do modelo.
+                // Mantém os materiais PBR importados do modelo, mas garante que usem um
+                // shader do URP: materiais importados sob o Built-in (shader "Standard")
+                // renderizam magenta sob o URP. A conversão preserva texturas e cores.
+                EnsureURPMaterials(visual);
             }
             else
             {
@@ -519,6 +520,65 @@ namespace ProjectTerra.Sandbox
         /// Aplica a textura de paleta colormap.png original da coleção Kenney em todos os MeshRenderers
         /// do veículo instanciado, garantindo cores reais de fábrica com sombreamento Standard.
         /// </summary>
+        /// <summary>
+        /// Converte para URP Lit qualquer material cujo shader não seja do Universal Render
+        /// Pipeline (tipicamente o "Standard" do Built-in, que fica magenta sob o URP),
+        /// preservando a textura base, a cor e o normal map quando existentes.
+        /// </summary>
+        private static void EnsureURPMaterials(GameObject visual)
+        {
+            if (visual == null) return;
+            var urp = ProjectTerra.Core.URPMaterialHelper.URPLitShader;
+            if (urp == null) return;
+
+            foreach (var rend in visual.GetComponentsInChildren<Renderer>(true))
+            {
+                var src = rend.sharedMaterials;
+                if (src == null || src.Length == 0) continue;
+
+                var dst = new Material[src.Length];
+                bool changed = false;
+                for (int i = 0; i < src.Length; i++)
+                {
+                    var m = src[i];
+                    if (m != null && m.shader != null && m.shader.name.StartsWith("Universal Render Pipeline"))
+                    {
+                        dst[i] = m; // já é URP
+                        continue;
+                    }
+
+                    changed = true;
+                    var nm = new Material(urp) { name = (m != null ? m.name : "Mat") + "_URP" };
+
+                    if (m != null)
+                    {
+                        Texture baseTex = m.HasProperty("_MainTex") ? m.GetTexture("_MainTex")
+                                        : (m.HasProperty("_BaseMap") ? m.GetTexture("_BaseMap") : m.mainTexture);
+                        if (baseTex != null && nm.HasProperty("_BaseMap")) nm.SetTexture("_BaseMap", baseTex);
+
+                        Color col = m.HasProperty("_Color") ? m.GetColor("_Color")
+                                  : (m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor") : Color.white);
+                        if (nm.HasProperty("_BaseColor")) nm.SetColor("_BaseColor", col);
+
+                        if (m.HasProperty("_BumpMap"))
+                        {
+                            var bump = m.GetTexture("_BumpMap");
+                            if (bump != null && nm.HasProperty("_BumpMap"))
+                            {
+                                nm.SetTexture("_BumpMap", bump);
+                                nm.EnableKeyword("_NORMALMAP");
+                            }
+                        }
+                    }
+
+                    if (nm.HasProperty("_Smoothness")) nm.SetFloat("_Smoothness", 0.3f);
+                    dst[i] = nm;
+                }
+
+                if (changed) rend.sharedMaterials = dst;
+            }
+        }
+
         private static void ApplyVehicleColormap(GameObject visual)
         {
             if (visual == null) return;
@@ -531,11 +591,11 @@ namespace ProjectTerra.Sandbox
 
             if (colormap != null)
             {
-                Shader s = Shader.Find("Standard") ?? Shader.Find("Diffuse") ?? Shader.Find("Unlit/Texture");
-                var mat = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
-                mat.name = "Vehicle_Colormap_Material";
-                mat.mainTexture = colormap;
-                mat.color = Color.white;
+                // URP Lit (não "Standard" do Built-in, que renderiza magenta sob o URP).
+                var mat = ProjectTerra.Core.URPMaterialHelper.CreateURPLitMaterial(
+                    "Vehicle_Colormap_Material", Color.white, 0.2f, 0.05f);
+                if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", colormap);
+                else if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", colormap);
 
                 foreach (var mr in visual.GetComponentsInChildren<Renderer>(true))
                 {
