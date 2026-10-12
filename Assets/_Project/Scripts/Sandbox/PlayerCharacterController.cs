@@ -295,9 +295,7 @@ namespace ProjectTerra.Sandbox
                     speed *= wadingDrag;
                 }
 
-                controller.Move(moveDir * (speed * Time.deltaTime));
-
-                // Pulo
+                // Pulo (o impulso é aplicado ANTES do movimento unificado deste frame)
                 if (TerraInput.GetButtonDown("Jump") && isGrounded)
                 {
                     velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
@@ -305,12 +303,18 @@ namespace ProjectTerra.Sandbox
 
                 // Gravidade
                 velocity.y += gravity * Time.deltaTime;
-                Vector3 totalMove = velocity;
+
+                // Movimento unificado: horizontal + vertical em UMA ÚNICA chamada Move.
+                // Antes eram duas chamadas (horizontal e depois vertical). Uma chamada só-horizontal
+                // com isGrounded=true faz o CharacterController "colar" no solo (snap de até stepOffset),
+                // o que engolia o primeiro quadro do salto — a travada "como se preso ao chão".
+                // Combinando o impulso vertical no mesmo Move, o salto decola limpo no primeiro frame.
+                Vector3 frameMove = moveDir * speed + Vector3.up * velocity.y;
                 if (isWading)
                 {
-                    totalMove += waterInfo.flowVelocity * (submersion / 1.25f);
+                    frameMove += waterInfo.flowVelocity * (submersion / 1.25f);
                 }
-                controller.Move(totalMove * Time.deltaTime);
+                controller.Move(frameMove * Time.deltaTime);
             }
 
             // Proteção contra queda no vazio / perda de colisão do terreno
