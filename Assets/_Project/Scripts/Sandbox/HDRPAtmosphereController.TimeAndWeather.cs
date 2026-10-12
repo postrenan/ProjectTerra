@@ -21,12 +21,9 @@ namespace ProjectTerra.Sandbox
         {
             timeOfDay = Mathf.Repeat(hour, 24.0f);
 
-            if (sunLight == null)
-            {
-                var lightObj = GameObject.Find("Directional Light (Sun)") ?? GameObject.Find("Sun_DirectionalLight") ?? GameObject.Find("Directional Light");
-                if (lightObj != null) sunLight = lightObj.GetComponent<Light>();
-            }
-
+            // Garante o Sol (procura ou cria). Sem isto o ciclo congela quando a luz
+            // não existe na cena, pois o retorno antecipado abaixo nunca girava o Sol.
+            EnsureSunLight();
             if (sunLight == null) return;
 
             // Rotação do Sol: 06:00 nascer, 12:00 zênite, 18:00 pôr, 00:00 meia-noite.

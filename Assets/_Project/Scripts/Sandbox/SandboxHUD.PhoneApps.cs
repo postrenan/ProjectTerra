@@ -191,6 +191,62 @@ namespace ProjectTerra.Sandbox
 
         #region Finanças e Banco
 
+        /// <summary>Oferta de crédito de um banco: valor liberado, juros e nº de parcelas.</summary>
+        private struct BankOffer
+        {
+            public string id;
+            public string name;
+            public long principal;      // valor creditado ao jogador
+            public int interestPercent; // juros sobre o principal
+            public int installments;    // número de parcelas
+
+            public long TotalDebt => principal + principal * interestPercent / 100;
+            public long InstallmentAmount => (TotalDebt + installments - 1) / installments; // arredonda p/ cima
+        }
+
+        // Três bancos com perfis diferentes: do crédito pequeno e barato ao grande e caro.
+        private static readonly BankOffer[] BankOffers =
+        {
+            new BankOffer { id = "popular",     name = "Banco Popular",     principal = 30000,  interestPercent = 8,  installments = 12 },
+            new BankOffer { id = "nacional",    name = "Banco Nacional",    principal = 80000,  interestPercent = 12, installments = 18 },
+            new BankOffer { id = "continental", name = "Banco Continental", principal = 200000, interestPercent = 18, installments = 24 },
+        };
+
+        /// <summary>
+        /// Abate <paramref name="n"/> parcelas (ou o total, se n &lt;= 0) de um empréstimo,
+        /// limitado ao saldo disponível. Remove o empréstimo quando quitado.
+        /// </summary>
+        private void PayLoan(RegionSaveData save, BankLoan loan, int n)
+        {
+            long desired = n > 0 ? loan.installmentAmount * n : loan.remainingDebt;
+            long pay = System.Math.Min(System.Math.Min(desired, loan.remainingDebt), save.currentMoney);
+            if (pay <= 0)
+            {
+                ShowToast("Sem saldo para pagar.");
+                return;
+            }
+
+            save.currentMoney -= pay;
+            loan.remainingDebt -= pay;
+
+            if (loan.remainingDebt <= 0)
+            {
+                save.loans.Remove(loan);
+                save.AddLoanHistory(loan.bankName, "Quitação", pay);
+                ShowToast($"{loan.bankName}: empréstimo quitado!");
+            }
+            else
+            {
+                // Recalcula o progresso de parcelas a partir do saldo devedor.
+                long parcelasRestantes = (loan.remainingDebt + loan.installmentAmount - 1) / loan.installmentAmount;
+                loan.installmentsPaid = (int)System.Math.Max(0, loan.installmentsTotal - parcelasRestantes);
+                save.AddLoanHistory(loan.bankName, "Pagamento", pay);
+                ShowToast($"{loan.bankName}: pago ${pay:N0}.");
+            }
+
+            PersistSave();
+        }
+
         private void DrawPhoneFinances(Rect content)
         {
             DrawAppHeader(content, "Finanças");
@@ -244,42 +300,125 @@ namespace ProjectTerra.Sandbox
             GUILayout.Space(4);
 
             GUILayout.Label("BANCO", phoneSectionStyle);
-            GUILayout.Label($"Dívida atual: ${save.loanDebt:N0}", phoneBodyStyle);
-            GUILayout.Space(4);
+            GUILayout.Label($"Dia {save.gameDay}", phoneSmallStyle);
+            GUILayout.Label($"Dívida total: ${save.TotalLoanDebt:N0}", phoneBodyStyle);
+            GUILayout.Label($"Empréstimos ativos: {save.ActiveLoanCount}/{RegionSaveData.MaxActiveLoans}", phoneSmallStyle);
+            GUILayout.Space(6);
 
-            const long loanAmount = 50000;
-            const long loanDebtAdded = 55000; // 10% de juros
-            const long maxDebt = 500000;
-
-            if (save.loanDebt + loanDebtAdded <= maxDebt)
+            // --- Empréstimos ativos (pagamento parcelado) ---
+            if (save.ActiveLoanCount > 0)
             {
-                if (GUILayout.Button($"Empréstimo +${loanAmount:N0}", phoneListButtonStyle, GUILayout.Height(28)))
+                GUILayout.Label("MEUS EMPRÉSTIMOS", phoneSectionStyle);
+                GUILayout.Label($"Vence 1 parcela por dia • multa de {LoanLateFeePercent}% por atraso.", phoneSmallStyle);
+                GUILayout.Space(4);
+
+                // Cópia para iterar com segurança (PayLoan pode remover da lista).
+                var activeLoans = new List<BankLoan>(save.loans);
+                foreach (var loan in activeLoans)
                 {
-                    save.currentMoney += loanAmount;
-                    save.loanDebt += loanDebtAdded;
-                    PersistSave();
-                    ShowToast($"Empréstimo de ${loanAmount:N0} creditado.");
+                    if (loan == null) continue;
+
+                    GUILayout.Label(loan.bankName, phoneBodyStyle);
+                    GUILayout.Label($"Devendo ${loan.remainingDebt:N0}", phoneSmallStyle);
+                    GUILayout.Label($"Parcela ${loan.installmentAmount:N0} • {loan.installmentsPaid}/{loan.installmentsTotal} pagas", phoneSmallStyle);
+
+                    // Parcelas vencidas: uma por dia desde a contratação.
+                    long elapsed = System.Math.Max(0, save.gameDay - loan.startDay);
+                    long expectedPaid = System.Math.Min(loan.installmentsTotal, elapsed);
+                    long overdue = System.Math.Max(0, expectedPaid - loan.installmentsPaid);
+                    if (overdue > 0)
+                        GUILayout.Label($"[Atraso] {overdue} parcela(s) vencida(s) acumulando multa.", phoneLockStyle);
+
+                    if (save.currentMoney <= 0)
+                    {
+                        GUILayout.Label("Sem saldo para pagar parcelas.", phoneLockStyle);
+                    }
+                    else
+                    {
+                        GUILayout.BeginHorizontal();
+                        if (GUILayout.Button("Pagar 1 parcela", phoneListButtonStyle, GUILayout.Height(26)))
+                            PayLoan(save, loan, 1);
+                        if (loan.InstallmentsRemaining > 1 &&
+                            GUILayout.Button("Pagar 3", phoneListButtonStyle, GUILayout.Height(26)))
+                            PayLoan(save, loan, 3);
+                        GUILayout.EndHorizontal();
+
+                        if (GUILayout.Button($"Quitar tudo (${System.Math.Min(save.currentMoney, loan.remainingDebt):N0})",
+                                phoneListButtonStyle, GUILayout.Height(26)))
+                            PayLoan(save, loan, 0);
+                    }
+
+                    GUILayout.Space(4);
+                    DrawPhoneDivider();
+                    GUILayout.Space(5);
                 }
-                GUILayout.Label("Juros de 10% sobre o valor tomado.", phoneSmallStyle);
+            }
+
+            // --- Contratar novos empréstimos ---
+            GUILayout.Label("CONTRATAR CRÉDITO", phoneSectionStyle);
+
+            if (save.ActiveLoanCount >= RegionSaveData.MaxActiveLoans)
+            {
+                GUILayout.Label($"[Bloqueado] Limite de {RegionSaveData.MaxActiveLoans} empréstimos atingido. Quite um para contratar outro.", phoneLockStyle);
             }
             else
             {
-                GUILayout.Label("[Bloqueado] Limite de crédito atingido.", phoneLockStyle);
+                foreach (var bank in BankOffers)
+                {
+                    GUILayout.Label(bank.name, phoneBodyStyle);
+                    GUILayout.Label($"Libera ${bank.principal:N0} • {bank.interestPercent}% juros", phoneSmallStyle);
+                    GUILayout.Label($"{bank.installments}x de ${bank.InstallmentAmount:N0}", phoneSmallStyle);
+
+                    if (save.HasLoanWith(bank.id))
+                    {
+                        GUILayout.Label("[Ativo] Já possui um empréstimo neste banco.", phoneLockStyle);
+                    }
+                    else if (GUILayout.Button($"Contratar +${bank.principal:N0}", phoneListButtonStyle, GUILayout.Height(28)))
+                    {
+                        save.currentMoney += bank.principal;
+                        save.loans.Add(new BankLoan
+                        {
+                            bankId = bank.id,
+                            bankName = bank.name,
+                            remainingDebt = bank.TotalDebt,
+                            installmentAmount = bank.InstallmentAmount,
+                            installmentsPaid = 0,
+                            installmentsTotal = bank.installments,
+                            startDay = save.gameDay,
+                            lastPenaltyDay = save.gameDay,
+                        });
+                        save.AddLoanHistory(bank.name, "Contratação", bank.principal);
+                        PersistSave();
+                        ShowToast($"{bank.name}: ${bank.principal:N0} creditados.");
+                    }
+
+                    GUILayout.Space(4);
+                    DrawPhoneDivider();
+                    GUILayout.Space(5);
+                }
             }
 
-            GUILayout.Space(4);
-            if (save.loanDebt > 0)
+            // --- Histórico de pagamentos ---
+            GUILayout.Space(2);
+            GUILayout.Label("HISTÓRICO", phoneSectionStyle);
+            if (save.loanHistory == null || save.loanHistory.Count == 0)
             {
-                long pay = System.Math.Min(save.currentMoney, save.loanDebt);
-                bool canPay = pay > 0;
-                if (canPay && GUILayout.Button($"Quitar ${pay:N0}", phoneListButtonStyle, GUILayout.Height(28)))
+                GUILayout.Label("Nenhuma movimentação bancária ainda.", phoneSmallStyle);
+            }
+            else
+            {
+                // Mais recentes primeiro.
+                for (int i = save.loanHistory.Count - 1; i >= 0; i--)
                 {
-                    save.currentMoney -= pay;
-                    save.loanDebt -= pay;
-                    PersistSave();
-                    ShowToast($"Dívida reduzida em ${pay:N0}.");
+                    var h = save.loanHistory[i];
+                    if (h == null) continue;
+                    // + crédito recebido, - saída de caixa, ! multa somada à dívida.
+                    string sinal = h.type == "Contratação" ? "+"
+                                 : h.type == "Multa" ? "!"
+                                 : "-";
+                    GUILayout.Label($"Dia {h.day} • {h.type} • {h.bankName}", phoneSmallStyle);
+                    GUILayout.Label($"   {sinal}${h.amount:N0}", phoneSmallStyle);
                 }
-                if (!canPay) GUILayout.Label("Sem saldo para abater a dívida.", phoneSmallStyle);
             }
 
             GUILayout.EndScrollView();
@@ -738,7 +877,7 @@ namespace ProjectTerra.Sandbox
             GUILayout.Label($"Entregas concluídas: {save.completedDeliveries}", phoneSmallStyle);
             if (save.advancedEconomy) GUILayout.Label($"Entregas atrasadas: {save.lateDeliveries}", phoneSmallStyle);
             GUILayout.Label($"Reputação: {save.reputation}", phoneSmallStyle);
-            GUILayout.Label($"Dívida: ${save.loanDebt:N0}", phoneSmallStyle);
+            GUILayout.Label($"Dívida: ${save.TotalLoanDebt:N0}", phoneSmallStyle);
 
             int ownedLic = 0;
             foreach (var li in DriverLicenseCatalog.All)

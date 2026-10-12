@@ -21,6 +21,8 @@ namespace ProjectTerra.Sandbox
         private float previousTime = -1f;
         private bool initialized = false;
 
+        private const int LoanLateFeePercent = 5; // multa de 5% da parcela por dia de atraso
+
         private void Awake()
         {
             Instance = this;
@@ -28,7 +30,7 @@ namespace ProjectTerra.Sandbox
 
         private RegionSaveData Save => SaveManager.Instance != null ? SaveManager.Instance.ActiveSave : null;
 
-        public int CurrentDay => Save != null ? Save.gameDay : 1;
+        public int CurrentDay => Save != null ? (int)Save.gameDay : 1;
 
         /// <summary>Tempo de jogo acumulado em horas (dia × 24 + horário solar). Base dos prazos de frete.</summary>
         public static float TotalGameHoursNow
@@ -70,7 +72,13 @@ namespace ProjectTerra.Sandbox
             var save = Save;
             if (save == null) return;
 
-            save.gameDay++;
+            // Único avançador de dia do jogo: incrementa gameDay e cobra multa por
+            // parcelas de empréstimo vencidas (sistema de bancos do main).
+            long loanPenalty = save.AdvanceDayAndChargeLate(LoanLateFeePercent);
+            if (loanPenalty > 0)
+            {
+                SandboxHUD.Instance?.ShowToast($"[Banco] Multa por atraso: ${loanPenalty:N0}", 4f);
+            }
 
             if (save.advancedEconomy)
             {
@@ -78,7 +86,7 @@ namespace ProjectTerra.Sandbox
                 ApplyDailyEvents(save);
             }
 
-            OnNewDay?.Invoke(save.gameDay);
+            OnNewDay?.Invoke((int)save.gameDay);
 
             // Renova o mercado de fretes a cada dia, dando sensação de mundo vivo.
             SandboxHUD.Instance?.RefreshJobMarket();
