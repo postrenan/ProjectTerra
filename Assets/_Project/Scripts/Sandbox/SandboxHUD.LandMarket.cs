@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using ProjectTerra.Core;
 using ProjectTerra.Planet;
@@ -7,28 +8,45 @@ namespace ProjectTerra.Sandbox
 {
     /// <summary>
     /// Loja de terrenos moderna (GIS / Portal Imobiliário Clean):
-    /// Visual contemporâneo com mapa satelital interativo, demarcação precisa de glebas
+    /// Visual contemporâneo com mapa satelital interativo, demarcação procedural de glebas
     /// e painel de dossiê cadastral com interface limpa e responsiva.
+    ///
+    /// As glebas NÃO são mais quadrados de tamanho fixo: um diagrama de Voronoi sobre
+    /// sementes distribuídas por amostragem tipo Poisson (determinística por região) recorta
+    /// o território real da província em lotes orgânicos de formatos e áreas variadas, cada um
+    /// limitado ao contorno geográfico verdadeiro (nenhuma gleba invade água ou região vizinha).
     /// </summary>
     public partial class SandboxHUD
     {
         #region Estado da Loja de Terrenos
 
-        private const int LandGridCols = 16;
+        // Resolução do mapa de células (parcelPixel). Alinhado 1:1 com a textura satelital.
+        private const int LandParcelMapRes = 200;
 
-        private int landCols, landRows;
+        private int landParcelCount;
+        private float[] landSeedU, landSeedV;      // sementes Voronoi (espaço normalizado 0..1)
+        private int[] landParcelPixel;             // id da gleba por pixel (-1 = fora da província)
+        private bool[] landParcelBoundary;         // pixel pertence à linha de divisa entre glebas
         private bool[] landForSale;
         private long[] landPrice;
         private float[] landAreaHa;
+        private float[] landCentU, landCentV;      // centroide normalizado de cada gleba
+
         private int landCacheRegionId = int.MinValue;
         private float landCacheW, landCacheL;
         private int landSelected = -1;
+        private int landHover = -1;
         private Vector2 landPanelScroll = Vector2.zero;
         private GUIStyle landCellStyle;
 
+        // Overlay de glebas desenhado sobre o satélite; só é reconstruído quando o estado muda
+        // (hover, seleção ou conjunto de glebas adquiridas), nunca a cada frame.
+        private Texture2D landOverlayTex;
+        private int landOverlayKey = int.MinValue;
+
         #endregion
 
-        #region Cálculo da Grade Cadastral
+        #region Geração Procedural da Malha Cadastral (Voronoi / Poisson)
 
         private void EnsureLandGrid()
         {
@@ -38,7 +56,7 @@ namespace ProjectTerra.Sandbox
             float worldL = rsm != null ? rsm.worldLengthMeters : 60000f;
             int regId = region != null ? region.id : (activeSave != null ? activeSave.regionId : 0);
 
-            if (landForSale != null && landCacheRegionId == regId &&
+            if (landParcelPixel != null && landCacheRegionId == regId &&
                 Mathf.Approximately(landCacheW, worldW) && Mathf.Approximately(landCacheL, worldL))
                 return;
 
@@ -46,59 +64,151 @@ namespace ProjectTerra.Sandbox
             landCacheW = worldW;
             landCacheL = worldL;
             landSelected = -1;
+            landHover = -1;
+            landOverlayKey = int.MinValue; // força reconstrução do overlay
 
-            float aspect = worldW / Mathf.Max(1f, worldL);
-            landCols = LandGridCols;
-            landRows = Mathf.Clamp(Mathf.RoundToInt(landCols / Mathf.Max(0.2f, aspect)), 6, 28);
+            GenerateProceduralParcels(region, regId, worldW, worldL);
+        }
 
-            int n = landCols * landRows;
-            landForSale = new bool[n];
-            landPrice = new long[n];
-            landAreaHa = new float[n];
-
-            float cellW = worldW / landCols;
-            float cellL = worldL / landRows;
-            float areaHa = cellW * cellL / 10000f;
-
+        private void GenerateProceduralParcels(RegionData region, int regId, float worldW, float worldL)
+        {
+            int res = LandParcelMapRes;
             bool useMask = region != null && region.id > 0;
             if (useMask) RegionBoundaryService.EnsureLoaded();
 
-            for (int r = 0; r < landRows; r++)
-            {
-                for (int c = 0; c < landCols; c++)
-                {
-                    int id = r * landCols + c;
+            float dLat = useMask ? (region.maxLat - region.minLat) : 0f;
+            float dLon = useMask ? (region.maxLon - region.minLon) : 0f;
 
-                    float insideFrac = 1f;
+            // Número-alvo de glebas conforme a área real da província (lotes maiores em
+            // estados gigantes, poucos lotes em microterritórios). Média ~6,5 km²/gleba.
+            float areaKm2 = (worldW / 1000f) * (worldL / 1000f);
+            int target = Mathf.Clamp(Mathf.RoundToInt(areaKm2 / 6.5f), 18, 120);
+
+            // Distribuição tipo Poisson (espaçamento métrico mínimo) → glebas de tamanhos
+            // variados e orgânicos, sem o padrão regular de uma grade.
+            float avgArea = (worldW * worldL) / Mathf.Max(1, target);
+            float minSpacing = 0.62f * Mathf.Sqrt(avgArea);
+            float minSpacingSq = minSpacing * minSpacing;
+
+            var rng = new System.Random(unchecked(regId * 73856093) ^ 19349663);
+            var sU = new List<float>(target);
+            var sV = new List<float>(target);
+
+            int attempts = target * 60;
+            while (sU.Count < target && attempts-- > 0)
+            {
+                float u = (float)rng.NextDouble();
+                float v = (float)rng.NextDouble();
+
+                if (useMask)
+                {
+                    float lat = region.minLat + v * dLat;
+                    float lon = region.minLon + u * dLon;
+                    if (!RegionBoundaryService.IsInsideRegion(region.id, lat, lon)) continue;
+                }
+
+                bool ok = true;
+                for (int i = 0; i < sU.Count; i++)
+                {
+                    float du = (u - sU[i]) * worldW;
+                    float dv = (v - sV[i]) * worldL;
+                    if (du * du + dv * dv < minSpacingSq) { ok = false; break; }
+                }
+                if (!ok) continue;
+
+                sU.Add(u);
+                sV.Add(v);
+            }
+
+            if (sU.Count == 0) { sU.Add(0.5f); sV.Add(0.5f); }
+
+            int count = sU.Count;
+            landParcelCount = count;
+            landSeedU = sU.ToArray();
+            landSeedV = sV.ToArray();
+            landForSale = new bool[count];
+            landPrice = new long[count];
+            landAreaHa = new float[count];
+            landCentU = new float[count];
+            landCentV = new float[count];
+            landParcelPixel = new int[res * res];
+            landParcelBoundary = new bool[res * res];
+
+            var pxCount = new int[count];
+            var sumU = new double[count];
+            var sumV = new double[count];
+
+            // Atribuição Voronoi: cada pixel pertence à semente métrica mais próxima,
+            // recortado pelo contorno real da província (mesma convenção da textura satelital).
+            for (int y = 0; y < res; y++)
+            {
+                float ny = y / (float)(res - 1);
+                float lat = region != null ? region.minLat + ny * dLat : 0f;
+                int rowBase = y * res;
+                for (int x = 0; x < res; x++)
+                {
+                    float nx = x / (float)(res - 1);
+                    int idx = rowBase + x;
+
                     if (useMask)
                     {
-                        int hit = 0, total = 0;
-                        float dLat = region.maxLat - region.minLat;
-                        float dLon = region.maxLon - region.minLon;
-                        for (int sy = 0; sy < 4; sy++)
+                        float lon = region.minLon + nx * dLon;
+                        if (!RegionBoundaryService.IsInsideRegion(region.id, lat, lon))
                         {
-                            for (int sx = 0; sx < 4; sx++)
-                            {
-                                float u = (c + (sx + 0.5f) / 4f) / landCols;
-                                float v = 1f - (r + (sy + 0.5f) / 4f) / landRows;
-                                float lat = region.minLat + v * dLat;
-                                float lon = region.minLon + u * dLon;
-                                total++;
-                                if (RegionBoundaryService.IsInsideRegion(region.id, lat, lon)) hit++;
-                            }
+                            landParcelPixel[idx] = -1;
+                            continue;
                         }
-                        insideFrac = hit / (float)total;
                     }
 
-                    landForSale[id] = insideFrac >= 0.4f;
-                    landAreaHa[id] = areaHa * insideFrac;
+                    int best = 0;
+                    float bestD = float.MaxValue;
+                    for (int i = 0; i < count; i++)
+                    {
+                        float du = (nx - landSeedU[i]) * worldW;
+                        float dv = (ny - landSeedV[i]) * worldL;
+                        float d = du * du + dv * dv;
+                        if (d < bestD) { bestD = d; best = i; }
+                    }
 
-                    float noise = Mathf.PerlinNoise(c * 0.37f + regId * 0.13f, r * 0.37f + 11.7f);
-                    float factor = Mathf.Lerp(0.7f, 1.45f, noise);
-                    double basePrice = 120000.0 + 8000.0 * Mathf.Sqrt(Mathf.Max(1f, landAreaHa[id]));
-                    long price = (long)(basePrice * factor);
-                    landPrice[id] = (price / 1000L) * 1000L;
+                    landParcelPixel[idx] = best;
+                    pxCount[best]++;
+                    sumU[best] += nx;
+                    sumV[best] += ny;
                 }
+            }
+
+            // Linhas de divisa (um pixel difere do vizinho à direita/abaixo, incluindo transição p/ fora).
+            for (int y = 0; y < res; y++)
+            {
+                int rowBase = y * res;
+                for (int x = 0; x < res; x++)
+                {
+                    int idx = rowBase + x;
+                    int p = landParcelPixel[idx];
+                    if (p < 0) continue;
+                    bool bound = false;
+                    if (x < res - 1 && landParcelPixel[idx + 1] != p) bound = true;
+                    else if (y < res - 1 && landParcelPixel[idx + res] != p) bound = true;
+                    else if (x > 0 && landParcelPixel[idx - 1] != p) bound = true;
+                    else if (y > 0 && landParcelPixel[idx - res] != p) bound = true;
+                    landParcelBoundary[idx] = bound;
+                }
+            }
+
+            // Métricas por gleba: área real (hectares), centroide e preço.
+            float pxAreaHa = (worldW / res) * (worldL / res) / 10000f;
+            for (int i = 0; i < count; i++)
+            {
+                landForSale[i] = pxCount[i] > 0;
+                landAreaHa[i] = pxCount[i] * pxAreaHa;
+                landCentU[i] = pxCount[i] > 0 ? (float)(sumU[i] / pxCount[i]) : landSeedU[i];
+                landCentV[i] = pxCount[i] > 0 ? (float)(sumV[i] / pxCount[i]) : landSeedV[i];
+
+                float noise = Mathf.PerlinNoise(landCentU[i] * 6.3f + regId * 0.13f, landCentV[i] * 6.3f + 11.7f);
+                float factor = Mathf.Lerp(0.7f, 1.45f, noise);
+                double basePrice = 120000.0 + 8000.0 * Mathf.Sqrt(Mathf.Max(1f, landAreaHa[i]));
+                long price = (long)(basePrice * factor);
+                landPrice[i] = (price / 1000L) * 1000L;
             }
         }
 
@@ -106,6 +216,67 @@ namespace ProjectTerra.Sandbox
         {
             if (p >= 1000000L) return $"${p / 1000000f:0.0}M";
             return $"${p / 1000L}k";
+        }
+
+        #endregion
+
+        #region Overlay das Glebas (reconstruído sob demanda)
+
+        private int ComputeOverlayKey(RegionSaveData save)
+        {
+            int key = 17;
+            key = key * 31 + landHover;
+            key = key * 31 + landSelected;
+            var owned = save != null ? save.ownedParcels : null;
+            if (owned != null)
+            {
+                key = key * 31 + owned.Count;
+                for (int i = 0; i < owned.Count; i++) key = key * 31 + owned[i];
+            }
+            return key;
+        }
+
+        private void EnsureLandOverlay(RegionSaveData save)
+        {
+            if (landParcelPixel == null) return;
+
+            int key = ComputeOverlayKey(save);
+            if (landOverlayTex != null && key == landOverlayKey) return;
+            landOverlayKey = key;
+
+            int res = LandParcelMapRes;
+            if (landOverlayTex == null)
+            {
+                landOverlayTex = new Texture2D(res, res, TextureFormat.RGBA32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Bilinear
+                };
+            }
+
+            var owned = save != null ? save.ownedParcels : null;
+            Color outside = new Color(0f, 0f, 0f, 0.55f);          // fora da província: indisponível
+            Color line = new Color(1f, 1f, 1f, 0.5f);              // divisa cadastral
+            Color clear = new Color(0f, 0f, 0f, 0f);
+            Color colOwned = new Color(0.10f, 0.75f, 0.35f, 0.42f);
+            Color colSel = new Color(0.25f, 0.65f, 1f, 0.45f);
+            Color colHover = new Color(1f, 0.95f, 0.40f, 0.33f);
+
+            var px = new Color[res * res];
+            for (int i = 0; i < px.Length; i++)
+            {
+                int p = landParcelPixel[i];
+                if (p < 0) { px[i] = outside; continue; }
+                if (landParcelBoundary[i]) { px[i] = line; continue; }
+
+                if (owned != null && owned.Contains(p)) px[i] = colOwned;
+                else if (p == landSelected) px[i] = colSel;
+                else if (p == landHover) px[i] = colHover;
+                else px[i] = clear;
+            }
+
+            landOverlayTex.SetPixels(px);
+            landOverlayTex.Apply(false);
         }
 
         #endregion
@@ -219,49 +390,34 @@ namespace ProjectTerra.Sandbox
             if (regionalMapTex != null) GUI.DrawTexture(map, regionalMapTex);
             else Fill(map, new Color(0.24f, 0.32f, 0.22f));
 
-            float cw = map.width / landCols;
-            float ch = map.height / landRows;
+            // Hover / seleção determinados pelo pixel da gleba sob o cursor.
+            int res = LandParcelMapRes;
             Vector2 mouse = Event.current.mousePosition;
-            int hover = -1;
             bool click = Event.current.type == EventType.MouseDown && Event.current.button == 0;
+            int newHover = -1;
 
-            for (int r = 0; r < landRows; r++)
+            if (landParcelPixel != null && map.Contains(mouse))
             {
-                for (int c = 0; c < landCols; c++)
-                {
-                    int id = r * landCols + c;
-                    Rect cell = new Rect(map.x + c * cw, map.y + r * ch, cw, ch);
-                    bool owned = save != null && save.ownedParcels != null && save.ownedParcels.Contains(id);
-
-                    if (!landForSale[id])
-                    {
-                        Fill(cell, new Color(0f, 0f, 0f, 0.55f));
-                        continue;
-                    }
-
-                    bool isHover = cell.Contains(mouse);
-                    if (isHover) hover = id;
-
-                    if (owned) Fill(cell, new Color(0.10f, 0.75f, 0.35f, 0.45f));
-                    else if (isHover) Fill(cell, new Color(1f, 0.95f, 0.40f, 0.35f));
-
-                    GUI.color = new Color(1f, 1f, 1f, 0.40f);
-                    DrawOutline(cell, Color.white);
-                    GUI.color = Color.white;
-
-                    if (cw > 38f && ch > 16f)
-                        GUI.Label(cell, owned ? "SUA" : ShortPrice(landPrice[id]), landCellStyle);
-                }
+                float fx = (mouse.x - map.x) / map.width;
+                float fy = (mouse.y - map.y) / map.height;
+                // A textura é desenhada com GUI.DrawTexture (origem na base): o topo do
+                // retângulo corresponde à última linha de pixels, daí (1 - fy).
+                int tx = Mathf.Clamp((int)(fx * (res - 1)), 0, res - 1);
+                int ty = Mathf.Clamp((int)((1f - fy) * (res - 1)), 0, res - 1);
+                int p = landParcelPixel[ty * res + tx];
+                if (p >= 0 && p < landForSale.Length && landForSale[p]) newHover = p;
             }
 
-            // Destaque da Seleção
-            if (landSelected >= 0 && landSelected < landForSale.Length)
+            if (newHover != landHover) landHover = newHover;
+
+            // Overlay das glebas (orgânicas), reconstruído só quando o estado muda.
+            EnsureLandOverlay(save);
+            if (landOverlayTex != null) GUI.DrawTexture(map, landOverlayTex);
+
+            if (click && landHover >= 0 && map.Contains(mouse))
             {
-                int sr = landSelected / landCols, sc = landSelected % landCols;
-                Rect sel = new Rect(map.x + sc * cw, map.y + sr * ch, cw, ch);
-                GUI.color = new Color(0.25f, 0.65f, 1f, 1f);
-                DrawOutline(sel, new Color(0.25f, 0.65f, 1f));
-                GUI.color = Color.white;
+                landSelected = landHover;
+                Event.current.Use();
             }
 
             // Jogador no mapa
@@ -274,12 +430,6 @@ namespace ProjectTerra.Sandbox
                     Fill(new Rect(pp.x - 5, pp.y - 5, 10, 10), new Color(0.95f, 0.20f, 0.20f));
                     GUI.Label(new Rect(pp.x + 7, pp.y - 9, 80, 18), "Você", landCellStyle);
                 }
-            }
-
-            if (click && hover >= 0 && map.Contains(mouse))
-            {
-                landSelected = hover;
-                Event.current.Use();
             }
         }
 
@@ -295,25 +445,24 @@ namespace ProjectTerra.Sandbox
             landPanelScroll = GUILayout.BeginScrollView(landPanelScroll);
 
             GUI.Label(new Rect(0, 0, panel.width - 40f, 22f), "Dossiê da Propriedade", brPageH2Style);
-            GUI.Label(new Rect(0, 26f, panel.width - 40f, 18f), $"Suas terras: {ownedCount} parcelas adquiridas", brBodyStyle);
+            GUI.Label(new Rect(0, 26f, panel.width - 40f, 18f), $"Suas terras: {ownedCount} glebas adquiridas", brBodyStyle);
             GUI.Label(new Rect(0, 48f, panel.width - 40f, 22f), $"Saldo: {moneyStr}", brPriceStyle);
 
             GUILayout.Space(82);
 
-            if (landSelected < 0 || landSelected >= landForSale.Length)
+            if (landSelected < 0 || landForSale == null || landSelected >= landForSale.Length)
             {
                 Rect tip = GUILayoutUtility.GetRect(panel.width - 40f, 74f);
                 Fill(tip, new Color(0.96f, 0.97f, 0.99f));
                 DrawOutline(tip, UiBorderLight);
                 GUI.Label(new Rect(tip.x + 14f, tip.y + 16f, tip.width - 28f, 42f),
-                    "Clique sobre qualquer parcela no mapa para consultar dimensão, área e valor de aquisição.", brSmallStyle);
+                    "Clique sobre qualquer gleba no mapa para consultar formato, área e valor de aquisição.", brSmallStyle);
             }
             else
             {
                 int id = landSelected;
-                int row = id / landCols, col = id % landCols;
                 bool owned = save != null && save.ownedParcels != null && save.ownedParcels.Contains(id);
-                string code = $"Gleba {(char)('A' + Mathf.Min(col, 25))}-{row + 1}";
+                string code = $"Gleba Nº {id + 1:000}";
 
                 Rect info = GUILayoutUtility.GetRect(panel.width - 40f, 144f);
                 Fill(info, new Color(0.97f, 0.98f, 1f));
@@ -322,7 +471,7 @@ namespace ProjectTerra.Sandbox
                 GUI.Label(new Rect(info.x + 16f, info.y + 14f, info.width - 32f, 24f), code, brPageH1Style);
                 GUI.Label(new Rect(info.x + 16f, info.y + 42f, info.width - 32f, 20f), $"Área: {landAreaHa[id]:N0} hectares", brBodyStyle);
                 GUI.Label(new Rect(info.x + 16f, info.y + 64f, info.width - 32f, 20f),
-                    $"Dimensões: {landCacheW / landCols / 1000f:0.0} x {landCacheL / landRows / 1000f:0.0} km", brSmallStyle);
+                    "Formato: gleba de contorno procedural (irregular)", brSmallStyle);
                 GUI.Label(new Rect(info.x + 16f, info.y + 86f, info.width - 32f, 20f),
                     owned ? "Situação: Sua propriedade (Adquirida)" : "Situação: Disponível para compra", brSmallStyle);
 
@@ -332,7 +481,7 @@ namespace ProjectTerra.Sandbox
 
                 bool canAfford = save != null && save.currentMoney >= landPrice[id];
                 GUI.enabled = !owned && canAfford;
-                string label = owned ? "Já Adquirida" : (canAfford ? "Adquirir Parcela" : "Saldo Insuficiente");
+                string label = owned ? "Já Adquirida" : (canAfford ? "Adquirir Gleba" : "Saldo Insuficiente");
                 if (GUILayout.Button(label, brBuyPrimaryStyle, GUILayout.Height(42)))
                 {
                     PurchaseLandParcel(id);
@@ -348,8 +497,8 @@ namespace ProjectTerra.Sandbox
         {
             var save = CurrentSave;
             if (save == null) { ShowToast("Sem partida ativa."); return; }
-            if (id < 0 || id >= landForSale.Length || !landForSale[id]) return;
-            if (save.ownedParcels == null) save.ownedParcels = new System.Collections.Generic.List<int>();
+            if (landForSale == null || id < 0 || id >= landForSale.Length || !landForSale[id]) return;
+            if (save.ownedParcels == null) save.ownedParcels = new List<int>();
             if (save.ownedParcels.Contains(id)) return;
             if (save.currentMoney < landPrice[id]) { ShowToast("Saldo insuficiente."); return; }
 
@@ -358,8 +507,7 @@ namespace ProjectTerra.Sandbox
             save.reputation += 5;
             PersistSave();
 
-            string code = $"{(char)('A' + Mathf.Min(id % landCols, 25))}{id / landCols + 1}";
-            ShowToast($"Gleba {code} adquirida com sucesso! (+5 Rep)");
+            ShowToast($"Gleba Nº {id + 1:000} adquirida com sucesso! (+5 Rep)");
         }
 
         #endregion
