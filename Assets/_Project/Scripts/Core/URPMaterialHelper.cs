@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectTerra.Core
@@ -149,6 +150,119 @@ namespace ProjectTerra.Core
         public static Material CreateSolidMaterial(Color color, float smoothness = 0.15f, float metallic = 0.0f)
         {
             var mat = CreateURPLitMaterial("Solid_" + color.GetHashCode(), color, smoothness, metallic);
+            return mat;
+        }
+
+        // Cache de conversões (material-fonte -> material URP) para evitar recriar
+        // materiais idênticos ao converter centenas de instâncias (arbustos, rochas).
+        private static readonly Dictionary<int, Material> _urpConversionCache = new Dictionary<int, Material>();
+
+        /// <summary>
+        /// Percorre os renderers de um modelo instanciado e converte qualquer material cujo
+        /// shader não seja do Universal Render Pipeline (ex.: Standard do Built-in, que aparece
+        /// ROSA/magenta em URP) para um material URP/Lit equivalente, preservando albedo, normal,
+        /// cor, metallic/smoothness e alpha clip. Materiais já URP são mantidos intactos.
+        /// </summary>
+        /// <param name="foliageAlphaClip">Força alpha clip (cutout) — use para folhagem recortada.</param>
+        public static void UpgradeRenderersToURP(GameObject root, bool foliageAlphaClip = false)
+        {
+            if (root == null) return;
+            if (URPLitShader == null) return;
+
+            var renderers = root.GetComponentsInChildren<Renderer>(true);
+            if (renderers == null) return;
+
+            foreach (var rend in renderers)
+            {
+                if (rend == null) continue;
+                var mats = rend.sharedMaterials;
+                if (mats == null || mats.Length == 0) continue;
+
+                bool changed = false;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    var src = mats[i];
+                    if (src == null) continue;
+
+                    // Já é um shader do URP? Mantém como está.
+                    var sh = src.shader;
+                    if (sh != null && sh.name != null && sh.name.StartsWith("Universal Render Pipeline/"))
+                        continue;
+
+                    mats[i] = ConvertToURPLit(src, foliageAlphaClip);
+                    changed = true;
+                }
+
+                if (changed) rend.sharedMaterials = mats;
+            }
+        }
+
+        /// <summary>
+        /// Converte um material (tipicamente Standard do Built-in) para URP/Lit preservando
+        /// as texturas e parâmetros principais. O resultado é cacheado por material-fonte.
+        /// </summary>
+        public static Material ConvertToURPLit(Material src, bool preferAlphaClip = false)
+        {
+            if (src == null) return null;
+
+            int key = src.GetInstanceID();
+            if (_urpConversionCache.TryGetValue(key, out var cached) && cached != null)
+                return cached;
+
+            var mat = new Material(URPLitShader) { name = src.name + "_URP" };
+
+            // Cor base
+            Color baseColor = Color.white;
+            if (src.HasProperty("_Color")) baseColor = src.GetColor("_Color");
+            else if (src.HasProperty("_BaseColor")) baseColor = src.GetColor("_BaseColor");
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", baseColor);
+
+            // Albedo / BaseMap (transfere também tiling/offset)
+            Texture albedo = null;
+            if (src.HasProperty("_MainTex")) albedo = src.GetTexture("_MainTex");
+            if (albedo == null && src.HasProperty("_BaseMap")) albedo = src.GetTexture("_BaseMap");
+            if (albedo != null && mat.HasProperty("_BaseMap"))
+            {
+                mat.SetTexture("_BaseMap", albedo);
+                if (src.HasProperty("_MainTex"))
+                {
+                    mat.SetTextureScale("_BaseMap", src.GetTextureScale("_MainTex"));
+                    mat.SetTextureOffset("_BaseMap", src.GetTextureOffset("_MainTex"));
+                }
+            }
+
+            // Normal map
+            if (src.HasProperty("_BumpMap"))
+            {
+                var normal = src.GetTexture("_BumpMap");
+                if (normal != null && mat.HasProperty("_BumpMap"))
+                {
+                    mat.SetTexture("_BumpMap", normal);
+                    mat.EnableKeyword("_NORMALMAP");
+                    if (src.HasProperty("_BumpScale")) mat.SetFloat("_BumpScale", src.GetFloat("_BumpScale"));
+                }
+            }
+
+            // Metallic / Smoothness (mapeia _Glossiness do Standard -> _Smoothness do URP)
+            if (src.HasProperty("_Metallic") && mat.HasProperty("_Metallic"))
+                mat.SetFloat("_Metallic", src.GetFloat("_Metallic"));
+            if (mat.HasProperty("_Smoothness"))
+            {
+                if (src.HasProperty("_Glossiness")) mat.SetFloat("_Smoothness", src.GetFloat("_Glossiness"));
+                else if (src.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", src.GetFloat("_Smoothness"));
+            }
+
+            // Alpha clip (cutout): folhagem recortada ou Standard em modo Cutout
+            bool cutout = preferAlphaClip || src.IsKeywordEnabled("_ALPHATEST_ON");
+            if (src.HasProperty("_Mode") && Mathf.Approximately(src.GetFloat("_Mode"), 1f))
+                cutout = true; // Standard "Cutout"
+            if (cutout)
+            {
+                float cutoff = src.HasProperty("_Cutoff") ? src.GetFloat("_Cutoff") : 0.5f;
+                SetupAlphaClip(mat, cutoff);
+            }
+
+            _urpConversionCache[key] = mat;
             return mat;
         }
     }
