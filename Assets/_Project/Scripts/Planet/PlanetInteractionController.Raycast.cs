@@ -41,14 +41,15 @@ namespace ProjectTerra.Planet
                 {
                     Vector3 worldHit = ray.origin + ray.direction * (float)t;
                     Vector3 localHit = planet.transform.InverseTransformPoint(worldHit);
-                    selectedLocalNormal = localHit.normalized;
-                    selectedWorldPoint = worldHit;
+                    Vector3 localNormal = localHit.normalized;
 
                     // Converter coordenadas locais para Latitude e Longitude
-                    float lat = Mathf.Asin(Mathf.Clamp(selectedLocalNormal.y, -1f, 1f)) * Mathf.Rad2Deg;
-                    float lon = Mathf.Atan2(selectedLocalNormal.x, -selectedLocalNormal.z) * Mathf.Rad2Deg;
+                    float lat = Mathf.Asin(Mathf.Clamp(localNormal.y, -1f, 1f)) * Mathf.Rad2Deg;
+                    float lon = Mathf.Atan2(localNormal.x, -localNormal.z) * Mathf.Rad2Deg;
 
-                    SelectRegionAt(lat, lon);
+                    // Só confirma o ponto selecionado (marcador/câmera) se a região for válida;
+                    // clicar no mar não deve mover o marcador nem herdar a última região.
+                    SelectRegionAt(lat, lon, localNormal, worldHit);
                 }
             }
         }

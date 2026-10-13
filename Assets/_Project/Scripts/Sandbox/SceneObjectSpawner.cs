@@ -193,7 +193,9 @@ namespace ProjectTerra.Sandbox
                     bool isRealRock = rockPrefab.name.StartsWith("Rock") && char.IsDigit(rockPrefab.name.Length > 4 ? rockPrefab.name[4] : ' ');
                     if (isRealRock)
                     {
-                        // Rocha realista com shaders PBR próprios
+                        // Rocha realista com texturas PBR próprias — converte materiais Built-in
+                        // (Standard) para URP/Lit para não renderizarem rosa/magenta.
+                        ProjectTerra.Core.URPMaterialHelper.UpgradeRenderersToURP(rock);
                         float s = Random.Range(1.2f, 3.5f);
                         rock.transform.localScale = Vector3.one * s;
                     }
@@ -233,6 +235,9 @@ namespace ProjectTerra.Sandbox
                     var bushPrefab = bushModels[b % bushModels.Count];
                     var bushInst = Object.Instantiate(bushPrefab, spawnPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), bushRoot);
                     bushInst.transform.localScale = Vector3.one * Random.Range(0.8f, 1.6f);
+                    // Folhagem usa materiais Built-in (Standard) recortados; converte para URP/Lit
+                    // com alpha clip para preservar as texturas e evitar o rosa/magenta de shader ausente.
+                    ProjectTerra.Core.URPMaterialHelper.UpgradeRenderersToURP(bushInst, foliageAlphaClip: true);
                 }
             }
 
