@@ -137,9 +137,13 @@ namespace ProjectTerra.Sandbox
 
         private void OpenApp(PhoneApp app)
         {
+            if (app == PhoneApp.Internet)
+            {
+                OpenVehicleBrowser(); // tela 2D cheia com os sites (guarda o celular)
+                return;
+            }
             currentApp = app;
             phoneScroll = Vector2.zero;
-            if (app == PhoneApp.Internet) internetPage = "home";
         }
 
 
@@ -187,29 +191,19 @@ namespace ProjectTerra.Sandbox
 
             Rect body = new Rect(x, y, w, h);
 
-            // Corpo do aparelho (moldura escura) + fio de luz ciano no topo.
-            GUI.color = new Color(0.02f, 0.02f, 0.035f, 0.99f);
-            GUI.DrawTexture(body, whiteTex);
-            GUI.color = new Color(0.25f, 0.7f, 1f, 0.9f);
-            GUI.DrawTexture(new Rect(body.x, body.y, w, 2), whiteTex);
-            GUI.DrawTexture(new Rect(body.x, body.y, 2, h), whiteTex);
-            GUI.DrawTexture(new Rect(body.x + w - 2, body.y, 2, h), whiteTex);
-            GUI.color = Color.white;
+            // Corpo do aparelho com cantos arredondados modernos (smartphone contemporâneo)
+            UIThemeHelper.DrawRoundedBox(body, new Color(0.02f, 0.02f, 0.035f, 0.99f), new Color(0.25f, 0.7f, 1f, 0.9f), 18f, 2f);
 
-            // Alto-falante / câmera (detalhe no topo).
-            GUI.color = new Color(0.12f, 0.14f, 0.18f, 1f);
-            GUI.DrawTexture(new Rect(body.x + w * 0.5f - 22f, body.y + 7f, 44f, 4f), whiteTex);
-            GUI.DrawTexture(new Rect(body.x + w * 0.5f + 28f, body.y + 7f, 5f, 5f), whiteTex);
-            GUI.color = Color.white;
+            // Alto-falante / câmera (detalhe no topo arredondado).
+            UIThemeHelper.DrawRoundedBox(new Rect(body.x + w * 0.5f - 22f, body.y + 7f, 44f, 4f), new Color(0.12f, 0.14f, 0.18f, 1f), Color.clear, 2f, 0f);
+            UIThemeHelper.DrawRoundedBox(new Rect(body.x + w * 0.5f + 28f, body.y + 7f, 5f, 5f), new Color(0.12f, 0.14f, 0.18f, 1f), Color.clear, 2.5f, 0f);
 
-            // Tela interna.
+            // Tela interna com cantos arredondados suaves.
             float pad = 9f;
             float screenTop = body.y + 18f;
             float homeBarH = 24f;
             Rect screenRect = new Rect(body.x + pad, screenTop, w - pad * 2f, body.height - (screenTop - body.y) - homeBarH);
-            GUI.color = new Color(0.06f, 0.09f, 0.14f, 1f);
-            GUI.DrawTexture(screenRect, whiteTex);
-            GUI.color = Color.white;
+            UIThemeHelper.DrawRoundedBox(screenRect, new Color(0.06f, 0.09f, 0.14f, 1f), new Color(0.15f, 0.25f, 0.40f, 0.40f), 12f, 1f);
 
             // Barra de status (hora + sinal + bateria).
             DrawPhoneStatusBar(screenRect);
@@ -234,11 +228,9 @@ namespace ProjectTerra.Sandbox
                 case PhoneApp.GameSystem: DrawPhoneGameSystem(content); break;
             }
 
-            // Barra "home"inferior: toque para voltar à tela inicial / guardar o celular.
+            // Barra "home"inferior com pílula arredondada: toque para voltar à tela inicial / guardar o celular.
             Rect homeBar = new Rect(body.x, body.y + body.height - homeBarH, w, homeBarH);
-            GUI.color = new Color(0.4f, 0.55f, 0.7f, 0.55f);
-            GUI.DrawTexture(new Rect(homeBar.x + w * 0.5f - 45f, homeBar.y + homeBarH - 8f, 90f, 4f), whiteTex);
-            GUI.color = Color.white;
+            UIThemeHelper.DrawRoundedBox(new Rect(homeBar.x + w * 0.5f - 45f, homeBar.y + homeBarH - 8f, 90f, 4f), new Color(0.4f, 0.55f, 0.7f, 0.55f), Color.clear, 2f, 0f);
             if (GUI.Button(homeBar, "", GUIStyle.none))
             {
                 PhoneBack();
@@ -262,7 +254,6 @@ namespace ProjectTerra.Sandbox
         }
 
         // ---- Tela inicial: grade de apps ----
-        private static readonly string[] HomeEmojis = { "️", "", "", "", "", "", "", "", "", "", "" };
         private static readonly string[] HomeLabels = { "Mapa", "Frete", "Finanças", "Licenças", "Garagem", "Loja", "Estatíst.", "Internet", "Contatos", "Ajustes", "Jogo" };
         private static readonly PhoneApp[] HomeTargets =
         {
@@ -270,9 +261,25 @@ namespace ProjectTerra.Sandbox
             PhoneApp.Dealer, PhoneApp.Stats, PhoneApp.Internet, PhoneApp.Contacts, PhoneApp.Settings, PhoneApp.GameSystem
         };
 
+        // Ícones (PNG Lucide via TerraIcons) na mesma ordem de HomeLabels/HomeTargets.
+        private static readonly ProjectTerra.UI.TerraIcon[] HomeIcons =
+        {
+            ProjectTerra.UI.TerraIcon.LocationPin,   // Mapa
+            ProjectTerra.UI.TerraIcon.CargoBox,      // Frete
+            ProjectTerra.UI.TerraIcon.Wallet,        // Finanças
+            ProjectTerra.UI.TerraIcon.DriverLicense, // Licenças
+            ProjectTerra.UI.TerraIcon.Tools,         // Garagem
+            ProjectTerra.UI.TerraIcon.Shop,          // Loja
+            ProjectTerra.UI.TerraIcon.Analytics,     // Estatísticas
+            ProjectTerra.UI.TerraIcon.Satellite,     // Internet
+            ProjectTerra.UI.TerraIcon.PhoneCall,     // Contatos
+            ProjectTerra.UI.TerraIcon.Settings,      // Ajustes
+            ProjectTerra.UI.TerraIcon.Flag           // Jogo
+        };
+
         private void DrawPhoneHome(Rect content)
         {
-            float headerH = 68f;
+            float headerH = 96f; // relógio + região + saldo sem sobrepor a grade
             GUILayout.BeginArea(new Rect(content.x, content.y, content.width, headerH));
             GUILayout.Space(1);
             string timeStr = FormattedInGameTimeString;
@@ -294,12 +301,14 @@ namespace ProjectTerra.Sandbox
             float gap = 8f;
             float gridTop = content.y + headerH + 4f;
             float gridAvail = content.height - headerH - 8f;
-            int count = HomeEmojis.Length - 2; // sem Finanças e Loja (movidas para a Internet)
+            int count = HomeLabels.Length - 2; // sem Finanças e Loja (movidas para a Internet)
             int rows = Mathf.CeilToInt(count / (float)cols);
 
+            const float labelBand = 26f; // espaço do texto abaixo do ícone
             float cellW = (content.width - gap * (cols - 1)) / cols;
-            float cellH = Mathf.Min(cellW + 16f, (gridAvail - gap * (rows - 1)) / rows);
-            float tile = Mathf.Min(cellW, cellH - 14f);
+            float maxTileByHeight = (gridAvail - gap * (rows - 1)) / rows - labelBand;
+            float tile = Mathf.Max(24f, Mathf.Min(cellW * 0.62f, maxTileByHeight));
+            float cellH = tile + labelBand;
 
             Color[] palette =
             {
@@ -333,7 +342,7 @@ namespace ProjectTerra.Sandbox
                 float iy = gridTop + row * (cellH + gap);
                 Rect cellRect = new Rect(ix, iy, cellW, cellH);
 
-                if (DrawAppIcon(cellRect, tile, HomeEmojis[i], HomeLabels[i], palette[i]))
+                if (DrawAppIcon(cellRect, tile, HomeIcons[i], HomeLabels[i], palette[i]))
                 {
                     if (HomeTargets[i] == PhoneApp.Home) // Mapa: fecha o celular e abre o mapa tático
                     {
@@ -352,7 +361,7 @@ namespace ProjectTerra.Sandbox
             }
         }
 
-        private bool DrawAppIcon(Rect cell, float tile, string emoji, string label, Color tileColor)
+        private bool DrawAppIcon(Rect cell, float tile, ProjectTerra.UI.TerraIcon icon, string label, Color tileColor)
         {
             float tileX = cell.x + (cell.width - tile) * 0.5f;
             Rect tileRect = new Rect(tileX, cell.y, tile, tile);
@@ -363,8 +372,11 @@ namespace ProjectTerra.Sandbox
             GUI.DrawTexture(new Rect(tileRect.x, tileRect.y, tile, 2f), whiteTex);
             GUI.color = Color.white;
 
-            GUI.Label(tileRect, emoji, phoneIconStyle);
-            GUI.Label(new Rect(cell.x, cell.y + tile + 1f, cell.width, 13f), label, phoneAppLabelStyle);
+            float inset = tile * 0.2f;
+            ProjectTerra.UI.TerraIcons.Draw(new Rect(tileRect.x + inset, tileRect.y + inset, tile - inset * 2f, tile - inset * 2f), icon, Color.white);
+
+            // Altura generosa + respiro acima: evita cortar as "pernas" das letras (g, p, q, j).
+            GUI.Label(new Rect(cell.x - 4f, cell.y + tile + 3f, cell.width + 8f, 20f), label, phoneAppLabelStyle);
 
             return GUI.Button(cell, "", GUIStyle.none);
         }
@@ -372,6 +384,7 @@ namespace ProjectTerra.Sandbox
         // ---- Cabeçalho comum dos apps (seta voltar + título) ----
         private void DrawAppHeader(Rect content, string title)
         {
+            if (embeddedInBrowser) return;
             Rect backRect = new Rect(content.x, content.y, 34f, 22f);
             if (GUI.Button(backRect, "◀", phoneBackStyle))
             {
@@ -559,11 +572,8 @@ namespace ProjectTerra.Sandbox
             float h = Mathf.Min(560f, Screen.height - 40f);
             Rect panel = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
 
-            GUI.color = new Color(0.05f, 0.07f, 0.11f, 0.98f);
-            GUI.DrawTexture(panel, whiteTex);
-            GUI.color = new Color(0.25f, 0.7f, 1f, 0.9f);
-            GUI.DrawTexture(new Rect(panel.x, panel.y, w, 2), whiteTex);
-            GUI.color = Color.white;
+            // Painel modal com bordas arredondadas e glow ciano
+            UIThemeHelper.DrawRoundedBox(panel, new Color(0.05f, 0.07f, 0.11f, 0.98f), new Color(0.25f, 0.7f, 1f, 0.9f), 12f, 1.5f);
 
             GUI.Label(new Rect(panel.x + 16f, panel.y + 10f, w - 32f, 28f), "CONFIGURAÇÕES", phoneHeaderStyle);
 

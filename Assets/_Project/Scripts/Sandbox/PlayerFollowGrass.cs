@@ -228,11 +228,16 @@ namespace ProjectTerra.Sandbox
                 if (layers > 6) rock = splatCache[iz, ix, 6];
                 if (layers > 7) snow = splatCache[iz, ix, 7];
 
-                // Camadas de concreto, asfalto, paralelepípedo, brita e terra simples
+                // Camadas de concreto, asfalto, paralelepípedo, brita e terra simples (8..12 e 28..33)
                 for (int l = 8; l < layers && l <= 12; l++)
                 {
                     pavedOrDirt += splatCache[iz, ix, l];
                 }
+                for (int l = 28; l < layers && l <= 33; l++)
+                {
+                    pavedOrDirt += splatCache[iz, ix, l];
+                }
+                if (layers > 18) pavedOrDirt += splatCache[iz, ix, 18];
                 if (layers > 3) pavedOrDirt += splatCache[iz, ix, 3] * 0.6f;
             }
             else if (isDesertRegion)

@@ -18,7 +18,7 @@ namespace ProjectTerra.Sandbox
         [Header("Configurações do Sulco")]
         public float furrowWidth = 2.6f;
         public float segmentDistance = 0.85f;
-        public float terrainOffsetHeight = 0.035f;
+        public float terrainOffsetHeight = 0.05f;
 
         private Transform plowTransform;
         private Transform discGang;

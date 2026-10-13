@@ -356,10 +356,13 @@ namespace ProjectTerra.Sandbox
                 sunLight.colorTemperature = sunColorKelvin;
                 sunLight.shadows = LightShadows.Soft;
 
-                // URP: intensidade fotométrica balanceada
+                // URP: intensidade fotométrica balanceada e estabilização de sombras contra acne/flicker no solo
                 sunLight.intensity = 1.0f;
                 sunLight.color = new Color(1.0f, 0.96f, 0.90f);
                 sunLight.shadowStrength = 0.85f;
+                sunLight.shadowBias = 0.05f;
+                sunLight.shadowNormalBias = 0.4f;
+                sunLight.shadowNearPlane = 0.2f;
             }
         }
     }

@@ -53,8 +53,13 @@ namespace ProjectTerra.UI
             dossierCardStyle = new GUIStyle(GUI.skin.box)
             {
                 // Margem interna generosa do card do dossiê
-                padding = new RectOffset(26, 26, 24, 24)
+                padding = new RectOffset(26, 26, 24, 24),
+                border = new RectOffset(10, 10, 10, 10)
             };
+            dossierCardStyle.normal.background = UIThemeHelper.CreateRoundedTexture(
+                new Color(0.05f, 0.1f, 0.18f, 0.88f),
+                new Color(0.25f, 0.65f, 0.95f, 0.75f),
+                1.5f, 10f, 32);
 
             // Título de seção do dossiê (fonte maior que o subtítulo padrão)
             dossierHeadingStyle = new GUIStyle(subtitleStyle)
@@ -75,6 +80,7 @@ namespace ProjectTerra.UI
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter
             };
+            UIThemeHelper.ApplyPrimaryButtonSkin(enterButtonStyle);
             enterButtonStyle.normal.textColor = Color.white;
 
             stylesInitialized = true;
@@ -141,14 +147,14 @@ namespace ProjectTerra.UI
             GUILayout.Label(displayTitle, titleStyle);
             GUILayout.Space(4);
             string locationDesc = currentRegion != null ?
-                $"{currentRegion.country.ToUpper()} • {currentRegion.type} • Coordenadas: Lat {currentRegion.centerLat:F2}° | Lon {currentRegion.centerLon:F2}° (Escala 1:1 Datum WGS84)" :
+                $"{currentRegion.country.ToUpper()} • {currentRegion.type} • Coordenadas: Lat {currentRegion.centerLat:F2}° | Lon {currentRegion.centerLon:F2}° " :
                 "TERRITÓRIO GLOBAL • ESCALA 1:1";
             GUILayout.Label(locationDesc, quoteStyle);
             GUILayout.EndArea();
 
             // 4. Painel de Dossiê Regional e Econômico (Top-Right Glassmorphism)
             GUILayout.BeginArea(new Rect(sw - 470, 36, 448, sh - 260));
-            GUI.color = new Color(0.05f, 0.1f, 0.18f, 0.88f * screenAlpha);
+            GUI.color = new Color(1f, 1f, 1f, screenAlpha);
             GUILayout.BeginVertical(dossierCardStyle, GUILayout.ExpandHeight(true));
             GUI.color = new Color(1f, 1f, 1f, screenAlpha);
 
@@ -214,20 +220,22 @@ namespace ProjectTerra.UI
             GUILayout.EndHorizontal();
             GUILayout.Space(6);
 
-            // Fundo da Barra de Progresso
+            // Fundo da Barra de Progresso com cantos arredondados
             Rect progressBgRect = GUILayoutUtility.GetRect(sw - 540, 12);
-            GUI.color = new Color(0.12f, 0.15f, 0.22f, 0.95f * screenAlpha);
-            GUI.DrawTexture(progressBgRect, whiteTexture);
+            UIThemeHelper.DrawRoundedBox(progressBgRect,
+                new Color(0.12f, 0.15f, 0.22f, 0.95f * screenAlpha),
+                new Color(0.25f, 0.50f, 0.75f, 0.50f * screenAlpha), 6f, 1f);
 
-            // Preenchimento com Brilho
+            // Preenchimento com Brilho e cantos arredondados
             float barWidth = (progressBgRect.width - 4) * loadProgress;
-            Rect progressFillRect = new Rect(progressBgRect.x + 2, progressBgRect.y + 2, barWidth, progressBgRect.height - 4);
-            Color barColor = isFinishedLoading ?
-                new Color(0.35f, 0.95f, 0.5f, 1f * screenAlpha) :
-                new Color(0.3f, 0.75f, 1f, 1f * screenAlpha);
-            GUI.color = barColor;
-            GUI.DrawTexture(progressFillRect, whiteTexture);
-            GUI.color = new Color(1f, 1f, 1f, screenAlpha);
+            if (barWidth > 4f)
+            {
+                Rect progressFillRect = new Rect(progressBgRect.x + 2, progressBgRect.y + 2, barWidth, progressBgRect.height - 4);
+                Color barColor = isFinishedLoading ?
+                    new Color(0.35f, 0.95f, 0.5f, 1f * screenAlpha) :
+                    new Color(0.3f, 0.75f, 1f, 1f * screenAlpha);
+                UIThemeHelper.DrawRoundedBox(progressFillRect, barColor, Color.clear, 4f, 0f);
+            }
 
             GUILayout.Space(14);
 
@@ -236,7 +244,7 @@ namespace ProjectTerra.UI
             {
                 float pulse = 0.85f + 0.15f * Mathf.Sin(Time.time * 5.0f);
                 GUI.color = new Color(0.2f, 0.8f, 0.4f, pulse * screenAlpha);
-                if (GUILayout.Button("ENTRAR NO TERRITÓRIO [ENTER]", enterButtonStyle, GUILayout.Height(40), GUILayout.Width(340)))
+                if (GUILayout.Button("ENTRAR ", enterButtonStyle, GUILayout.Height(40), GUILayout.Width(340)))
                 {
                     StartFadeOut();
                 }

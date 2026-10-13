@@ -11,7 +11,8 @@ namespace ProjectTerra.Planet
             if (cardStyle != null) return;
 
             cardStyle = new GUIStyle(GUI.skin.box);
-            cardStyle.normal.background = whiteTex;
+            cardStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.04f, 0.08f, 0.16f, 0.92f), new Color(0.25f, 0.60f, 0.90f, 0.75f), 1.5f, 8f, 32);
+            cardStyle.border = new RectOffset(8, 8, 8, 8);
 
             headerTitleStyle = new GUIStyle(GUI.skin.label)
             {
@@ -49,12 +50,14 @@ namespace ProjectTerra.Planet
                 fontSize = 12,
                 fontStyle = FontStyle.Bold
             };
+            UIThemeHelper.ApplyModernButtonSkin(buttonStyle);
 
             primaryButtonStyle = new GUIStyle(GUI.skin.button)
             {
                 fontSize = 12,
                 fontStyle = FontStyle.Bold
             };
+            UIThemeHelper.ApplyPrimaryButtonSkin(primaryButtonStyle);
             primaryButtonStyle.normal.textColor = new Color(1f, 0.95f, 0.5f);
 
             dangerButtonStyle = new GUIStyle(GUI.skin.button)
@@ -62,16 +65,21 @@ namespace ProjectTerra.Planet
                 fontSize = 11,
                 fontStyle = FontStyle.Bold
             };
+            UIThemeHelper.ApplyDangerButtonSkin(dangerButtonStyle);
             dangerButtonStyle.normal.textColor = new Color(1f, 0.4f, 0.4f);
 
             saveCardBoxStyle = new GUIStyle(GUI.skin.box);
-            saveCardBoxStyle.normal.background = whiteTex;
+            saveCardBoxStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.08f, 0.15f, 0.28f, 0.88f), new Color(0.25f, 0.60f, 0.90f, 0.75f), 1.5f, 8f, 32);
+            saveCardBoxStyle.border = new RectOffset(8, 8, 8, 8);
 
             textFieldStyle = new GUIStyle(GUI.skin.textField)
             {
                 fontSize = 12,
-                fontStyle = FontStyle.Bold
+                fontStyle = FontStyle.Bold,
+                border = new RectOffset(6, 6, 6, 6),
+                padding = new RectOffset(8, 8, 4, 4)
             };
+            textFieldStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.06f, 0.12f, 0.22f, 0.90f), new Color(0.25f, 0.55f, 0.85f, 0.70f), 1.5f, 6f, 32);
 
             recentBtnStyle = new GUIStyle(GUI.skin.button)
             {
@@ -79,6 +87,7 @@ namespace ProjectTerra.Planet
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter
             };
+            UIThemeHelper.ApplyModernButtonSkin(recentBtnStyle);
             recentBtnStyle.normal.textColor = new Color(0.85f, 0.95f, 1f);
             recentBtnStyle.hover.textColor = Color.white;
 
@@ -88,6 +97,7 @@ namespace ProjectTerra.Planet
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter
             };
+            UIThemeHelper.ApplyPrimaryButtonSkin(playBtnStyle);
             playBtnStyle.normal.textColor = new Color(1f, 0.92f, 0.45f);
             playBtnStyle.hover.textColor = Color.white;
 
@@ -98,6 +108,7 @@ namespace ProjectTerra.Planet
                 alignment = TextAnchor.MiddleCenter,
                 padding = new RectOffset(0, 0, 0, 0)
             };
+            UIThemeHelper.ApplyDangerButtonSkin(closeButtonStyle);
             closeButtonStyle.normal.textColor = new Color(1f, 0.6f, 0.6f);
             closeButtonStyle.hover.textColor = Color.white;
         }
@@ -151,16 +162,8 @@ namespace ProjectTerra.Planet
             Rect cardRect = new Rect(x, y, width, height);
             lastCardRect = cardRect;
 
-            // 1. Fundo translúcido espacial
-            GUI.color = new Color(0.02f, 0.05f, 0.12f, 0.94f);
-            GUI.DrawTexture(cardRect, whiteTex);
-
-            // 2. Borda externa suave
-            GUI.color = new Color(0.3f, 0.7f, 1.0f, 0.85f);
-            GUI.DrawTexture(new Rect(x, y, width, 2), whiteTex);
-            GUI.DrawTexture(new Rect(x, y + height - 2, width, 2), whiteTex);
-            GUI.DrawTexture(new Rect(x, y, 2, height), whiteTex);
-            GUI.DrawTexture(new Rect(x + width - 2, y, 2, height), whiteTex);
+            // Fundo translúcido espacial com cantos arredondados e borda suave
+            UIThemeHelper.DrawRoundedBox(cardRect, new Color(0.02f, 0.05f, 0.12f, 0.94f), new Color(0.3f, 0.7f, 1.0f, 0.85f), 10f, 1.5f);
 
             // 3. Pino indicador na posição do clique
             GUI.color = new Color(1f, 0.85f, 0.3f, 0.95f);
@@ -208,17 +211,8 @@ namespace ProjectTerra.Planet
 
             bool isPaused = planet != null && planet.IsRotationPaused;
 
-            // 1. Fundo translúcido estilizado
-            GUI.color = isPaused ? new Color(0.12f, 0.09f, 0.03f, 0.94f) : new Color(0.02f, 0.06f, 0.14f, 0.90f);
-            GUI.DrawTexture(rotationButtonRect, whiteTex);
-
-            // 2. Borda externa suave
-            Color borderColor = isPaused ? new Color(1.0f, 0.82f, 0.35f, 0.95f) : new Color(0.25f, 0.6f, 0.85f, 0.75f);
-            GUI.color = borderColor;
-            GUI.DrawTexture(new Rect(btnX, btnY, btnWidth, 2), whiteTex);
-            GUI.DrawTexture(new Rect(btnX, btnY + btnHeight - 2, btnWidth, 2), whiteTex);
-            GUI.DrawTexture(new Rect(btnX, btnY, 2, btnHeight), whiteTex);
-            GUI.DrawTexture(new Rect(btnX + btnWidth - 2, btnY, 2, btnHeight), whiteTex);
+            // 1. Botão estilizado com cantos arredondados procedurais
+            Color prevCol = GUI.color;
             GUI.color = Color.white;
 
             // 3. Botão Rotacionar / Pausar (com ícone)

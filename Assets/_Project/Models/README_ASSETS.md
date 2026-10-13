@@ -68,18 +68,44 @@ Todos os ativos incluídos nesta biblioteca foram disponibilizados sob a licenç
   - Prédios comerciais (`building-a` a `building-n`), arranha-céus e edifícios administrativos (`building-skyscraper-a` a `building-skyscraper-e`).
 - **Suburbanos e Rurais (`Suburban/`)** (21 arquivos):
   - Casas residenciais, chalés, garagens, armazéns e estruturas agrícolas (`building-type-a` a `building-type-s`).
-- **Texturas**: Atlas de mapeamento de cores `colormap_commercial.png` e `colormap_suburban.png`.
+- **Downtown City MegaKit (`DowntownCity/`)** (153 arquivos FBX + 33 texturas PBR):
+  - Paredes modulares (`Metal_FirstFloor_Wall`, `Metal_FirstFloor_Window`), cornijas e cantos (`Trim_Corner`, `Trim_FirstFloor_Wall`).
+  - Entradas e escadarias (`Door_1`, `Door_2`, `Entrance_Concrete_2x1`, `Stairs_Entrance_Concrete`).
+  - Vias e calçadas modulares (`Street_2Lane`, `Street_4Lane`, `Sidewalk_Straight_3m`, `Sidewalk_Planter`).
+  - Mobiliário e adereços urbanos (`Prop_Bollard`, `Prop_Planter_Single`, `Prop_ACUnit`, `Prop_ManholeCover`, `Prop_Drain`).
+  - Texturas PBR completas (Albedo/BaseColor, Normal Maps e ORM).
+
+---
+
+### 5. 🌲 Cenário Florestal Realista (`Assets/_Project/Models/Nature/RealisticForest/`)
+- **Coníferas Realistas (`Conifers/`)**: Modelos fotorrealistas *Book of the Dead* (`PF Conifer Tall BOTD`, `PF Conifer Medium BOTD`, `PF Conifer Small BOTD`, `PF Conifer Bare BOTD`) com LODs e shaders com balanço ao vento.
+- **Formações Rochosas (`Rocks/`)**: Rocha e pedregulhos 4K/2K (*Rocks and Boulders 2*) com LOD groups (`Rock1A` a `Rock1E`, `Rock2`, `Rock3`, `Rock4A`, `Rock6A`).
+- **Vegetação Rasteira e Arbustos (`Bushes/`)**: Arbustos de alta densidade (*Yughues Free Bushes 2018*) com meshes e texturas (`P_Bush01` a `P_Bush05`).
+- **Camadas e Texturas de Terreno (`TerrainLayers/`, `Textures/`, `Materials/`)**.
+- **Cena Demonstrativa (`DemoForestScene/`)**: Layout de level design de floresta tutorial.
+
+---
+
+### 6. 🏃 Universal Animation Library (`Assets/_Project/Animations/UniversalAnimationLibrary/`)
+- **Animações Humanoides Padrão (CC0 Quaternius)**:
+  - `UAL1_Standard.fbx`: Conjunto completo de animações (Idle, Walk, Run, Sprint, Jump, Swim, Drive, Crouch, Turn, etc.) sem Root Motion.
+  - `UAL1_Standard_RM.fbx`: Conjunto com Root Motion pré-calculado.
+  - Controlador gerado via menu `Tools/Animations/Setup Humanoid Animations` (`PlayerHumanoidController.controller`).
 
 ---
 
 ## 🛠️ Integração no Código do Jogo
 1. **`SceneObjectSpawner.cs`**:
-   - Povoa a natureza (densidade de árvores proporcional ao `forestPercent` do save da região).
-   - Espalha rochas pelas elevações e encostas.
+   - Povoa a natureza alternando árvores folhosas e pinheiros fotorrealistas *Book of the Dead* (`PF Conifer Tall/Medium/Small BOTD`).
+   - Espalha rochas e pedregulhos com sombreamento PBR realista (`Rock1A`, `Rock2`, `Rock3`, etc.).
+   - Espalha arbustos e vegetação rasteira fotorrealista (`P_Bush01` a `P_Bush05`) em orlas de mata e margens de estrada.
    - Posiciona pastos de gado (vacas, cavalos, ovelhas) próximos à sede rural.
    - Posiciona fauna selvagem (raposas, lobos) em clareiras florestais.
-2. **`RegionalSandboxManager.cs`**:
-   - `CreateBuilding`: Instancia modelos 3D dos prédios comerciais e residenciais para a cidade inicial e silos.
-   - Integração com `SceneObjectSpawner.PopulateNatureAndFauna`.
-3. **`VehicleBuilder.cs`**:
+2. **`DowntownBuildingBuilder.cs` & `RegionalSandboxManager.Town.cs`**:
+   - `CreateBuilding` monta prédios municipais e comerciais da cidade inicial usando peças modulares do Downtown City MegaKit (`Metal_FirstFloor_Wall`, `Metal_FirstFloor_Window`, `Trim_Corner`, `Roof_Slate_Center`, `Door_1`).
+   - Instala unidades de ar condicionado (`Prop_ACUnit`) nos telhados e postes balizadores (`Prop_Bollard`) e floreiras (`Prop_Planter_Single`) ao longo das calçadas.
+3. **`PlayerCharacterController.cs` & `HumanoidAnimationSetup.cs`**:
+   - Suporte nativo a `playerAnimator`, atualizando dinamicamente estados `Speed`, `IsMoving`, `IsSprinting`, `IsGrounded`, `IsSwimming` e `IsDriving`.
+   - Gera o controlador Mecanim para o jogador com animações da Universal Animation Library.
+4. **`VehicleBuilder.cs`**:
    - Acopla as malhas 3D detalhadas de tratores (`tractor.fbx`) e caminhões (`truck.fbx`) preservando o sistema de física `Rigidbody` e os colliders de colisão já calibrados.

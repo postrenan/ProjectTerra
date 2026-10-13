@@ -28,9 +28,11 @@ namespace ProjectTerra.Sandbox
         private bool hasHitTerrain = false;
         public bool HasHitTerrain => hasHitTerrain;
 
-        private Rect paletteRect = new Rect(Screen.width - 340, 70, 320, 520);
+        private Rect paletteRect = new Rect(Screen.width - 390, 60, 370, 590);
         private Vector2 scrollPos;
         private bool isMouseOverGui = false;
+        private string currentCategory = "Todas";
+        private static readonly string[] Categories = new string[] { "Todas", "Sementes", "Solos", "Gramas", "Vegetação", "Concretos", "Pavimentos" };
 
         private void Awake()
         {
@@ -167,28 +169,25 @@ namespace ProjectTerra.Sandbox
         {
             if (TerraInput.GetKeyDown(Key.Digit1) || TerraInput.GetKeyDown(Key.Numpad1)) SelectLayer(TerrainPBRFactory.LayerConcrete); // 1: Concreto
             if (TerraInput.GetKeyDown(Key.Digit2) || TerraInput.GetKeyDown(Key.Numpad2)) SelectLayer(TerrainPBRFactory.LayerDirtSimple); // 2: Terra Simples
-            if (TerraInput.GetKeyDown(Key.Digit3) || TerraInput.GetKeyDown(Key.Numpad3)) SelectLayer(TerrainPBRFactory.LayerAsphalt); // 3: Asfalto
+            if (TerraInput.GetKeyDown(Key.Digit3) || TerraInput.GetKeyDown(Key.Numpad3)) SelectLayer(TerrainPBRFactory.LayerSeeds); // 3: Solo Semeado
             if (TerraInput.GetKeyDown(Key.Digit4) || TerraInput.GetKeyDown(Key.Numpad4)) SelectLayer(TerrainPBRFactory.LayerGrass); // 4: Grama Lush
-            if (TerraInput.GetKeyDown(Key.Digit5) || TerraInput.GetKeyDown(Key.Numpad5)) SelectLayer(TerrainPBRFactory.LayerGravel); // 5: Cascalho / Britas
-            if (TerraInput.GetKeyDown(Key.Digit6) || TerraInput.GetKeyDown(Key.Numpad6)) SelectLayer(TerrainPBRFactory.LayerCobblestone); // 6: Paralelepípedo
-            if (TerraInput.GetKeyDown(Key.Digit7) || TerraInput.GetKeyDown(Key.Numpad7)) SelectLayer(TerrainPBRFactory.LayerSand); // 7: Areia
+            if (TerraInput.GetKeyDown(Key.Digit5) || TerraInput.GetKeyDown(Key.Numpad5)) SelectLayer(TerrainPBRFactory.LayerMeadowGrass); // 5: Grama com Flores
+            if (TerraInput.GetKeyDown(Key.Digit6) || TerraInput.GetKeyDown(Key.Numpad6)) SelectLayer(TerrainPBRFactory.LayerFertileSoil); // 6: Terra Preta Fértil
+            if (TerraInput.GetKeyDown(Key.Digit7) || TerraInput.GetKeyDown(Key.Numpad7)) SelectLayer(TerrainPBRFactory.LayerForestFloor); // 7: Chão de Floresta
             if (TerraInput.GetKeyDown(Key.Digit8) || TerraInput.GetKeyDown(Key.Numpad8)) SelectLayer(TerrainPBRFactory.LayerSoil); // 8: Solo Arado
-            if (TerraInput.GetKeyDown(Key.Digit9) || TerraInput.GetKeyDown(Key.Numpad9)) SelectLayer(TerrainPBRFactory.LayerMud); // 9: Lama Úmida
-            if (TerraInput.GetKeyDown(Key.Digit0) || TerraInput.GetKeyDown(Key.Numpad0)) SelectLayer(TerrainPBRFactory.LayerRedClay); // 0: Argila Vermelha
+            if (TerraInput.GetKeyDown(Key.Digit9) || TerraInput.GetKeyDown(Key.Numpad9)) SelectLayer(TerrainPBRFactory.LayerConcreteRough); // 9: Concreto Áspero
+            if (TerraInput.GetKeyDown(Key.Digit0) || TerraInput.GetKeyDown(Key.Numpad0)) SelectLayer(TerrainPBRFactory.LayerAsphalt); // 0: Asfalto
         }
 
         public void SelectLayer(int layerIdx)
         {
-            if (layerIdx >= 0 && layerIdx < TerrainGroundPainter.AvailableTextures.Length)
+            selectedLayerIndex = layerIdx;
+            var info = GetSelectedInfo();
+            if (brushRingRenderer != null && brushRingRenderer.sharedMaterial != null)
             {
-                selectedLayerIndex = layerIdx;
-                var info = TerrainGroundPainter.AvailableTextures[layerIdx];
-                if (brushRingRenderer != null && brushRingRenderer.sharedMaterial != null)
-                {
-                    brushRingRenderer.sharedMaterial.color = new Color(info.swatchColor.r, info.swatchColor.g, info.swatchColor.b, 0.9f);
-                }
-                SandboxHUD.Instance?.ShowToast($"Selecionado: {info.displayName}");
+                brushRingRenderer.sharedMaterial.color = new Color(info.swatchColor.r, info.swatchColor.g, info.swatchColor.b, 0.9f);
             }
+            SandboxHUD.Instance?.ShowToast($"Selecionado: {info.displayName}");
         }
 
         public void PaintAtWorldPos(Vector3 worldPos, int layerIdx, float strength)
@@ -243,9 +242,12 @@ namespace ProjectTerra.Sandbox
 
         public GroundTextureInfo GetSelectedInfo()
         {
-            if (selectedLayerIndex >= 0 && selectedLayerIndex < TerrainGroundPainter.AvailableTextures.Length)
+            for (int i = 0; i < TerrainGroundPainter.AvailableTextures.Length; i++)
             {
-                return TerrainGroundPainter.AvailableTextures[selectedLayerIndex];
+                if (TerrainGroundPainter.AvailableTextures[i].layerIndex == selectedLayerIndex)
+                {
+                    return TerrainGroundPainter.AvailableTextures[i];
+                }
             }
             return TerrainGroundPainter.AvailableTextures[0];
         }
@@ -256,7 +258,7 @@ namespace ProjectTerra.Sandbox
         {
             if (!isToolActive) return;
 
-            paletteRect.x = Screen.width - 340;
+            paletteRect.x = Screen.width - 390;
             isMouseOverGui = paletteRect.Contains(Event.current.mousePosition);
 
             GUI.skin.window.fontSize = 12;
@@ -276,12 +278,12 @@ namespace ProjectTerra.Sandbox
             GUI.color = oldColor;
 
             GUILayout.BeginVertical();
-            GUILayout.Label($"<b>{info.displayName}</b>", GUILayout.Height(18));
+            GUILayout.Label($"<b>{info.displayName}</b> ({info.category})", GUILayout.Height(18));
             GUILayout.Label($"<size=10>{info.description}</size>", GUILayout.Height(16));
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(8);
+            GUILayout.Space(6);
 
             // Controles de Raio e Força
             GUILayout.Label($"Raio do Pincel: <b>{brushRadius:F0} metros</b> (ou use Scroll do mouse)");
@@ -290,17 +292,38 @@ namespace ProjectTerra.Sandbox
             GUILayout.Label($"Intensidade de Pintura: <b>{brushStrength * 100f:F0}%</b>");
             brushStrength = GUILayout.HorizontalSlider(brushStrength, 0.1f, 1.0f);
 
-            GUILayout.Space(8);
+            GUILayout.Space(6);
+            GUILayout.Label("<b>Filtro por Categoria:</b>");
+
+            // Abas de categorias
+            GUILayout.BeginHorizontal();
+            for (int c = 0; c < Categories.Length; c++)
+            {
+                string cat = Categories[c];
+                bool isCatActive = (currentCategory == cat);
+                var prevCol = GUI.color;
+                if (isCatActive) GUI.color = new Color(0.2f, 1f, 0.8f);
+                if (GUILayout.Button(cat, GUILayout.Height(22)))
+                {
+                    currentCategory = cat;
+                }
+                GUI.color = prevCol;
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
             GUILayout.Label("<b>Escolha a Textura do Chão:</b>");
 
             // Lista rolável de texturas
-            scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(240));
+            scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(260));
             var textures = TerrainGroundPainter.AvailableTextures;
 
             for (int i = 0; i < textures.Length; i++)
             {
                 var t = textures[i];
-                bool isSelected = (i == selectedLayerIndex);
+                if (currentCategory != "Todas" && t.category != currentCategory) continue;
+
+                bool isSelected = (t.layerIndex == selectedLayerIndex);
 
                 GUILayout.BeginHorizontal();
                 var c = GUI.color;
@@ -308,10 +331,10 @@ namespace ProjectTerra.Sandbox
                 GUILayout.Box("", GUILayout.Width(18), GUILayout.Height(18));
                 GUI.color = isSelected ? Color.cyan : c;
 
-                string btnText = isSelected ? $"<b> {t.displayName}</b>" : t.displayName;
+                string btnText = isSelected ? $"<b>► {t.displayName}</b>" : t.displayName;
                 if (GUILayout.Button(btnText, GUILayout.Height(22)))
                 {
-                    SelectLayer(i);
+                    SelectLayer(t.layerIndex);
                 }
                 GUI.color = c;
                 GUILayout.EndHorizontal();

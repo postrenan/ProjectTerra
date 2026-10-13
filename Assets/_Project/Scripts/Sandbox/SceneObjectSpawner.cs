@@ -43,6 +43,8 @@ namespace ProjectTerra.Sandbox
             treeRoot.SetParent(rootObj.transform);
             var rockRoot = new GameObject("Rocks_Formations").transform;
             rockRoot.SetParent(rootObj.transform);
+            var bushRoot = new GameObject("Bushes_Foliage").transform;
+            bushRoot.SetParent(rootObj.transform);
             var animalRoot = new GameObject("Fauna_Animals").transform;
             animalRoot.SetParent(rootObj.transform);
 
@@ -50,15 +52,50 @@ namespace ProjectTerra.Sandbox
             Vector3 terrainSize = terrain.terrainData.size;
 
             // Carregar prefabs 3D de recursos — caminhos relativos à pasta Resources/Models/
-            // Árvores: disponíveis em Resources/Models/Nature/Trees/
-            GameObject treeDefault = LoadModel("Models/Nature/Trees/tree_default"); // Árvore folhosa genérica
-            GameObject treeDetailed = LoadModel("Models/Nature/Trees/tree_detailed"); // Árvore folhosa detalhada
-            GameObject treeCone = LoadModel("Models/Nature/Trees/tree_cone"); // Pinheiro cônico
+            // Árvores realistas (Book of the Dead - Conifers) e Low-Poly
+            GameObject treeRealTall = LoadModel("Models/Nature/Realistic/Conifers/PF Conifer Tall BOTD");
+            GameObject treeRealMed = LoadModel("Models/Nature/Realistic/Conifers/PF Conifer Medium BOTD");
+            GameObject treeRealSmall = LoadModel("Models/Nature/Realistic/Conifers/PF Conifer Small BOTD");
+            GameObject treeDefault = LoadModel("Models/Nature/Trees/tree_default");
+            GameObject treeDetailed = LoadModel("Models/Nature/Trees/tree_detailed");
+            GameObject treeCone = LoadModel("Models/Nature/Trees/tree_cone");
 
-            // Rochas: disponíveis em Resources/Models/Nature/Rocks/
+            var treeModels = new List<GameObject>();
+            if (treeRealTall != null) treeModels.Add(treeRealTall);
+            if (treeRealMed != null) treeModels.Add(treeRealMed);
+            if (treeRealSmall != null) treeModels.Add(treeRealSmall);
+            if (treeDetailed != null) treeModels.Add(treeDetailed);
+            if (treeCone != null) treeModels.Add(treeCone);
+            if (treeDefault != null) treeModels.Add(treeDefault);
+
+            // Rochas realistas (Rocks & Boulders 2) e Low-Poly
+            GameObject rockReal1 = LoadModel("Models/Nature/Realistic/Rocks/Rock1A");
+            GameObject rockReal2 = LoadModel("Models/Nature/Realistic/Rocks/Rock2");
+            GameObject rockReal3 = LoadModel("Models/Nature/Realistic/Rocks/Rock3");
+            GameObject rockReal4 = LoadModel("Models/Nature/Realistic/Rocks/Rock4A");
+            GameObject rockReal6 = LoadModel("Models/Nature/Realistic/Rocks/Rock6A");
             GameObject rockLarge = LoadModel("Models/Nature/Rocks/rock_largeA");
             GameObject rockSmall = LoadModel("Models/Nature/Rocks/rock_smallA");
             GameObject rockTall = LoadModel("Models/Nature/Rocks/rock_tallA");
+
+            var rockModels = new List<GameObject>();
+            if (rockReal1 != null) rockModels.Add(rockReal1);
+            if (rockReal2 != null) rockModels.Add(rockReal2);
+            if (rockReal3 != null) rockModels.Add(rockReal3);
+            if (rockReal4 != null) rockModels.Add(rockReal4);
+            if (rockReal6 != null) rockModels.Add(rockReal6);
+            if (rockLarge != null) rockModels.Add(rockLarge);
+            if (rockSmall != null) rockModels.Add(rockSmall);
+            if (rockTall != null) rockModels.Add(rockTall);
+
+            // Arbustos realistas (Yughues Bushes)
+            GameObject bushReal1 = LoadModel("Models/Nature/Realistic/Bushes/P_Bush01");
+            GameObject bushReal2 = LoadModel("Models/Nature/Realistic/Bushes/P_Bush02");
+            GameObject bushReal3 = LoadModel("Models/Nature/Realistic/Bushes/P_Bush03");
+            var bushModels = new List<GameObject>();
+            if (bushReal1 != null) bushModels.Add(bushReal1);
+            if (bushReal2 != null) bushModels.Add(bushReal2);
+            if (bushReal3 != null) bushModels.Add(bushReal3);
 
             GameObject cowModel = LoadModel("Models/Animals/Farm/Cow");
             GameObject horseModel = LoadModel("Models/Animals/Farm/Horse");
@@ -91,30 +128,39 @@ namespace ProjectTerra.Sandbox
                 var rsmTree = RegionalSandboxManager.Instance;
                 if (rsmTree != null && rsmTree.IsOnRoadOrRiver(spawnPos.x, spawnPos.z, 3f)) continue;
 
-                GameObject[] treeModels = { treeDefault, treeCone, treeDetailed };
-                GameObject treePrefab = treeModels[i % treeModels.Length];
+                GameObject treePrefab = treeModels.Count > 0 ? treeModels[i % treeModels.Count] : null;
                 if (treePrefab != null)
                 {
                     var tree = Object.Instantiate(treePrefab, spawnPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), treeRoot);
-                    // Proporcoes variadas: mais alto que largo, com variacao por individuo.
-                    float baseS = Random.Range(2.6f, 5.6f);
-                    float w = baseS * Random.Range(0.82f, 1.18f);
-                    float hgt = baseS * Random.Range(1.05f, 1.65f);
-                    tree.transform.localScale = new Vector3(w, hgt, w);
-                    // Variacao de tom de folhagem e tronco (seco em desertos, verde em biomas normais).
-                    Color leaf;
-                    if (isDesert)
+                    bool isBOTD = treePrefab.name.Contains("BOTD") || treePrefab.name.Contains("Conifer");
+                    
+                    if (isBOTD)
                     {
-                        float dTone = Random.Range(0.44f, 0.56f);
-                        leaf = new Color(dTone * 1.12f, dTone * 0.98f, dTone * 0.55f);
+                        // Pinheiros realistas mantêm escala natural e materiais PBR originais
+                        float s = Random.Range(0.85f, 1.45f);
+                        tree.transform.localScale = Vector3.one * s;
                     }
                     else
                     {
-                        float g = Random.Range(0.34f, 0.56f);
-                        leaf = new Color(0.10f + Random.Range(0f, 0.12f), g, 0.10f + Random.Range(0f, 0.08f));
+                        // Proporções variadas para modelos low-poly
+                        float baseS = Random.Range(2.6f, 5.6f);
+                        float w = baseS * Random.Range(0.82f, 1.18f);
+                        float hgt = baseS * Random.Range(1.05f, 1.65f);
+                        tree.transform.localScale = new Vector3(w, hgt, w);
+                        Color leaf;
+                        if (isDesert)
+                        {
+                            float dTone = Random.Range(0.44f, 0.56f);
+                            leaf = new Color(dTone * 1.12f, dTone * 0.98f, dTone * 0.55f);
+                        }
+                        else
+                        {
+                            float g = Random.Range(0.34f, 0.56f);
+                            leaf = new Color(0.10f + Random.Range(0f, 0.12f), g, 0.10f + Random.Range(0f, 0.08f));
+                        }
+                        Color bark = new Color(0.34f + Random.Range(0f, 0.12f), 0.23f + Random.Range(0f, 0.08f), 0.13f);
+                        ApplyModelColors(tree, leaf, bark);
                     }
-                    Color bark = new Color(0.34f + Random.Range(0f, 0.12f), 0.23f + Random.Range(0f, 0.08f), 0.13f);
-                    ApplyModelColors(tree, leaf, bark);
                 }
                 else
                 {
@@ -140,17 +186,25 @@ namespace ProjectTerra.Sandbox
                 var rsmRock = RegionalSandboxManager.Instance;
                 if (rsmRock != null && rsmRock.IsOnRoadOrRiver(spawnPos.x, spawnPos.z, 2f)) continue;
 
-                GameObject[] rockModels = { rockSmall, rockLarge, rockTall };
-                GameObject rockPrefab = rockModels[i % rockModels.Length];
+                GameObject rockPrefab = rockModels.Count > 0 ? rockModels[i % rockModels.Count] : null;
                 if (rockPrefab != null)
                 {
                     var rock = Object.Instantiate(rockPrefab, spawnPos, Quaternion.Euler(Random.Range(-14f, 14f), Random.Range(0f, 360f), Random.Range(-14f, 14f)), rockRoot);
-                    // Formas irregulares: escala nao-uniforme + faixa ampla de tamanho.
-                    float baseS = Random.Range(1.8f, 7.0f);
-                    Vector3 s = new Vector3(baseS * Random.Range(0.7f, 1.4f), baseS * Random.Range(0.5f, 1.1f), baseS * Random.Range(0.7f, 1.4f));
-                    rock.transform.localScale = s;
-                    float gray = Random.Range(0.36f, 0.54f);
-                    ApplyModelColors(rock, new Color(gray, gray, gray + 0.03f), new Color(gray - 0.05f, gray - 0.05f, gray - 0.03f));
+                    bool isRealRock = rockPrefab.name.StartsWith("Rock") && char.IsDigit(rockPrefab.name.Length > 4 ? rockPrefab.name[4] : ' ');
+                    if (isRealRock)
+                    {
+                        // Rocha realista com shaders PBR próprios
+                        float s = Random.Range(1.2f, 3.5f);
+                        rock.transform.localScale = Vector3.one * s;
+                    }
+                    else
+                    {
+                        float baseS = Random.Range(1.8f, 7.0f);
+                        Vector3 s = new Vector3(baseS * Random.Range(0.7f, 1.4f), baseS * Random.Range(0.5f, 1.1f), baseS * Random.Range(0.7f, 1.4f));
+                        rock.transform.localScale = s;
+                        float gray = Random.Range(0.36f, 0.54f);
+                        ApplyModelColors(rock, new Color(gray, gray, gray + 0.03f), new Color(gray - 0.05f, gray - 0.05f, gray - 0.03f));
+                    }
                 }
                 else
                 {
@@ -160,8 +214,34 @@ namespace ProjectTerra.Sandbox
                 rocksSpawned++;
             }
 
+            // 2b. Arbustos e folhagem realista nos limites de clareiras e bosques
+            if (bushModels.Count > 0 && !isDesert)
+            {
+                int bushCount = Mathf.Clamp(treeCount / 2, 40, 150);
+                for (int b = 0; b < bushCount; b++)
+                {
+                    float angle = Random.Range(0f, Mathf.PI * 2f);
+                    float dist = Random.Range(150f, 2500f);
+                    Vector3 baseCenter = (starterBasePos + townPos) * 0.5f;
+                    Vector3 spawnPos = baseCenter + new Vector3(Mathf.Cos(angle) * dist, 0f, Mathf.Sin(angle) * dist);
+                    spawnPos.y = terrain.SampleHeight(spawnPos) + terrainPos.y;
+
+                    if (spawnPos.y < 1.0f) continue;
+                    var rsm = RegionalSandboxManager.Instance;
+                    if (rsm != null && rsm.IsOnRoadOrRiver(spawnPos.x, spawnPos.z, 1.5f)) continue;
+
+                    var bushPrefab = bushModels[b % bushModels.Count];
+                    var bushInst = Object.Instantiate(bushPrefab, spawnPos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f), bushRoot);
+                    bushInst.transform.localScale = Vector3.one * Random.Range(0.8f, 1.6f);
+                }
+            }
+
             // 3. Animais de Fazenda — sempre spawnados (com prefab ou fallback procedural)
             SpawnPastureAnimals(animalRoot, starterBasePos, terrain, cowModel, horseModel, sheepModel);
+
+            // 3b. [desativado] Cerca do pasto das vacas (modelos do Blender em Resources/Models/Structures/Fences).
+            // Para reativar, descomente a linha abaixo:
+            // SpawnPastureFences(rootObj.transform, starterBasePos + new Vector3(120f, 0f, 80f), terrain);
 
             // 4. Animais Selvagens — sempre spawnados
             SpawnWildAnimals(animalRoot, starterBasePos + new Vector3(800f, 0f, 900f), terrain, foxModel, wolfModel);
@@ -278,6 +358,86 @@ namespace ProjectTerra.Sandbox
                     var prim = SpawnAnimalPrimitive(parent, pos, $"Animal_Ovelha_{i + 1}", new Vector3(0.6f, 0.7f, 0.9f), new Color(0.92f, 0.90f, 0.88f));
                     var anim = prim.AddComponent<AnimalController>();
                     anim.Initialize(AnimalSpecies.Sheep, terrain, null, sheepCenter, 28f);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Cerca o pasto das vacas com os modelos de cerca (Resources/Models/Structures/Fences).
+        /// Cada modelo tem o pivô no primeiro poste e se estende ao longo de +Z local
+        /// (comprimento entre postes: quadrada 6.354m, redonda 5.109m). Os segmentos são
+        /// esticados em Z para fechar cada lado exatamente e acompanham o relevo.
+        /// Um segmento do meio do lado sul fica vazio, servindo de portão.
+        /// </summary>
+        private static void SpawnPastureFences(Transform parent, Vector3 pastureCenter, Terrain terrain)
+        {
+            const float half = 42f;
+            string[] paths =
+            {
+                "Models/Structures/Fences/fence_square",
+                "Models/Structures/Fences/fence_round",
+                "Models/Structures/Fences/fence_square_brace",
+                "Models/Structures/Fences/fence_round_brace",
+            };
+            float[] lengths = { 6.354f, 5.109f, 6.354f, 5.109f };
+
+            var prefabs = new GameObject[paths.Length];
+            bool any = false;
+            for (int i = 0; i < paths.Length; i++)
+            {
+                prefabs[i] = LoadModel(paths[i]);
+                any |= prefabs[i] != null;
+            }
+            if (!any) return;
+
+            var fenceRoot = new GameObject("Pasture_Fences").transform;
+            fenceRoot.SetParent(parent);
+
+            Vector3[] corners =
+            {
+                new Vector3(-half, 0f, -half),
+                new Vector3(-half, 0f,  half),
+                new Vector3( half, 0f,  half),
+                new Vector3( half, 0f, -half),
+            };
+
+            float sideLen = half * 2f;
+            Color wood = new Color(0.45f, 0.30f, 0.17f);
+            float terrainY = terrain.transform.position.y;
+
+            for (int side = 0; side < 4; side++)
+            {
+                Vector3 a = pastureCenter + corners[side];
+                Vector3 b = pastureCenter + corners[(side + 1) % 4];
+                int variant = (side % 2 == 0) ? 0 : 1; // lados alternam quadrada/redonda
+                int count = Mathf.Max(1, Mathf.CeilToInt(sideLen / lengths[variant]));
+
+                for (int s = 0; s < count; s++)
+                {
+                    if (side == 0 && s == count / 2) continue; // portão
+
+                    // A cada 3º segmento usa a variante com travessa diagonal
+                    int v = (s % 3 == 2) ? variant + 2 : variant;
+                    if (prefabs[v] == null) v = variant;
+                    if (prefabs[v] == null) continue;
+
+                    Vector3 p0 = Vector3.Lerp(a, b, (float)s / count);
+                    Vector3 p1 = Vector3.Lerp(a, b, (float)(s + 1) / count);
+                    p0.y = terrain.SampleHeight(p0) + terrainY;
+                    p1.y = terrain.SampleHeight(p1) + terrainY;
+
+                    Vector3 dir = p1 - p0;
+                    var fence = Object.Instantiate(prefabs[v], p0, Quaternion.LookRotation(dir.normalized, Vector3.up), fenceRoot);
+                    fence.name = $"Cerca_{side}_{s}";
+                    // Estica só no eixo do comprimento para fechar o vão (inclui inclinação do terreno).
+                    var ls = fence.transform.localScale;
+                    fence.transform.localScale = new Vector3(ls.x, ls.y, ls.z * dir.magnitude / lengths[v]);
+                    ApplyModelColors(fence, wood, wood);
+
+                    foreach (var mf in fence.GetComponentsInChildren<MeshFilter>())
+                    {
+                        if (mf.GetComponent<Collider>() == null) mf.gameObject.AddComponent<MeshCollider>();
+                    }
                 }
             }
         }
@@ -464,12 +624,11 @@ namespace ProjectTerra.Sandbox
         }
 
         /// <summary>
-        /// Spawna um edifício 3D importado caso disponível no caminho, ou invoca o fallback procedural.
+        /// Spawna um edifício 3D modular utilizando o kit Downtown City MegaKit.
         /// </summary>
         public static GameObject SpawnBuilding(Transform parent, Vector3 position, Vector3 scale, string resourcePath, string name)
         {
-            // [removido] Assets de prédios/edifícios desativados do cenário
-            return null;
+            return DowntownBuildingBuilder.BuildBuilding(parent, position, scale, Color.white, name);
         }
 
         /// <summary>

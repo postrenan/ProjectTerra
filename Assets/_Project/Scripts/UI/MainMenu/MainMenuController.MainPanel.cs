@@ -69,9 +69,6 @@ namespace ProjectTerra.UI
             floatingReturnBtnRect = new Rect(btnX, btnY, btnW, btnH);
 
             Color prev = GUI.color;
-            GUI.color = new Color(0.04f, 0.10f, 0.20f, 0.90f);
-            GUI.DrawTexture(floatingReturnBtnRect, whiteTex);
-            DrawBorder(floatingReturnBtnRect, new Color(0.35f, 0.80f, 1.0f, 0.85f), 1.5f);
             GUI.color = Color.white;
 
             if (GUI.Button(floatingReturnBtnRect, "MENU PRINCIPAL", floatingBackBtnStyle))
@@ -89,12 +86,8 @@ namespace ProjectTerra.UI
             float sidebarY = 24f;
             mainPanelRect = new Rect(sidebarX, sidebarY, sidebarWidth, sidebarHeight);
 
-            // Fundo em vidro escuro translúcido (mantém o globo visível ao redor e através)
-            GUI.color = new Color(0.02f, 0.05f, 0.12f, 0.92f * screenAlpha);
-            GUI.DrawTexture(mainPanelRect, whiteTex);
-
-            // Borda refinada em ciano neon
-            DrawBorder(mainPanelRect, new Color(0.20f, 0.55f, 0.85f, 0.70f * screenAlpha), 1.5f);
+            // Painel lateral em vidro escuro translúcido com bordas arredondadas e glow ciano
+            UIThemeHelper.DrawRoundedBox(mainPanelRect, new Color(0.02f, 0.05f, 0.12f, 0.92f * screenAlpha), new Color(0.20f, 0.55f, 0.85f, 0.70f * screenAlpha), 12f, 1.5f);
 
             // Área de conteúdo
             GUILayout.BeginArea(new Rect(sidebarX + 20f, sidebarY + 20f, sidebarWidth - 40f, sidebarHeight - 40f));
@@ -258,13 +251,8 @@ namespace ProjectTerra.UI
 
             subModalRect = new Rect(modalX, modalY, modalWidth, modalHeight);
 
-            // Fundo escuro fosco de vidro
-            GUI.color = new Color(0.02f, 0.05f, 0.12f, 0.94f * screenAlpha);
-            GUI.DrawTexture(subModalRect, whiteTex);
-
-            // Borda com acento ciano
-            DrawBorder(subModalRect, new Color(0.30f, 0.65f, 0.95f, 0.75f * screenAlpha), 1.5f);
-            GUI.color = Color.white;
+            // Fundo escuro fosco de vidro com bordas arredondadas e acento ciano
+            UIThemeHelper.DrawRoundedBox(subModalRect, new Color(0.02f, 0.05f, 0.12f, 0.94f * screenAlpha), new Color(0.30f, 0.65f, 0.95f, 0.75f * screenAlpha), 12f, 1.5f);
 
             // Conteúdo específico da tela atual
             GUILayout.BeginArea(new Rect(modalX + 24f, modalY + 20f, modalWidth - 48f, modalHeight - 40f));
@@ -324,11 +312,8 @@ namespace ProjectTerra.UI
             float dlgY = (Screen.height - dlgH) * 0.5f;
             Rect dlgRect = new Rect(dlgX, dlgY, dlgW, dlgH);
 
-            // Fundo escuro modal
-            GUI.color = new Color(0.03f, 0.05f, 0.10f, 0.98f);
-            GUI.DrawTexture(dlgRect, whiteTex);
-            DrawBorder(dlgRect, new Color(1f, 0.35f, 0.35f, 0.90f), 2f);
-            GUI.color = Color.white;
+            // Fundo escuro modal com bordas arredondadas de alerta
+            UIThemeHelper.DrawRoundedBox(dlgRect, new Color(0.03f, 0.05f, 0.10f, 0.98f), new Color(1f, 0.35f, 0.35f, 0.90f), 12f, 2f);
 
             GUILayout.BeginArea(new Rect(dlgX + 20f, dlgY + 20f, dlgW - 40f, dlgH - 40f));
             GUILayout.Label("Encerrar o Jogo?", modalHeaderTitleStyle);
@@ -371,10 +356,7 @@ namespace ProjectTerra.UI
             float badgeY = 24f;
             Rect badgeRect = new Rect(badgeX, badgeY, badgeW, badgeH);
 
-            GUI.color = new Color(0.04f, 0.18f, 0.32f, 0.95f);
-            GUI.DrawTexture(badgeRect, whiteTex);
-            DrawBorder(badgeRect, new Color(0.40f, 0.90f, 1.0f, 0.90f), 1.5f);
-            GUI.color = Color.white;
+            UIThemeHelper.DrawRoundedBox(badgeRect, new Color(0.04f, 0.18f, 0.32f, 0.95f), new Color(0.40f, 0.90f, 1.0f, 0.90f), 8f, 1.5f);
 
             GUI.Label(badgeRect, notificationMessage, labelBoldStyle);
         }

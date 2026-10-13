@@ -1,4 +1,5 @@
 using System;
+using ProjectTerra.UI;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -715,24 +716,49 @@ namespace ProjectTerra.Sandbox
             float panelH = 198f;
             Rect panelRect = new Rect(14f, 58f, panelW, panelH);
 
-            GUI.color = new Color(0.04f, 0.08f, 0.14f, 0.92f);
-            GUI.DrawTexture(panelRect, whiteTex);
-            GUI.color = new Color(0.2f, 0.6f, 0.9f, 0.7f);
-            GUI.DrawTexture(new Rect(panelRect.x, panelRect.y, panelRect.width, 1), whiteTex);
-            GUI.color = Color.white;
+            // Fundo escuro com cantos arredondados e borda neon
+            UIThemeHelper.DrawRoundedBox(panelRect, new Color(0.04f, 0.08f, 0.14f, 0.92f), new Color(0.2f, 0.6f, 0.9f, 0.7f), 8f, 1.2f);
 
             GUILayout.BeginArea(panelRect);
             GUILayout.Space(6);
             GUILayout.Label("CAMADAS GIS", titleStyle);
             GUILayout.Space(4);
 
-            showRoadsLayer = GUILayout.Toggle(showRoadsLayer, " ️ Rodovias / Trilhos");
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.HeavyTruck, 14f, new Color(0.75f, 0.8f, 0.9f));
+            GUILayout.Space(3);
+            showRoadsLayer = GUILayout.Toggle(showRoadsLayer, "Rodovias / Trilhos");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.WaterDrop, 14f, new Color(0.35f, 0.75f, 1f));
+            GUILayout.Space(3);
             showRiversLayer = GUILayout.Toggle(showRiversLayer, "Hidrografia / Rios");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Metropolis, 14f, new Color(0.9f, 0.85f, 0.4f));
+            GUILayout.Space(3);
             showCitiesLayer = GUILayout.Toggle(showCitiesLayer, "Cidades & Sedes");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Flag, 14f, new Color(0.9f, 0.5f, 0.9f));
+            GUILayout.Space(3);
             showDivisasLayer = GUILayout.Toggle(showDivisasLayer, "Divisas / Vizinhos");
-            showContoursLayer = GUILayout.Toggle(showContoursLayer, " ️ Curvas de Nível");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.TrendingUp, 14f, new Color(0.6f, 0.8f, 0.6f));
+            GUILayout.Space(3);
+            showContoursLayer = GUILayout.Toggle(showContoursLayer, "Curvas de Nível");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Compass, 14f, new Color(0.5f, 0.75f, 0.95f));
+            GUILayout.Space(3);
             showGridLayer = GUILayout.Toggle(showGridLayer, "Grade Tática");
-            showLandmarksLayer = GUILayout.Toggle(showLandmarksLayer, " ▲ Marcos e Serras");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Mountain, 14f, new Color(0.85f, 0.7f, 0.45f));
+            GUILayout.Space(3);
+            showLandmarksLayer = GUILayout.Toggle(showLandmarksLayer, "Marcos e Serras");
+            GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
         }
@@ -743,17 +769,14 @@ namespace ProjectTerra.Sandbox
             float navH = 250f;
             Rect navRect = new Rect(Screen.width - navW - 14f, 58f, navW, navH);
 
-            GUI.color = new Color(0.04f, 0.08f, 0.14f, 0.92f);
-            GUI.DrawTexture(navRect, whiteTex);
-            GUI.color = new Color(0.2f, 0.6f, 0.9f, 0.7f);
-            GUI.DrawTexture(new Rect(navRect.x, navRect.y, navRect.width, 1), whiteTex);
-            GUI.color = Color.white;
+            // Painel de navegação com cantos arredondados e borda neon
+            UIThemeHelper.DrawRoundedBox(navRect, new Color(0.04f, 0.08f, 0.14f, 0.92f), new Color(0.2f, 0.6f, 0.9f, 0.7f), 8f, 1.2f);
 
             GUILayout.BeginArea(navRect);
             GUILayout.Space(6);
 
             // Zoom In [+]
-            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button("+", menuButtonStyle, GUILayout.Height(32)))
             {
                 ZoomAt(mapZoom * 1.3f, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
             }
@@ -766,7 +789,7 @@ namespace ProjectTerra.Sandbox
             GUILayout.Space(2);
 
             // Zoom Out [-]
-            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button("−", menuButtonStyle, GUILayout.Height(32)))
             {
                 ZoomAt(mapZoom * 0.77f, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
             }
@@ -774,13 +797,13 @@ namespace ProjectTerra.Sandbox
             GUILayout.Space(8);
 
             // Centralizar no Jogador []
-            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
+            if (HudIconButton(TerraIcon.LocationPin, menuButtonStyle, 18f, GUILayout.Height(32)))
             {
                 CenterOnPlayer(worldW, worldL, baseW, baseH);
             }
 
             // Centralizar na Capital []
-            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
+            if (HudIconButton(TerraIcon.Historic, menuButtonStyle, 18f, GUILayout.Height(32)))
             {
                 CenterOnCapital(worldW, worldL, baseW, baseH);
             }
@@ -1272,15 +1295,8 @@ namespace ProjectTerra.Sandbox
                 float badgeH = string.IsNullOrEmpty(lbl.subtitle) ? 24f : 36f;
                 Rect badgeRect = new Rect(sx - badgeW * 0.5f, sy - badgeH * 0.5f, badgeW, badgeH);
 
-                // Fundo do badge tático cinza-ardósia escuro com borda metálica
-                GUI.color = new Color(0.08f, 0.10f, 0.14f, 0.88f);
-                GUI.DrawTexture(badgeRect, whiteTex);
-
-                GUI.color = new Color(0.48f, 0.54f, 0.62f, 0.85f);
-                GUI.DrawTexture(new Rect(badgeRect.x, badgeRect.y, badgeRect.width, 1), whiteTex);
-                GUI.DrawTexture(new Rect(badgeRect.x, badgeRect.y + badgeRect.height - 1, badgeRect.width, 1), whiteTex);
-                GUI.DrawTexture(new Rect(badgeRect.x, badgeRect.y, 1, badgeRect.height), whiteTex);
-                GUI.DrawTexture(new Rect(badgeRect.x + badgeRect.width - 1, badgeRect.y, 1, badgeRect.height), whiteTex);
+                // Fundo do badge tático com cantos arredondados e borda metálica
+                UIThemeHelper.DrawRoundedBox(badgeRect, new Color(0.08f, 0.10f, 0.14f, 0.90f), new Color(0.48f, 0.54f, 0.62f, 0.85f), 6f, 1.2f);
 
                 // Título em cinza claro brilhante / prata
                 GUI.color = Color.white;

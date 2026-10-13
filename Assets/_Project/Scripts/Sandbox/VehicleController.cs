@@ -257,8 +257,8 @@ namespace ProjectTerra.Sandbox
                 bool throttleDown = TerraInput.GetKey(Key.LeftCtrl) || TerraInput.GetKey(Key.RightCtrl) || TerraInput.GetKey(Key.C);
                 float vert = TerraInput.GetAxis("Vertical");
 
-                // Shift ou W acelera potência do motor (potência de cruzeiro persistente)
-                if (throttleUp || (vert > 0.1f && aircraftThrottle < 0.99f))
+                // Apenas Shift acelera potência do motor (potência de cruzeiro persistente)
+                if (throttleUp)
                 {
                     aircraftThrottle = Mathf.MoveTowards(aircraftThrottle, 1.0f, Time.deltaTime * 0.9f);
                 }

@@ -92,6 +92,9 @@ namespace ProjectTerra.Gameplay
         public bool advancedEconomy = false;
         // Dificuldade escolhida na criação (índice de GameDifficulty).
         public int difficulty = (int)GameDifficulty.Balanced;
+
+        // Parcelas de terreno compradas na Loja de Terrenos (índice linha * colunas + coluna).
+        public List<int> ownedParcels = new List<int>();
         // Preço corrente do combustível por litro. 0 = ainda não definido → derivado da dificuldade.
         public float fuelPricePerLiter = 0f;
         // Total gasto em custos operacionais (combustível, reparo, despesa diária) — estatística.

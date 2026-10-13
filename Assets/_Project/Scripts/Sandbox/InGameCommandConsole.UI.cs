@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectTerra.UI;
 
 namespace ProjectTerra.Sandbox
 {
@@ -9,13 +10,17 @@ namespace ProjectTerra.Sandbox
             if (stylesReady) return;
 
             windowStyle = new GUIStyle(GUI.skin.box);
-            windowStyle.normal.background = whiteTex;
+            windowStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.02f, 0.05f, 0.09f, 0.85f), new Color(0.2f, 0.75f, 1.0f, 0.75f), 1.5f, 10f, 32);
+            windowStyle.border = new RectOffset(10, 10, 10, 10);
 
             inputStyle = new GUIStyle(GUI.skin.textField)
             {
                 fontSize = 14,
-                fontStyle = FontStyle.Bold
+                fontStyle = FontStyle.Bold,
+                border = new RectOffset(6, 6, 6, 6),
+                padding = new RectOffset(8, 8, 4, 4)
             };
+            inputStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.04f, 0.08f, 0.14f, 0.85f), new Color(0.25f, 0.65f, 0.95f, 0.80f), 1.2f, 6f, 32);
             inputStyle.normal.textColor = Color.white;
 
             logStyle = new GUIStyle(GUI.skin.label)
@@ -44,6 +49,7 @@ namespace ProjectTerra.Sandbox
                 fontSize = 12,
                 fontStyle = FontStyle.Bold
             };
+            UIThemeHelper.ApplyModernButtonSkin(btnStyle);
 
             stylesReady = true;
         }
@@ -76,12 +82,10 @@ namespace ProjectTerra.Sandbox
             float y = Screen.height - h - 45f;
             Rect consoleRect = new Rect(x, y, w, h);
 
-            // Fundo escuro aerodinâmico com borda ciano (translúcido estilo vidro/HUD)
-            GUI.color = new Color(0.02f, 0.05f, 0.09f, 0.50f);
-            GUI.DrawTexture(consoleRect, whiteTex);
-            GUI.color = new Color(0.2f, 0.75f, 1.0f, 0.75f);
-            GUI.DrawTexture(new Rect(consoleRect.x, consoleRect.y, consoleRect.width, 2), whiteTex);
-            GUI.DrawTexture(new Rect(consoleRect.x, consoleRect.y + 28f, consoleRect.width, 1), whiteTex);
+            // Fundo escuro aerodinâmico com borda ciano arredondada (estilo HUD moderno)
+            UIThemeHelper.DrawRoundedBox(consoleRect, new Color(0.02f, 0.05f, 0.09f, 0.85f), new Color(0.2f, 0.75f, 1.0f, 0.75f), 10f, 1.5f);
+            GUI.color = new Color(0.2f, 0.75f, 1.0f, 0.50f);
+            GUI.DrawTexture(new Rect(consoleRect.x + 8f, consoleRect.y + 28f, consoleRect.width - 16f, 1), whiteTex);
             GUI.color = Color.white;
 
             // Barra de Título
@@ -92,11 +96,9 @@ namespace ProjectTerra.Sandbox
                 return;
             }
 
-            // Histórico de Mensagens / Logs (área translúcida)
+            // Histórico de Mensagens / Logs (área translúcida com bordas arredondadas)
             Rect logAreaRect = new Rect(x + 10f, y + 32f, w - 20f, h - 85f);
-            GUI.color = new Color(0.04f, 0.08f, 0.14f, 0.30f);
-            GUI.DrawTexture(logAreaRect, whiteTex);
-            GUI.color = Color.white;
+            UIThemeHelper.DrawRoundedBox(logAreaRect, new Color(0.04f, 0.08f, 0.14f, 0.45f), new Color(0.15f, 0.35f, 0.55f, 0.40f), 6f, 1f);
 
             GUILayout.BeginArea(logAreaRect);
             scrollPos = GUILayout.BeginScrollView(scrollPos);

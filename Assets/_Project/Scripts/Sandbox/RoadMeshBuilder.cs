@@ -515,17 +515,17 @@ namespace ProjectTerra.Sandbox
                     {
                         // ACOSTAMENTO:
                         float groundY = (getTerrainHeight != null) ? getTerrainHeight(worldPos) : c.y;
-                        y = Mathf.Max(groundY + 0.04f, c.y - 0.05f);
+                        y = Mathf.Max(groundY + 0.05f, c.y - 0.04f);
                     }
                     else if (col == 2 || col == 4)
                     {
                         // BORDAS DA PISTA
-                        y = c.y + 0.02f;
+                        y = c.y + 0.04f;
                     }
                     else // col == 3 (Centro da pista)
                     {
                         // ABAULAMENTO CENTRAL (Crown) de drenagem pluvial suave
-                        y = c.y + 0.06f;
+                        y = c.y + 0.08f;
                     }
 
                     int idx = i * cols + col;

@@ -75,6 +75,14 @@ namespace ProjectTerra.Sandbox
         private GUIStyle menuButtonDangerStyle;
         private GUIStyle toastStyle;
 
+        // Estilos do Novo HUD In-Game (Print 1 & 2)
+        private GUIStyle hudBoxTitleStyle;
+        private GUIStyle hudBoxSubStyle;
+        private GUIStyle hudSpeedBigStyle;
+        private GUIStyle hudGearTextStyle;
+        private GUIStyle hudMiniValueStyle;
+        private GUIStyle hudKeyBadgeStyle;
+
         // Estilos do Celular (estilo GTA V)
         private GUIStyle phoneStatusStyle;
         private GUIStyle phoneHeaderStyle;
@@ -332,18 +340,35 @@ namespace ProjectTerra.Sandbox
             bool phoneActive = IsPhoneOpen || phoneAnim > 0.001f;
 
             // 2. HUD In-Game Moderno (se visível via [H]). O celular ocupa apenas o
-            // canto inferior direito, então o HUD do topo permanece. Os elementos
-            // do rodapé/direita são ocultados para não colidir com o aparelho.
+            // canto inferior direito, então o HUD do topo permanece.
             if (IsHudVisible)
             {
-                DrawTopLeftStatusPill();
-                if (ShowCompass) DrawTopCompassTape();
+                // Topo Esquerdo: Ajuda de Botões (Print 1 & 2)
+                DrawTopLeftButtonHelp();
+
+                // Topo Centro: Bússola (Print 1 & 2)
+                if (ShowCompass) DrawTopCenterCompass();
+
+                // Topo Direito: Data + Finança + Hora + Clima(ícone) (Print 1 & 2)
+                DrawTopRightStatusBox();
+
+                // Rastreador de Missão (logo abaixo da caixa de status no topo direito)
                 if (ShowMissionTracker) DrawTopRightMissionCard();
+
+                // Canto Inferior Direito: Print 1 (dentro de veículo) e Print 2 (a pé)
                 if (!phoneActive)
                 {
-                    if (ShowTelemetry) DrawVehicleTelemetry();
-                    DrawContextualHints();
-                    DrawSubtleKeyShortcuts();
+                    var player = PlayerCharacterController.Instance;
+                    bool inVehicle = player != null && player.isDriving && player.currentVehicle != null;
+
+                    if (inVehicle)
+                    {
+                        DrawVehicleHUDCluster(player.currentVehicle);
+                    }
+                    else
+                    {
+                        DrawOnFootHUDCluster(player);
+                    }
                 }
             }
 
