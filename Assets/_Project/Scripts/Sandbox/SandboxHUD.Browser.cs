@@ -665,8 +665,8 @@ namespace ProjectTerra.Sandbox
             foreach (var f in filters)
             {
                 bool isSel = portalCategoryFilter == f.key;
-                float fw = brFilterChipStyle.CalcSize(new GUIContent(f.label)).x + 24f;
-                Rect fRect = GUILayoutUtility.GetRect(fw, 32f, GUILayout.Width(fw), GUILayout.Height(32f));
+                float fw = brFilterChipStyle.CalcSize(new GUIContent(f.label)).x + 28f;
+                Rect fRect = GUILayoutUtility.GetRect(fw, 34f, GUILayout.Width(fw), GUILayout.Height(34f));
 
                 Fill(fRect, isSel ? UiPrimaryBlue : UiCardBg);
                 DrawOutline(fRect, isSel ? UiPrimaryBlue : UiBorderLight);
@@ -675,18 +675,18 @@ namespace ProjectTerra.Sandbox
                 {
                     portalCategoryFilter = f.key;
                 }
-                GUILayout.Space(8);
+                GUILayout.Space(12);
             }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(16);
+            GUILayout.Space(22);
 
             // --- GRID DE CARTÕES MODERNOS COM ÍCONES VETORIAIS ---
             int cols = maxContainerW >= 740f ? 2 : 1;
-            float gap = 16f;
+            float gap = 20f;
             float cardW = (maxContainerW - (cols - 1) * gap) / cols;
-            float cardH = 150f;
+            float cardH = 158f;
 
             var cardList = new System.Collections.Generic.List<(TerraIcon icon, string title, string subtitle, string tag, string desc, string navTarget, Color accent)>();
 
@@ -721,13 +721,24 @@ namespace ProjectTerra.Sandbox
                 Rect cRect = GUILayoutUtility.GetRect(cardW, cardH, GUILayout.Width(cardW), GUILayout.Height(cardH));
                 DrawModernPortalCard(cRect, item.icon, item.title, item.subtitle, item.tag, item.desc, item.navTarget, item.accent);
 
-                if (i % cols == cols - 1) GUILayout.EndHorizontal();
-                else GUILayout.Space(gap);
+                if (i % cols == cols - 1)
+                {
+                    GUILayout.EndHorizontal();
+                    GUILayout.Space(gap);
+                }
+                else
+                {
+                    GUILayout.Space(gap);
+                }
                 i++;
             }
-            if (i % cols != 0) GUILayout.EndHorizontal();
+            if (i % cols != 0)
+            {
+                GUILayout.EndHorizontal();
+                GUILayout.Space(gap);
+            }
 
-            GUILayout.Space(30);
+            GUILayout.Space(26);
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
@@ -740,21 +751,21 @@ namespace ProjectTerra.Sandbox
 
             Fill(new Rect(r.x, r.y, r.width, 3f), accent);
 
-            // Ícone nativo vetorial
-            Rect iconBox = new Rect(r.x + 16f, r.y + 14f, 20f, 20f);
+            // Ícone nativo vetorial com margem e padding limpos
+            Rect iconBox = new Rect(r.x + 18f, r.y + 16f, 22f, 22f);
             TerraIcons.Draw(iconBox, icon, accent);
 
             // Tag/Badge Minimalista
-            float tagW = brBadgeStyle.CalcSize(new GUIContent(tag)).x + 16f;
-            Rect tagRect = new Rect(iconBox.xMax + 8f, r.y + 14f, tagW, 20f);
+            float tagW = brBadgeStyle.CalcSize(new GUIContent(tag)).x + 18f;
+            Rect tagRect = new Rect(iconBox.xMax + 10f, r.y + 16f, tagW, 22f);
             Fill(tagRect, new Color(accent.r, accent.g, accent.b, 0.12f));
             GUI.Label(tagRect, tag, brBadgeStyle);
 
-            GUI.Label(new Rect(r.x + 16f, r.y + 40f, r.width - 32f, 24f), title, brPageH2Style);
-            GUI.Label(new Rect(r.x + 16f, r.y + 64f, r.width - 32f, 18f), subtitle, brSmallStyle);
-            GUI.Label(new Rect(r.x + 16f, r.y + 86f, r.width - 32f, 38f), desc, brBodyStyle);
+            GUI.Label(new Rect(r.x + 18f, r.y + 44f, r.width - 36f, 24f), title, brPageH2Style);
+            GUI.Label(new Rect(r.x + 18f, r.y + 68f, r.width - 36f, 18f), subtitle, brSmallStyle);
+            GUI.Label(new Rect(r.x + 18f, r.y + 90f, r.width - 36f, 38f), desc, brBodyStyle);
 
-            Rect btnRect = new Rect(r.xMax - 100f, r.yMax - 34f, 86f, 26f);
+            Rect btnRect = new Rect(r.xMax - 110f, r.yMax - 36f, 94f, 26f);
             if (GUI.Button(btnRect, "Acessar →", brBuySecondaryStyle))
             {
                 Navigate(target, true);
@@ -793,15 +804,15 @@ namespace ProjectTerra.Sandbox
             TerraIcons.Draw(new Rect(header.x + 20f, header.y + 68f, 14f, 14f), TerraIcon.Checkmark, UiSuccessGreen);
             GUI.Label(new Rect(header.x + 38f, header.y + 66f, header.width - 58f, 18f), s.tagline, brSmallStyle);
 
-            GUILayout.Space(20);
+            GUILayout.Space(24);
 
             for (int idx = 0; idx < s.items.Length; idx++)
             {
                 DrawModernItemCard(maxContainerW, s, idx);
-                GUILayout.Space(14);
+                GUILayout.Space(18);
             }
 
-            GUILayout.Space(24);
+            GUILayout.Space(26);
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
@@ -809,7 +820,7 @@ namespace ProjectTerra.Sandbox
         private void DrawModernItemCard(float containerW, ShopSite s, int idx)
         {
             var it = s.items[idx];
-            float cardH = containerW >= 640f ? 140f : 230f;
+            float cardH = containerW >= 640f ? 148f : 240f;
             Rect card = GUILayoutUtility.GetRect(containerW, cardH);
 
             bool hover = card.Contains(Event.current.mousePosition);
@@ -822,31 +833,31 @@ namespace ProjectTerra.Sandbox
             if (containerW >= 640f)
             {
                 float imgW = 160f;
-                Rect imgFrame = new Rect(card.x + 12f, card.y + 12f, imgW, cardH - 24f);
+                Rect imgFrame = new Rect(card.x + 14f, card.y + 14f, imgW, cardH - 28f);
                 DrawCleanProductImage(imgFrame, it);
 
-                float btnColW = 160f;
-                float tx = imgFrame.xMax + 18f;
-                float infoW = card.width - (tx - card.x) - btnColW - 20f;
+                float btnColW = 164f;
+                float tx = imgFrame.xMax + 20f;
+                float infoW = card.width - (tx - card.x) - btnColW - 22f;
 
-                GUI.Label(new Rect(tx, card.y + 12f, infoW, 24f), it.name, brPageH2Style);
+                GUI.Label(new Rect(tx, card.y + 14f, infoW, 24f), it.name, brPageH2Style);
 
                 string specsStr = (it.specs != null && it.specs.Length > 0) ? string.Join("  •  ", it.specs) : "";
-                GUI.Label(new Rect(tx, card.y + 38f, infoW, 20f), specsStr, brSmallStyle);
+                GUI.Label(new Rect(tx, card.y + 40f, infoW, 20f), specsStr, brSmallStyle);
 
-                GUI.Label(new Rect(tx, card.y + 62f, infoW, cardH - 74f), it.desc, brBodyStyle);
+                GUI.Label(new Rect(tx, card.y + 66f, infoW, cardH - 78f), it.desc, brBodyStyle);
 
-                float rx = card.xMax - btnColW - 16f;
+                float rx = card.xMax - btnColW - 18f;
                 GUI.Label(new Rect(rx, card.y + 16f, btnColW, 26f), FormatPrice(it.price), brPriceStyle);
 
-                if (GUI.Button(new Rect(rx, card.y + 50f, btnColW, 30f), "Ficha Técnica", brBuySecondaryStyle))
+                if (GUI.Button(new Rect(rx, card.y + 52f, btnColW, 30f), "Ficha Técnica", brBuySecondaryStyle))
                 {
                     Navigate($"item:{s.id}:{idx}", true);
                 }
 
                 GUI.enabled = canAfford;
                 string buyTxt = canAfford ? "Comprar Agora" : "Saldo Insuficiente";
-                if (GUI.Button(new Rect(rx, card.y + 88f, btnColW, 36f), buyTxt, brBuyPrimaryStyle))
+                if (GUI.Button(new Rect(rx, card.y + 92f, btnColW, 38f), buyTxt, brBuyPrimaryStyle))
                 {
                     PurchaseItem(it, 0);
                 }
@@ -855,23 +866,23 @@ namespace ProjectTerra.Sandbox
             else
             {
                 float imgW = 140f;
-                Rect imgFrame = new Rect(card.x + 12f, card.y + 12f, imgW, 95f);
+                Rect imgFrame = new Rect(card.x + 14f, card.y + 14f, imgW, 95f);
                 DrawCleanProductImage(imgFrame, it);
 
-                float tx = imgFrame.xMax + 14f;
-                float topW = card.width - tx - 12f;
-                GUI.Label(new Rect(tx, card.y + 12f, topW, 22f), it.name, brPageH2Style);
-                GUI.Label(new Rect(tx, card.y + 36f, topW, 24f), FormatPrice(it.price), brPriceStyle);
+                float tx = imgFrame.xMax + 16f;
+                float topW = card.width - tx - 14f;
+                GUI.Label(new Rect(tx, card.y + 14f, topW, 22f), it.name, brPageH2Style);
+                GUI.Label(new Rect(tx, card.y + 38f, topW, 24f), FormatPrice(it.price), brPriceStyle);
 
-                if (GUI.Button(new Rect(tx, card.y + 66f, topW, 28f), "Detalhes", brBuySecondaryStyle))
+                if (GUI.Button(new Rect(tx, card.y + 68f, topW, 30f), "Detalhes", brBuySecondaryStyle))
                 {
                     Navigate($"item:{s.id}:{idx}", true);
                 }
 
-                GUI.Label(new Rect(card.x + 14f, card.y + 115f, card.width - 28f, 55f), it.desc, brBodyStyle);
+                GUI.Label(new Rect(card.x + 16f, card.y + 118f, card.width - 32f, 55f), it.desc, brBodyStyle);
 
                 GUI.enabled = canAfford;
-                if (GUI.Button(new Rect(card.x + 14f, card.yMax - 42f, card.width - 28f, 34f), canAfford ? "Comprar Agora" : "Saldo Insuficiente", brBuyPrimaryStyle))
+                if (GUI.Button(new Rect(card.x + 16f, card.yMax - 46f, card.width - 32f, 36f), canAfford ? "Comprar Agora" : "Saldo Insuficiente", brBuyPrimaryStyle))
                 {
                     PurchaseItem(it, 0);
                 }

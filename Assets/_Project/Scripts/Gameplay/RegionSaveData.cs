@@ -189,6 +189,7 @@ namespace ProjectTerra.Gameplay
 
         public bool HasLicense(DriverLicense lic) => (Licenses & lic) == lic;
         public void GrantLicense(DriverLicense lic) { Licenses |= lic; }
+        public void AddLicense(DriverLicense lic) => GrantLicense(lic);
 
         public int forestPercent;
         public int mineralsPercent;

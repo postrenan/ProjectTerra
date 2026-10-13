@@ -599,6 +599,22 @@ namespace ProjectTerra.Sandbox
                 DrawMapMarker(rsm.starterVehicle.transform.position, worldW, worldL, mapImageRect, "Veículo", new Color(1f, 0.65f, 0.25f));
             }
 
+            // 8.5. Estruturas Comerciais e de Serviços Regionais
+            var structures = RegionalStructuresManager.ActiveStructures;
+            if (structures != null)
+            {
+                for (int sIdx = 0; sIdx < structures.Count; sIdx++)
+                {
+                    var s = structures[sIdx];
+                    if (s == null) continue;
+                    var def = s.Definition;
+                    Color markerCol = def != null ? def.themeColor : new Color(0.3f, 0.8f, 1f);
+                    string label = def != null ? def.shortName : s.customName;
+                    Vector3 sPos = s.interactionPoint != null ? s.interactionPoint.position : s.transform.position;
+                    DrawMapMarker(sPos, worldW, worldL, mapImageRect, label, markerCol);
+                }
+            }
+
             // 9. Jogador com Radar Pulsante e Seta de Rotação 360°
             if (player != null)
             {

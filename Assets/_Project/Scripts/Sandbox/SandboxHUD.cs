@@ -27,8 +27,11 @@ namespace ProjectTerra.Sandbox
         public bool IsPhoneOpen { get; private set; } = false;
         /// <summary>Menu de configurações aberto ([Esc]).</summary>
         public bool IsSettingsOpen { get; private set; } = false;
-        /// <summary>True se o celular ou as configurações estiverem abertos (bloqueia o input de gameplay).</summary>
-        public bool IsOptionsMenuOpen => IsPhoneOpen || IsSettingsOpen;
+        /// <summary>Barra horizontal de construção aberta ([Menu Construção]).</summary>
+        public bool IsConstructionBarOpen { get; private set; } = false;
+        private float constructionBarAnim = 0f;
+        /// <summary>True se o celular, configurações ou barra de construção estiverem abertos (bloqueia o input de gameplay).</summary>
+        public bool IsOptionsMenuOpen => IsPhoneOpen || IsSettingsOpen || IsConstructionBarOpen;
         public bool IsHudVisible { get; private set; } = true;
         public bool ShowCompass { get; private set; } = true;
         public bool ShowMissionTracker { get; private set; } = true;
@@ -101,6 +104,18 @@ namespace ProjectTerra.Sandbox
         private GUIStyle phoneStatusRightStyle;
         private GUIStyle phoneClockWidgetStyle;
         private GUIStyle phoneClockSubStyle;
+        private GUIStyle phoneCardStyle;
+        private GUIStyle menuCardSectionStyle;
+
+        // Estilos da Barra Horizontal de Construção (Menu Inferior)
+        private GUIStyle buildBarTitleStyle;
+        private GUIStyle buildCardNameStyle;
+        private GUIStyle buildCardPriceStyle;
+        private GUIStyle buildCardLockedStyle;
+        private GUIStyle buildArrowStyle;
+        private GUIStyle buildCloseBtnStyle;
+        private GUIStyle buildTabStyle;
+        private GUIStyle buildSubtabStyle;
 
         #region Sincronização de Horário In-Game / Celular
 
@@ -171,6 +186,10 @@ namespace ProjectTerra.Sandbox
             // Anima o celular deslizando para cima/baixo (independente do timeScale).
             float phoneTarget = IsPhoneOpen ? 1f : 0f;
             phoneAnim = Mathf.MoveTowards(phoneAnim, phoneTarget, Time.unscaledDeltaTime * 6.5f);
+
+            // Anima a barra de construção deslizando para cima/baixo (independente do timeScale).
+            float barTarget = IsConstructionBarOpen ? 1f : 0f;
+            constructionBarAnim = Mathf.MoveTowards(constructionBarAnim, barTarget, Time.unscaledDeltaTime * 6.5f);
 
             // Regeneração adiada do mercado de fretes (fora do OnGUI).
             TickJobMarket();
@@ -251,17 +270,29 @@ namespace ProjectTerra.Sandbox
 
             // Atalho [Alt Esquerdo]: Saca/guarda o celular. Com o celular aberto dentro
             // de um app, o atalho volta primeiro para a tela inicial (como o botão home).
+            // Se estiver na barra de construção, volta para o celular.
             if (TerraInput.GetKeyDown(Key.LeftAlt) && !IsSettingsOpen)
             {
-                PhoneBack();
+                if (IsConstructionBarOpen)
+                {
+                    CloseConstructionBarToPhone();
+                }
+                else
+                {
+                    PhoneBack();
+                }
             }
 
-            // Atalho [Esc]: fecha o mapa; senão abre/fecha o menu de configurações.
+            // Atalho [Esc]: fecha o mapa; se barra de construção aberta, fecha e volta para o celular; senão abre/fecha o menu de configurações.
             if (TerraInput.GetKeyDown(Key.Escape))
             {
                 if (IsRegionalMapOpen)
                 {
                     CloseRegionalMap();
+                }
+                else if (IsConstructionBarOpen)
+                {
+                    CloseConstructionBarToPhone();
                 }
                 else
                 {
@@ -303,7 +334,7 @@ namespace ProjectTerra.Sandbox
             Debug.Log($"[TimeWarp] Simulação acelerada: {multiplier}x");
         }
 
-        private void RestoreGameplayCursor()
+        public void RestoreGameplayCursor()
         {
             if (InGameCommandConsole.Instance != null && InGameCommandConsole.Instance.IsOpen)
             {
@@ -340,6 +371,7 @@ namespace ProjectTerra.Sandbox
             }
 
             bool phoneActive = IsPhoneOpen || phoneAnim > 0.001f;
+            bool barActive = IsConstructionBarOpen || constructionBarAnim > 0.001f;
 
             // 2. HUD In-Game Moderno (se visível via [H]). O celular ocupa apenas o
             // canto inferior direito, então o HUD do topo permanece.
@@ -355,10 +387,10 @@ namespace ProjectTerra.Sandbox
                 DrawTopRightStatusBox();
 
                 // Rastreador de Missão (logo abaixo da caixa de status no topo direito)
-                if (ShowMissionTracker) DrawTopRightMissionCard();
+                if (ShowMissionTracker && !barActive) DrawTopRightMissionCard();
 
                 // Canto Inferior Direito: Print 1 (dentro de veículo) e Print 2 (a pé)
-                if (!phoneActive)
+                if (!phoneActive && !barActive)
                 {
                     var player = PlayerCharacterController.Instance;
                     bool inVehicle = player != null && player.isDriving && player.currentVehicle != null;
@@ -371,6 +403,9 @@ namespace ProjectTerra.Sandbox
                     {
                         DrawOnFootHUDCluster(player);
                     }
+
+                    // Indicador flutuante / prompt de canteiro de obras manual próximo
+                    DrawWorldConstructionSitePrompt(player);
                 }
             }
 
@@ -380,9 +415,15 @@ namespace ProjectTerra.Sandbox
                 DrawPhone();
             }
 
+            // 4. Barra Horizontal de Construção na parte inferior da tela (baseada na imagem de layout)
+            if (barActive)
+            {
+                DrawHorizontalConstructionBar();
+            }
+
             DrawToastNotification();
 
-            // 4. Menu de configurações [Esc] por cima de tudo.
+            // 5. Menu de configurações [Esc] por cima de tudo.
             if (IsSettingsOpen)
             {
                 DrawSettingsMenu();

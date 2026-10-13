@@ -70,8 +70,34 @@ namespace ProjectTerra.Sandbox
             EnsureGroundPainter();
             EnsureAmbientAudio();
             EnsureGameClock();
+            EnsureRegionalStructures();
             BuildDeliveryHubs();
             SetupInitialMission();
+        }
+
+        private void EnsureRegionalStructures()
+        {
+            var mgr = FindAnyObjectByType<RegionalStructuresManager>();
+            if (mgr == null)
+            {
+                mgr = new GameObject("RegionalStructuresManager").AddComponent<RegionalStructuresManager>();
+            }
+
+            if (FindAnyObjectByType<StructureInteractionUI>() == null)
+            {
+                new GameObject("StructureInteractionUI").AddComponent<StructureInteractionUI>();
+            }
+
+            var infra = RegionInfrastructureDatabase.GetInfrastructure(activeSave != null ? activeSave.regionId : 0, activeRegionData);
+
+            mgr.GenerateRegionalStructures(
+                activeRegionData,
+                infra,
+                townCenterPosition,
+                worldWidthMeters,
+                worldLengthMeters,
+                GetTerrainHeight
+            );
         }
 
         private void EnsureGameClock()

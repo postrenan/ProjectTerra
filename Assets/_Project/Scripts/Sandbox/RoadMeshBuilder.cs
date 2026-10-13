@@ -386,14 +386,41 @@ namespace ProjectTerra.Sandbox
         {
             if (centerSpine == null || centerSpine.Length < 2) return null;
 
-            int m = centerSpine.Length;
+            // Subdivide qualquer segmento longo com mais de 150m para impedir que
+            // o PhysX gere triângulos com arestas > 500 unidades no MeshCollider.
+            List<Vector3> densified = null;
+            for (int i = 0; i < centerSpine.Length - 1; i++)
+            {
+                float d = Vector3.Distance(centerSpine[i], centerSpine[i + 1]);
+                if (d > 150f)
+                {
+                    if (densified == null)
+                    {
+                        densified = new List<Vector3>(centerSpine.Length + 16);
+                        for (int k = 0; k <= i; k++) densified.Add(centerSpine[k]);
+                    }
+                    int cuts = Mathf.CeilToInt(d / 100f);
+                    for (int c = 1; c < cuts; c++)
+                    {
+                        densified.Add(Vector3.Lerp(centerSpine[i], centerSpine[i + 1], c / (float)cuts));
+                    }
+                    densified.Add(centerSpine[i + 1]);
+                }
+                else if (densified != null)
+                {
+                    densified.Add(centerSpine[i + 1]);
+                }
+            }
+
+            Vector3[] activeSpine = (densified != null) ? densified.ToArray() : centerSpine;
+            int m = activeSpine.Length;
 
             // 1. Suavizar e garantir alturas precisas na espinha dorsal
             var center = new Vector3[m];
             var rights = new Vector3[m];
             for (int i = 0; i < m; i++)
             {
-                Vector3 p = centerSpine[i];
+                Vector3 p = activeSpine[i];
                 float th = getTerrainHeight != null ? getTerrainHeight(p) : p.y;
                 p.y = th + 0.12f; // Leito da pista ligeiramente elevado (12 cm) para drenagem
                 center[i] = p;
@@ -932,9 +959,10 @@ namespace ProjectTerra.Sandbox
             if (points == null || points.Count < 2) return points;
             if (points.Count == 2)
             {
-                // Subdivide linha reta simples a cada ~14m
+                // Subdivide linha reta garantindo passos de ~14m e nunca superiores a 100m
                 float d = Vector2.Distance(points[0], points[1]);
-                int sub = Mathf.Clamp(Mathf.RoundToInt(d / targetSpacing), 1, 100);
+                float step = Mathf.Clamp(targetSpacing, 10f, 100f);
+                int sub = Mathf.Max(1, Mathf.CeilToInt(d / step));
                 var res = new List<Vector2>(sub + 1);
                 for (int s = 0; s <= sub; s++)
                 {
@@ -954,7 +982,15 @@ namespace ProjectTerra.Sandbox
                 Vector2 p3 = points[Mathf.Min(points.Count - 1, i + 2)];
 
                 float segDist = Vector2.Distance(p1, p2);
-                int sub = Mathf.Clamp(Mathf.RoundToInt(segDist / targetSpacing), 2, 40);
+                float step = Mathf.Clamp(targetSpacing, 10f, 100f);
+                int sub = Mathf.Max(2, Mathf.CeilToInt(segDist / step));
+
+                // Garante que a distância entre nós sucessivos nunca passe de 100m,
+                // prevenindo que o PhysX emita alerta de triângulos com arestas > 500 unidades no MeshCollider.
+                if (segDist / sub > 100f)
+                {
+                    sub = Mathf.CeilToInt(segDist / 100f);
+                }
 
                 for (int s = 1; s <= sub; s++)
                 {

@@ -78,7 +78,7 @@ namespace ProjectTerra.Sandbox
         public float smoothedThrottle { get; private set; } = 0f;
 
         [Header("Específico para Avião")]
-        public float takeOffSpeedKmh = 65f;
+        public float takeOffSpeedKmh = 52f;
         public float liftCoefficient = 1.8f;
         public float pitchRate = 45f;
         public float rollRate = 60f;
@@ -167,30 +167,30 @@ namespace ProjectTerra.Sandbox
             {
                 case VehicleCategory.Tractor:
                     rb.mass = 3800f;
-                    rb.linearDamping = 0.4f;
+                    rb.linearDamping = 0.05f;
                     rb.angularDamping = 2.5f;
                     rb.centerOfMass = new Vector3(0f, -0.45f, 0f);
                     fuelTankLiters = 180f;
                     break;
                 case VehicleCategory.Truck:
                     rb.mass = 4500f;
-                    rb.linearDamping = 0.3f;
+                    rb.linearDamping = 0.05f;
                     rb.angularDamping = 2.5f;
                     rb.centerOfMass = new Vector3(0f, -0.35f, 0.2f);
                     fuelTankLiters = 500f;
                     break;
                 case VehicleCategory.Car:
                     rb.mass = 1600f;
-                    rb.linearDamping = 0.25f;
+                    rb.linearDamping = 0.05f;
                     rb.angularDamping = 2.2f;
                     rb.centerOfMass = new Vector3(0f, -0.4f, 0.1f);
                     fuelTankLiters = 60f;
                     break;
                 case VehicleCategory.Plane:
                     rb.mass = 1200f;
-                    rb.linearDamping = 0.15f;
+                    rb.linearDamping = 0.03f;
                     rb.angularDamping = 1.2f;
-                    rb.centerOfMass = new Vector3(0f, -0.1f, 0.3f);
+                    rb.centerOfMass = new Vector3(0f, -0.05f, 0.08f);
                     fuelTankLiters = 150f;
                     break;
                 case VehicleCategory.Boat:
@@ -255,16 +255,31 @@ namespace ProjectTerra.Sandbox
             {
                 bool throttleUp = TerraInput.GetKey(Key.LeftShift) || TerraInput.GetKey(Key.RightShift);
                 bool throttleDown = TerraInput.GetKey(Key.LeftCtrl) || TerraInput.GetKey(Key.RightCtrl) || TerraInput.GetKey(Key.C);
-                float vert = TerraInput.GetAxis("Vertical");
 
-                // Apenas Shift acelera potência do motor (potência de cruzeiro persistente)
+                // Na pista / solo, se o jogador pressionar W ou Seta Cima (instinto natural de acelerar), acelera o manete!
+                if (currentAltitudeMeters < 1.8f)
+                {
+                    if (TerraInput.GetKey(Key.W) || TerraInput.GetKey(Key.UpArrow))
+                    {
+                        throttleUp = true;
+                    }
+                    if (TerraInput.GetKey(Key.S) || TerraInput.GetKey(Key.DownArrow))
+                    {
+                        if (currentSpeedKmh < 20f && !TerraInput.GetKey(Key.Space))
+                        {
+                            throttleDown = true;
+                        }
+                    }
+                }
+
+                // Shift ou W aceleram potência do motor (potência de cruzeiro persistente)
                 if (throttleUp)
                 {
-                    aircraftThrottle = Mathf.MoveTowards(aircraftThrottle, 1.0f, Time.deltaTime * 0.9f);
+                    aircraftThrottle = Mathf.MoveTowards(aircraftThrottle, 1.0f, Time.deltaTime * 1.8f);
                 }
                 else if (throttleDown)
                 {
-                    aircraftThrottle = Mathf.MoveTowards(aircraftThrottle, 0.0f, Time.deltaTime * 0.85f);
+                    aircraftThrottle = Mathf.MoveTowards(aircraftThrottle, 0.0f, Time.deltaTime * 1.5f);
                 }
 
                 currentThrottle = aircraftThrottle;
@@ -344,6 +359,12 @@ namespace ProjectTerra.Sandbox
         public void Refuel(float amountPercent = 100f)
         {
             fuelPercent = Mathf.Clamp(fuelPercent + amountPercent, 0f, 100f);
+        }
+
+        public void Repair(float amountPercent = 100f)
+        {
+            conditionPercent = Mathf.Clamp(conditionPercent + amountPercent, 0f, 100f);
+            isEngineFlooded = false;
         }
 
         public void ResetOrientation()

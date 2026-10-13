@@ -16,7 +16,7 @@ namespace ProjectTerra.Sandbox
             var player = PlayerCharacterController.Instance;
             bool inVehicle = player != null && player.isDriving && player.currentVehicle != null;
 
-            float w = inVehicle ? 360f : 340f;
+            float w = inVehicle ? 430f : 410f;
             float h = 48f;
             Rect rect = new Rect(20f, 15f, w, h);
 
@@ -33,35 +33,39 @@ namespace ProjectTerra.Sandbox
 
             // Atalhos Contextuais
             GUILayout.BeginHorizontal();
-            if (inVehicle)
+            if (IsConstructionBarOpen)
+            {
+                GUILayout.Label("[Esc / X] Voltar ao Celular  [Clique] Selecionar/Construir  [Scroll / ◀ ▶] Navegar", hudBoxSubStyle);
+            }
+            else if (inVehicle)
             {
                 var v = player.currentVehicle;
                 if (v.category == VehicleCategory.Plane)
                 {
-                    GUILayout.Label("[W/S] Arfagem  [A/D] Rolar  [Shift/Ctrl] Potência  [E] Sair", hudBoxSubStyle);
+                    GUILayout.Label("[W / Shift] Acelerar  [Espaço / S] Decolar/Subir  [A/D] Curva/Rolar  [Ctrl] Freio  [E] Sair", hudBoxSubStyle);
                 }
                 else if (v.category == VehicleCategory.Tractor)
                 {
-                    GUILayout.Label("[WASD] Conduzir  [E] Sair  [G] Engatar  [X] Arado  [C] Câm.", hudBoxSubStyle);
+                    GUILayout.Label("[WASD] Conduzir  [G] Engatar  [X] Arado  [F] Estrutura  [E] Sair", hudBoxSubStyle);
                 }
                 else if (v.category == VehicleCategory.Boat)
                 {
-                    GUILayout.Label("[WASD] Navegar  [E] Sair  [C] Câmera  [M] Mapa  [Alt] Celular", hudBoxSubStyle);
+                    GUILayout.Label("[WASD] Navegar  [F] Estrutura/Porto  [C] Câm.  [E] Sair  [M] Mapa", hudBoxSubStyle);
                 }
                 else
                 {
-                    GUILayout.Label("[WASD] Conduzir  [E] Sair  [L] Faróis  [C] Câmera  [M] Mapa", hudBoxSubStyle);
+                    GUILayout.Label("[WASD] Conduzir  [F] Estrutura/Posto  [L] Farol  [E] Sair  [M] Mapa", hudBoxSubStyle);
                 }
             }
             else
             {
                 if (player != null && player.nearbyVehicle != null)
                 {
-                    GUILayout.Label("[E] Entrar no Veículo  [WASD] Andar  [Shift] Correr  [M] Mapa", hudBoxSubStyle);
+                    GUILayout.Label("[E] Entrar Veículo  [F] Estrutura  [WASD] Andar  [Shift] Correr  [M] Mapa", hudBoxSubStyle);
                 }
                 else
                 {
-                    GUILayout.Label("[WASD] Andar  [Shift] Correr  [Espaço] Pular  [E] Usar  [M] Mapa", hudBoxSubStyle);
+                    GUILayout.Label("[WASD] Andar  [Shift] Correr  [Espaço] Pular  [F] Estrutura  [M] Mapa", hudBoxSubStyle);
                 }
             }
             GUILayout.EndHorizontal();

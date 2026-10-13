@@ -163,7 +163,7 @@ namespace ProjectTerra.Sandbox
 
             // Grid de Notícias Secundárias
             int cols = w >= 660f ? 2 : 1;
-            float gap = 16f;
+            float gap = 20f;
             float cardW = (w - (cols - 1) * gap) / cols;
 
             (string title, string cat, string body)[] newsList =
@@ -185,18 +185,29 @@ namespace ProjectTerra.Sandbox
             {
                 if (i % cols == 0) GUILayout.BeginHorizontal();
 
-                Rect card = GUILayoutUtility.GetRect(cardW, 115f, GUILayout.Width(cardW), GUILayout.Height(115f));
+                Rect card = GUILayoutUtility.GetRect(cardW, 118f, GUILayout.Width(cardW), GUILayout.Height(118f));
                 Fill(card, UiCardBg);
                 DrawOutline(card, UiBorderLight);
 
-                GUI.Label(new Rect(card.x + 16f, card.y + 12f, card.width - 32f, 18f), newsList[i].cat.ToUpper(), brSmallStyle);
-                GUI.Label(new Rect(card.x + 16f, card.y + 32f, card.width - 32f, 22f), newsList[i].title, brPageH2Style);
-                GUI.Label(new Rect(card.x + 16f, card.y + 58f, card.width - 32f, 50f), newsList[i].body, brBodyStyle);
+                GUI.Label(new Rect(card.x + 18f, card.y + 12f, card.width - 36f, 18f), newsList[i].cat.ToUpper(), brSmallStyle);
+                GUI.Label(new Rect(card.x + 18f, card.y + 32f, card.width - 36f, 22f), newsList[i].title, brPageH2Style);
+                GUI.Label(new Rect(card.x + 18f, card.y + 58f, card.width - 36f, 50f), newsList[i].body, brBodyStyle);
 
-                if (i % cols == cols - 1) GUILayout.EndHorizontal();
-                else GUILayout.Space(gap);
+                if (i % cols == cols - 1)
+                {
+                    GUILayout.EndHorizontal();
+                    GUILayout.Space(gap);
+                }
+                else
+                {
+                    GUILayout.Space(gap);
+                }
             }
-            if (newsList.Length % cols != 0) GUILayout.EndHorizontal();
+            if (newsList.Length % cols != 0)
+            {
+                GUILayout.EndHorizontal();
+                GUILayout.Space(gap);
+            }
         }
 
         // =========================================================================
@@ -234,6 +245,8 @@ namespace ProjectTerra.Sandbox
             GUI.Label(new Rect(tx, th.y + 8f, c3W, 20f), "Preço Atual", brPageH3Style); tx += c3W;
             GUI.Label(new Rect(tx, th.y + 8f, c4W, 20f), "Variação Diária", brPageH3Style);
 
+            GUILayout.Space(8);
+
             for (int i = 0; i < items.Length; i++)
             {
                 float t = (float)day * 0.7f + i * 1.9f;
@@ -242,28 +255,30 @@ namespace ProjectTerra.Sandbox
                 float deltaP = (now - prev) / prev * 100f;
                 bool isUp = now >= prev;
 
-                Rect row = GUILayoutUtility.GetRect(w, 42f);
+                Rect row = GUILayoutUtility.GetRect(w, 44f);
                 Fill(row, UiCardBg);
                 DrawOutline(row, UiBorderLight);
 
                 float rx = row.x + 16f;
-                GUI.Label(new Rect(rx, row.y + 10f, c1W, 22f), items[i].name, brPageH2Style); rx += c1W;
-                GUI.Label(new Rect(rx, row.y + 11f, c2W, 20f), items[i].unit, brBodyStyle); rx += c2W;
-                GUI.Label(new Rect(rx, row.y + 9f, c3W, 24f), $"$ {now:F2}", brPriceStyle); rx += c3W;
+                GUI.Label(new Rect(rx, row.y + 11f, c1W, 22f), items[i].name, brPageH2Style); rx += c1W;
+                GUI.Label(new Rect(rx, row.y + 12f, c2W, 20f), items[i].unit, brBodyStyle); rx += c2W;
+                GUI.Label(new Rect(rx, row.y + 10f, c3W, 24f), $"$ {now:F2}", brPriceStyle); rx += c3W;
 
                 // Chip de variação verde/vermelho sutil
                 Color chipBg = isUp ? new Color(0.88f, 0.98f, 0.92f) : new Color(0.98f, 0.90f, 0.90f);
                 Color chipText = isUp ? new Color(0.08f, 0.60f, 0.32f) : new Color(0.85f, 0.20f, 0.20f);
-                Rect chip = new Rect(rx, row.y + 9f, 85f, 24f);
+                Rect chip = new Rect(rx, row.y + 10f, 85f, 24f);
                 Fill(chip, chipBg);
                 DrawOutline(chip, isUp ? new Color(0.70f, 0.90f, 0.78f) : new Color(0.95f, 0.75f, 0.75f));
 
                 GUI.color = chipText;
                 GUI.Label(chip, $"{(isUp ? "+ " : "- ")}{Mathf.Abs(deltaP):0.0}%", brBadgeStyle);
                 GUI.color = Color.white;
+
+                GUILayout.Space(6);
             }
 
-            GUILayout.Space(16);
+            GUILayout.Space(14);
 
             Rect note = GUILayoutUtility.GetRect(w, 54f);
             Fill(note, UiCardBg);
@@ -290,7 +305,7 @@ namespace ProjectTerra.Sandbox
             GUI.Label(new Rect(accCard.x + 20f, accCard.y + 38f, accCard.width - 40f, 32f), save.GetFormattedMoney(), brPageH1Style);
             GUI.Label(new Rect(accCard.xMax - 220f, accCard.y + 16f, 200f, 20f), $"Score de Crédito: {save.reputation} pts", brSmallStyle);
 
-            GUILayout.Space(16);
+            GUILayout.Space(20);
 
             // Custos Diários da Frota (se economia avançada)
             if (save.advancedEconomy)
@@ -314,12 +329,12 @@ namespace ProjectTerra.Sandbox
                 GUI.Label(new Rect(costCard.x + 20f, costCard.y + 36f, costCard.width - 40f, 24f),
                     $"${dailyUpkeep:N0} / dia  •  Seguro: ${cfg.upkeepBasePerDay:N0}  •  Frota ativa: {fleet} veículos", brPageH2Style);
 
-                GUILayout.Space(16);
+                GUILayout.Space(20);
             }
 
             // Empréstimos Ativos
             GUILayout.Label("Empréstimos Ativos", brPageH2Style);
-            GUILayout.Space(8);
+            GUILayout.Space(10);
 
             if (save.ActiveLoanCount == 0)
             {
@@ -335,44 +350,44 @@ namespace ProjectTerra.Sandbox
                 {
                     if (loan == null) continue;
 
-                    Rect lCard = GUILayoutUtility.GetRect(w, 90f);
+                    Rect lCard = GUILayoutUtility.GetRect(w, 92f);
                     Fill(lCard, UiCardBg);
                     DrawOutline(lCard, UiBorderLight);
 
-                    GUI.Label(new Rect(lCard.x + 16f, lCard.y + 14f, 280f, 22f), loan.bankName, brPageH2Style);
-                    GUI.Label(new Rect(lCard.x + 16f, lCard.y + 38f, 280f, 20f),
+                    GUI.Label(new Rect(lCard.x + 18f, lCard.y + 14f, 280f, 22f), loan.bankName, brPageH2Style);
+                    GUI.Label(new Rect(lCard.x + 18f, lCard.y + 38f, 280f, 20f),
                         $"Dívida restante: ${loan.remainingDebt:N0}  •  Parcela: ${loan.installmentAmount:N0}", brBodyStyle);
-                    GUI.Label(new Rect(lCard.x + 16f, lCard.y + 60f, 280f, 18f),
+                    GUI.Label(new Rect(lCard.x + 18f, lCard.y + 60f, 280f, 18f),
                         $"Pagas: {loan.installmentsPaid} de {loan.installmentsTotal}", brSmallStyle);
 
-                    float bx = lCard.xMax - 260f;
+                    float bx = lCard.xMax - 264f;
                     float by = lCard.y + 26f;
 
                     bool canPay1 = save.currentMoney >= loan.installmentAmount;
                     GUI.enabled = canPay1;
-                    if (GUI.Button(new Rect(bx, by, 120, 36), "Pagar 1 Parcela", brBuySecondaryStyle))
+                    if (GUI.Button(new Rect(bx, by, 122f, 38f), "Pagar 1 Parcela", brBuySecondaryStyle))
                     {
                         PayLoan(save, loan, 1);
                     }
-                    bx += 128f;
+                    bx += 130f;
 
                     bool canPayAll = save.currentMoney >= loan.remainingDebt;
                     GUI.enabled = canPayAll;
-                    if (GUI.Button(new Rect(bx, by, 120, 36), "Quitar Total", brBuyPrimaryStyle))
+                    if (GUI.Button(new Rect(bx, by, 122f, 38f), "Quitar Total", brBuyPrimaryStyle))
                     {
                         PayLoan(save, loan, 0);
                     }
                     GUI.enabled = true;
 
-                    GUILayout.Space(10);
+                    GUILayout.Space(14);
                 }
             }
 
-            GUILayout.Space(20);
+            GUILayout.Space(24);
 
             // Contratação de Crédito
             GUILayout.Label("Linhas de Crédito Disponíveis", brPageH2Style);
-            GUILayout.Space(8);
+            GUILayout.Space(10);
 
             if (save.ActiveLoanCount >= RegionSaveData.MaxActiveLoans)
             {
@@ -385,18 +400,18 @@ namespace ProjectTerra.Sandbox
             {
                 foreach (var bank in BankOffers)
                 {
-                    Rect bCard = GUILayoutUtility.GetRect(w, 75f);
+                    Rect bCard = GUILayoutUtility.GetRect(w, 78f);
                     Fill(bCard, UiCardBg);
                     DrawOutline(bCard, UiBorderLight);
 
-                    GUI.Label(new Rect(bCard.x + 16f, bCard.y + 14f, bCard.width - 180f, 22f), bank.name, brPageH2Style);
-                    GUI.Label(new Rect(bCard.x + 16f, bCard.y + 40f, bCard.width - 180f, 20f),
+                    GUI.Label(new Rect(bCard.x + 18f, bCard.y + 14f, bCard.width - 180f, 22f), bank.name, brPageH2Style);
+                    GUI.Label(new Rect(bCard.x + 18f, bCard.y + 40f, bCard.width - 180f, 20f),
                         $"Liberação: ${bank.principal:N0}  •  Juros: {bank.interestPercent}%  •  {bank.installments} parcelas de ${bank.InstallmentAmount:N0}", brBodyStyle);
 
                     bool alreadyHas = save.HasLoanWith(bank.id);
                     GUI.enabled = !alreadyHas;
                     string btnTxt = alreadyHas ? "Contratado" : "Contratar";
-                    if (GUI.Button(new Rect(bCard.xMax - 140f, bCard.y + 20f, 124f, 36f), btnTxt, brBuyPrimaryStyle))
+                    if (GUI.Button(new Rect(bCard.xMax - 144f, bCard.y + 20f, 128f, 38f), btnTxt, brBuyPrimaryStyle))
                     {
                         save.currentMoney += bank.principal;
                         save.loans.Add(new BankLoan
@@ -416,7 +431,7 @@ namespace ProjectTerra.Sandbox
                     }
                     GUI.enabled = true;
 
-                    GUILayout.Space(8);
+                    GUILayout.Space(14);
                 }
             }
         }
@@ -432,7 +447,7 @@ namespace ProjectTerra.Sandbox
 
             // Cards de Preços de Combustível
             int cols = w >= 600f ? 3 : 1;
-            float gap = 12f;
+            float gap = 16f;
             float cardW = (w - (cols - 1) * gap) / cols;
 
             (string fuel, string val, string desc)[] fuels =
@@ -446,7 +461,7 @@ namespace ProjectTerra.Sandbox
             {
                 if (i % cols == 0) GUILayout.BeginHorizontal();
 
-                Rect fCard = GUILayoutUtility.GetRect(cardW, 85f, GUILayout.Width(cardW), GUILayout.Height(85f));
+                Rect fCard = GUILayoutUtility.GetRect(cardW, 88f, GUILayout.Width(cardW), GUILayout.Height(88f));
                 Fill(fCard, UiCardBg);
                 DrawOutline(fCard, UiBorderLight);
 
@@ -454,15 +469,26 @@ namespace ProjectTerra.Sandbox
                 GUI.Label(new Rect(fCard.x + 16f, fCard.y + 32f, fCard.width - 32f, 26f), fuels[i].val, brPageH1Style);
                 GUI.Label(new Rect(fCard.x + 16f, fCard.y + 60f, fCard.width - 32f, 18f), fuels[i].desc, brSmallStyle);
 
-                if (i % cols == cols - 1) GUILayout.EndHorizontal();
-                else GUILayout.Space(gap);
+                if (i % cols == cols - 1)
+                {
+                    GUILayout.EndHorizontal();
+                    GUILayout.Space(gap);
+                }
+                else
+                {
+                    GUILayout.Space(gap);
+                }
             }
-            if (fuels.Length % cols != 0) GUILayout.EndHorizontal();
+            if (fuels.Length % cols != 0)
+            {
+                GUILayout.EndHorizontal();
+                GUILayout.Space(gap);
+            }
 
-            GUILayout.Space(20);
+            GUILayout.Space(24);
 
             // Telemetria do Veículo em Uso
-            Rect vCard = GUILayoutUtility.GetRect(w, 150f);
+            Rect vCard = GUILayoutUtility.GetRect(w, 156f);
             Fill(vCard, UiCardBg);
             DrawOutline(vCard, UiBorderLight);
 
@@ -501,7 +527,7 @@ namespace ProjectTerra.Sandbox
 
                     bool canPay = save != null && save.currentMoney >= cost;
                     GUI.enabled = canPay;
-                    if (GUI.Button(new Rect(vCard.x + 20f, vCard.y + 104f, 220f, 34f), $"Completar Tanque (${cost:N0})", brBuyPrimaryStyle))
+                    if (GUI.Button(new Rect(vCard.x + 20f, vCard.y + 104f, 220f, 36f), $"Completar Tanque (${cost:N0})", brBuyPrimaryStyle))
                     {
                         vehicle.Refuel(100f);
                         save.currentMoney -= cost;
@@ -537,7 +563,7 @@ namespace ProjectTerra.Sandbox
                 if (CampaignGoalCatalog.IsClaimed(save, g.bit)) claimed++;
 
             // Progresso Geral
-            Rect pCard = GUILayoutUtility.GetRect(w, 85f);
+            Rect pCard = GUILayoutUtility.GetRect(w, 88f);
             Fill(pCard, UiCardBg);
             DrawOutline(pCard, UiBorderLight);
 
@@ -551,7 +577,7 @@ namespace ProjectTerra.Sandbox
             Fill(new Rect(pBar.x, pBar.y, pBar.width * ((float)claimed / Mathf.Max(1, CampaignGoalCatalog.All.Length)), pBar.height), UiPrimaryBlue);
             DrawOutline(pBar, UiBorderLight);
 
-            GUILayout.Space(16);
+            GUILayout.Space(20);
 
             // Lista de Metas
             foreach (var g in CampaignGoalCatalog.All)
@@ -559,7 +585,7 @@ namespace ProjectTerra.Sandbox
                 bool isClaimed = CampaignGoalCatalog.IsClaimed(save, g.bit);
                 bool met = g.isMet(save, fleet, lic);
 
-                Rect card = GUILayoutUtility.GetRect(w, 80f);
+                Rect card = GUILayoutUtility.GetRect(w, 82f);
                 Fill(card, UiCardBg);
                 DrawOutline(card, isClaimed ? new Color(0.80f, 0.92f, 0.85f) : (met ? UiBorderFocus : UiBorderLight));
 
@@ -593,7 +619,7 @@ namespace ProjectTerra.Sandbox
                     GUI.Label(new Rect(bx, by + 4f, 140f, 24f), "Em progresso", brSmallStyle);
                 }
 
-                GUILayout.Space(10);
+                GUILayout.Space(14);
             }
         }
 
@@ -627,23 +653,27 @@ namespace ProjectTerra.Sandbox
             GUI.Label(new Rect(x, th.y + 8f, c4, 20f), "Extensão", brPageH3Style); x += c4;
             GUI.Label(new Rect(x, th.y + 8f, c5, 20f), "Velocidade", brPageH3Style);
 
+            GUILayout.Space(8);
+
             for (int i = 0; i < roads.Length; i++)
             {
-                Rect row = GUILayoutUtility.GetRect(w, 40f);
+                Rect row = GUILayoutUtility.GetRect(w, 42f);
                 Fill(row, UiCardBg);
                 DrawOutline(row, UiBorderLight);
 
                 float rx = row.x + 16f;
-                GUI.Label(new Rect(rx, row.y + 10f, c1, 20f), roads[i].via, brPageH2Style); rx += c1;
-                GUI.Label(new Rect(rx, row.y + 11f, c2, 20f), roads[i].rota, brBodyStyle); rx += c2;
-                GUI.Label(new Rect(rx, row.y + 11f, c3, 20f), roads[i].pav, brBodyStyle); rx += c3;
+                GUI.Label(new Rect(rx, row.y + 11f, c1, 20f), roads[i].via, brPageH2Style); rx += c1;
+                GUI.Label(new Rect(rx, row.y + 12f, c2, 20f), roads[i].rota, brBodyStyle); rx += c2;
+                GUI.Label(new Rect(rx, row.y + 12f, c3, 20f), roads[i].pav, brBodyStyle); rx += c3;
                 GUI.Label(new Rect(rx, row.y + 11f, c4, 20f), roads[i].km, brPageH3Style); rx += c4;
-                GUI.Label(new Rect(rx, row.y + 11f, c5, 20f), roads[i].vel, brSmallStyle);
+                GUI.Label(new Rect(rx, row.y + 12f, c5, 20f), roads[i].vel, brSmallStyle);
+
+                GUILayout.Space(6);
             }
 
-            GUILayout.Space(16);
+            GUILayout.Space(20);
 
-            Rect helpCard = GUILayoutUtility.GetRect(w, 80f);
+            Rect helpCard = GUILayoutUtility.GetRect(w, 82f);
             Fill(helpCard, UiCardBg);
             DrawOutline(helpCard, UiBorderLight);
 

@@ -21,6 +21,7 @@ namespace ProjectTerra.Sandbox
             FuelStation, // Posto de combustível
             GoalCenter, // Metas de campanha
             Stats, // Estatísticas
+            Construction, // Menu de Construção e Obras
             Internet,
             Contacts,
             Settings,
@@ -110,6 +111,7 @@ namespace ProjectTerra.Sandbox
         {
             IsPhoneOpen = false;
             IsSettingsOpen = false;
+            IsConstructionBarOpen = false;
             RestoreGameplayCursor();
         }
 
@@ -141,6 +143,11 @@ namespace ProjectTerra.Sandbox
             if (app == PhoneApp.Internet)
             {
                 OpenVehicleBrowser(); // tela 2D cheia com os sites (guarda o celular)
+                return;
+            }
+            if (app == PhoneApp.Construction)
+            {
+                OpenConstructionBar(); // retrai o celular e abre barra horizontal inferior
                 return;
             }
             currentApp = app;
@@ -223,9 +230,10 @@ namespace ProjectTerra.Sandbox
                 case PhoneApp.FuelStation: DrawPhoneFuelStation(content); break;
                 case PhoneApp.GoalCenter: DrawPhoneGoals(content); break;
                 case PhoneApp.Stats: DrawPhoneStats(content); break;
+                case PhoneApp.Construction: DrawPhoneConstruction(content); break;
                 case PhoneApp.Internet: DrawPhoneInternet(content); break;
                 case PhoneApp.Contacts: DrawPhoneContacts(content); break;
-                case PhoneApp.Settings: DrawPhoneSettings(content); break;
+                case PhoneApp.Settings: DrawPhoneHome(content); break;
                 case PhoneApp.GameSystem: DrawPhoneGameSystem(content); break;
             }
 
@@ -255,11 +263,11 @@ namespace ProjectTerra.Sandbox
         }
 
         // ---- Tela inicial: grade de apps ----
-        private static readonly string[] HomeLabels = { "Mapa", "Frete", "Finanças", "Licenças", "Garagem", "Loja", "Estatíst.", "Internet", "Contatos", "Ajustes", "Jogo" };
+        private static readonly string[] HomeLabels = { "Mapa", "Frete", "Finanças", "Licenças", "Garagem", "Loja", "Estatíst.", "Construção", "Internet", "Contatos", "Jogo" };
         private static readonly PhoneApp[] HomeTargets =
         {
             PhoneApp.Home, PhoneApp.Jobs, PhoneApp.Finances, PhoneApp.Licenses, PhoneApp.Garage,
-            PhoneApp.Dealer, PhoneApp.Stats, PhoneApp.Internet, PhoneApp.Contacts, PhoneApp.Settings, PhoneApp.GameSystem
+            PhoneApp.Dealer, PhoneApp.Stats, PhoneApp.Construction, PhoneApp.Internet, PhoneApp.Contacts, PhoneApp.GameSystem
         };
 
         // Ícones (PNG Lucide via TerraIcons) na mesma ordem de HomeLabels/HomeTargets.
@@ -272,16 +280,19 @@ namespace ProjectTerra.Sandbox
             ProjectTerra.UI.TerraIcon.Tools,         // Garagem
             ProjectTerra.UI.TerraIcon.Shop,          // Loja
             ProjectTerra.UI.TerraIcon.Analytics,     // Estatísticas
+            ProjectTerra.UI.TerraIcon.Tools,         // Obras / Construções
             ProjectTerra.UI.TerraIcon.Satellite,     // Internet
             ProjectTerra.UI.TerraIcon.PhoneCall,     // Contatos
-            ProjectTerra.UI.TerraIcon.Settings,      // Ajustes
             ProjectTerra.UI.TerraIcon.Flag           // Jogo
         };
 
         private void DrawPhoneHome(Rect content)
         {
             float headerH = 96f; // relógio + região + saldo sem sobrepor a grade
-            GUILayout.BeginArea(new Rect(content.x, content.y, content.width, headerH));
+            Rect headerBoxRect = new Rect(content.x, content.y, content.width, headerH - 4f);
+            UIThemeHelper.DrawRoundedBox(headerBoxRect, new Color(0.04f, 0.08f, 0.14f, 0.65f), new Color(0.20f, 0.50f, 0.80f, 0.35f), 10f, 1.2f);
+
+            GUILayout.BeginArea(new Rect(content.x, content.y + 4f, content.width, headerH - 8f));
             GUILayout.Space(1);
             string timeStr = FormattedInGameTimeString;
             GUILayout.Label(timeStr, phoneClockWidgetStyle);
@@ -297,12 +308,20 @@ namespace ProjectTerra.Sandbox
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
 
-            // Grade 3 colunas, dimensionada para caber toda a grade dentro da tela.
+            // Finanças e Loja ficam dentro do app Internet: fora da grade inicial.
+            var visible = new System.Collections.Generic.List<int>();
+            for (int k = 0; k < HomeTargets.Length; k++)
+            {
+                if (HomeTargets[k] == PhoneApp.Finances || HomeTargets[k] == PhoneApp.Dealer) continue;
+                visible.Add(k);
+            }
+
+            // Grade 3 colunas, dimensionada para caber toda a grade perfeitamente dentro da tela (3x3 = 9 apps).
             const int cols = 3;
             float gap = 8f;
             float gridTop = content.y + headerH + 4f;
             float gridAvail = content.height - headerH - 8f;
-            int count = HomeLabels.Length - 2; // sem Finanças e Loja (movidas para a Internet)
+            int count = visible.Count;
             int rows = Mathf.CeilToInt(count / (float)cols);
 
             const float labelBand = 26f; // espaço do texto abaixo do ícone
@@ -320,19 +339,11 @@ namespace ProjectTerra.Sandbox
                 new Color(0.30f, 0.45f, 0.65f), // Garagem
                 new Color(0.65f, 0.30f, 0.30f), // Loja
                 new Color(0.25f, 0.55f, 0.60f), // Estatísticas
+                new Color(0.85f, 0.55f, 0.20f), // Obras / Construções
                 new Color(0.18f, 0.42f, 0.75f), // Internet
                 new Color(0.60f, 0.42f, 0.18f), // Contatos
-                new Color(0.40f, 0.42f, 0.50f), // Ajustes
-                new Color(0.55f, 0.25f, 0.55f) // Jogo
+                new Color(0.55f, 0.25f, 0.55f)  // Jogo
             };
-
-            // Finanças e Loja agora ficam dentro do app Internet: fora da grade inicial.
-            var visible = new System.Collections.Generic.List<int>();
-            for (int k = 0; k < HomeTargets.Length; k++)
-            {
-                if (HomeTargets[k] == PhoneApp.Finances || HomeTargets[k] == PhoneApp.Dealer) continue;
-                visible.Add(k);
-            }
 
             for (int vi = 0; vi < visible.Count; vi++)
             {
@@ -367,11 +378,8 @@ namespace ProjectTerra.Sandbox
             float tileX = cell.x + (cell.width - tile) * 0.5f;
             Rect tileRect = new Rect(tileX, cell.y, tile, tile);
 
-            GUI.color = tileColor;
-            GUI.DrawTexture(tileRect, whiteTex);
-            GUI.color = new Color(1f, 1f, 1f, 0.12f);
-            GUI.DrawTexture(new Rect(tileRect.x, tileRect.y, tile, 2f), whiteTex);
-            GUI.color = Color.white;
+            // Borda arredondada suave e moderna no ícone de cada app do celular
+            UIThemeHelper.DrawRoundedBox(tileRect, tileColor, new Color(1f, 1f, 1f, 0.25f), 10f, 1.2f);
 
             float inset = tile * 0.2f;
             ProjectTerra.UI.TerraIcons.Draw(new Rect(tileRect.x + inset, tileRect.y + inset, tile - inset * 2f, tile - inset * 2f), icon, Color.white);
@@ -401,68 +409,80 @@ namespace ProjectTerra.Sandbox
         private void DrawPhoneInternet(Rect content)
         {
             DrawAppHeader(content, "TerraNet");
-            Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
+            Rect area = new Rect(content.x + 8f, content.y + 34f, content.width - 16f, content.height - 38f);
             GUILayout.BeginArea(area);
 
             GUI.color = new Color(1f, 1f, 1f, 0.08f);
-            GUILayout.Box("[Bloqueado] www.terranet.world", phoneUrlStyle, GUILayout.Height(22));
+            GUILayout.Box("[Bloqueado] www.terranet.world", phoneUrlStyle, GUILayout.Height(24));
             GUI.color = Color.white;
-            GUILayout.Space(8);
+            GUILayout.Space(12);
 
             if (internetPage == "home")
             {
-                GUILayout.Label("Portais", phoneSectionStyle);
-                if (GUILayout.Button("Notícias da Região", phoneListButtonStyle, GUILayout.Height(30))) internetPage = "news";
-                GUILayout.Space(4);
-                if (GUILayout.Button("Mercado Agrícola", phoneListButtonStyle, GUILayout.Height(30))) internetPage = "market";
-                GUILayout.Space(4);
-                if (GUILayout.Button("Loja (Veículos, Terrenos, Animais)", phoneListButtonStyle, GUILayout.Height(30)))
+                GUILayout.Label("Portais Disponíveis", phoneSectionStyle);
+                GUILayout.Space(8);
+
+                if (GUILayout.Button("Notícias da Região", phoneListButtonStyle, GUILayout.Height(34))) internetPage = "news";
+                GUILayout.Space(8);
+                if (GUILayout.Button("Mercado Agrícola", phoneListButtonStyle, GUILayout.Height(34))) internetPage = "market";
+                GUILayout.Space(8);
+                if (GUILayout.Button("Loja (Veículos, Terrenos, Animais)", phoneListButtonStyle, GUILayout.Height(34)))
                 {
                     OpenVehicleBrowser();
                 }
-                GUILayout.Space(4);
-                if (GUILayout.Button("Finanças e Banco", phoneListButtonStyle, GUILayout.Height(30)))
+                GUILayout.Space(8);
+                if (GUILayout.Button("Finanças e Banco", phoneListButtonStyle, GUILayout.Height(34)))
                 {
                     OpenApp(PhoneApp.Finances);
                 }
-                GUILayout.Space(4);
-                if (GUILayout.Button("Posto de Combustível", phoneListButtonStyle, GUILayout.Height(30)))
+                GUILayout.Space(8);
+                if (GUILayout.Button("Posto de Combustível", phoneListButtonStyle, GUILayout.Height(34)))
                 {
                     OpenApp(PhoneApp.FuelStation);
                 }
-                GUILayout.Space(4);
-                if (GUILayout.Button("Metas da Campanha", phoneListButtonStyle, GUILayout.Height(30)))
+                GUILayout.Space(8);
+                if (GUILayout.Button("Metas da Campanha", phoneListButtonStyle, GUILayout.Height(34)))
                 {
                     OpenApp(PhoneApp.GoalCenter);
                 }
-                GUILayout.Space(4);
-                if (GUILayout.Button("️ Guia de Rodovias", phoneListButtonStyle, GUILayout.Height(30))) internetPage = "roads";
+                GUILayout.Space(8);
+                if (GUILayout.Button("Menu de Obras & Construções", phoneListButtonStyle, GUILayout.Height(34)))
+                {
+                    OpenApp(PhoneApp.Construction);
+                }
+                GUILayout.Space(8);
+                if (GUILayout.Button("Guia de Rodovias", phoneListButtonStyle, GUILayout.Height(34))) internetPage = "roads";
             }
             else
             {
-                if (GUILayout.Button("◀ Voltar ao portal", phoneLinkStyle, GUILayout.Height(22))) internetPage = "home";
-                GUILayout.Space(6);
+                if (GUILayout.Button("◀ Voltar aos portais", phoneLinkStyle, GUILayout.Height(24))) internetPage = "home";
+                GUILayout.Space(10);
 
                 string reg = activeSave != null ? activeSave.regionName : "a região";
                 string country = activeSave != null ? activeSave.countryName : "o país";
 
+                GUILayout.BeginVertical(phoneCardStyle ?? GUI.skin.box);
                 if (internetPage == "news")
                 {
-                    GUILayout.Label("Notícias", phoneSectionStyle);
-                    GUILayout.Label($"Clima estável em {reg}. Produtores de {country} relatam boa safra nesta temporada.", phoneBodyStyle);
+                    GUILayout.Label("Notícias Regionais", phoneSectionStyle);
                     GUILayout.Space(6);
-                    GUILayout.Label("Obras de pavimentação avançam nas rodovias regionais.", phoneBodyStyle);
+                    GUILayout.Label($"Clima estável em {reg}. Produtores de {country} relatam excelente safra nesta temporada.", phoneBodyStyle);
+                    GUILayout.Space(10);
+                    GUILayout.Label("Obras de pavimentação e recapeamento avançam nas rodovias regionais.", phoneBodyStyle);
                 }
                 else if (internetPage == "market")
                 {
-                    GUILayout.Label("Mercado", phoneSectionStyle);
-                    GUILayout.Label("Grãos: [Alta] em alta\nFretes: estáveis\nCombustível: moderado", phoneBodyStyle);
+                    GUILayout.Label("Mercado Agrícola", phoneSectionStyle);
+                    GUILayout.Space(6);
+                    GUILayout.Label("Grãos: [Alta] em alta\nFretes: estáveis\nCombustível: moderado\nInsumos: estáveis", phoneBodyStyle);
                 }
                 else if (internetPage == "roads")
                 {
-                    GUILayout.Label("️ Rodovias", phoneSectionStyle);
-                    GUILayout.Label("Abra o app Mapa para traçar rotas e marcar waypoints com um clique.", phoneBodyStyle);
+                    GUILayout.Label("Guia de Rodovias", phoneSectionStyle);
+                    GUILayout.Space(6);
+                    GUILayout.Label("Abra o app Mapa para traçar rotas, acompanhar relevo e marcar waypoints com um clique.", phoneBodyStyle);
                 }
+                GUILayout.EndVertical();
             }
 
             GUILayout.EndArea();
@@ -490,69 +510,49 @@ namespace ProjectTerra.Sandbox
             GUILayout.EndArea();
         }
 
-        // ---- App: Ajustes (áudio / HUD / gráficos) ----
-        private void DrawPhoneSettings(Rect content)
-        {
-            DrawAppHeader(content, "Ajustes");
-            Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
-            GUILayout.BeginArea(area);
-            phoneScroll = GUILayout.BeginScrollView(phoneScroll);
-
-            GUILayout.Label($"Volume: {Mathf.RoundToInt(AudioListener.volume * 100f)}%", phoneSectionStyle);
-            AudioListener.volume = GUILayout.HorizontalSlider(AudioListener.volume, 0f, 1f);
-            GUILayout.Space(12);
-
-            GUILayout.Label("Interface (HUD):", phoneSectionStyle);
-            ShowCompass = GUILayout.Toggle(ShowCompass, "Bússola");
-            GUILayout.Space(3);
-            ShowMissionTracker = GUILayout.Toggle(ShowMissionTracker, "Rastreador de Missões");
-            GUILayout.Space(3);
-            ShowTelemetry = GUILayout.Toggle(ShowTelemetry, "Telemetria do Veículo");
-            GUILayout.Space(12);
-
-            GUILayout.Label($"Qualidade: {QualitySettings.names[QualitySettings.GetQualityLevel()]}", phoneSectionStyle);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Médio", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(1, true);
-            if (GUILayout.Button("Alto", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(2, true);
-            if (GUILayout.Button("Ultra", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(3, true);
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
-        }
-
         // ---- App: Jogo (salvar / sair) ----
         private void DrawPhoneGameSystem(Rect content)
         {
             DrawAppHeader(content, "Jogo");
             Rect area = new Rect(content.x, content.y + 32f, content.width, content.height - 32f);
             GUILayout.BeginArea(area);
+            phoneScroll = GUILayout.BeginScrollView(phoneScroll);
 
             string reg = activeSave != null ? activeSave.regionName : "Região";
             string country = activeSave != null ? activeSave.countryName : "Mundo";
-            GUILayout.Label($"{reg}, {country}", phoneBodyStyle);
-            GUILayout.Space(12);
 
-            if (GUILayout.Button("Continuar", menuButtonPrimaryStyle, GUILayout.Height(36)))
+            GUILayout.BeginVertical(phoneCardStyle);
+            GUILayout.Label("SESSÃO ATUAL", phoneSectionStyle);
+            GUILayout.Label($"{reg}, {country}", phoneBodyStyle);
+            GUILayout.Label(activeSave != null ? $"Dia {activeSave.gameDay} • Saldo {activeSave.GetFormattedMoney()}" : "Partida ativa", phoneSmallStyle);
+            GUILayout.EndVertical();
+
+            GUILayout.Space(8);
+
+            GUILayout.BeginVertical(phoneCardStyle);
+            GUILayout.Label("AÇÕES", phoneSectionStyle);
+            if (GUILayout.Button("Continuar", menuButtonPrimaryStyle, GUILayout.Height(34)))
             {
                 CloseOptionsMenu();
             }
-            GUILayout.Space(8);
-            if (GUILayout.Button("Salvar Jogo", menuButtonStyle, GUILayout.Height(34)))
+            GUILayout.Space(6);
+            if (GUILayout.Button("Salvar Jogo", menuButtonStyle, GUILayout.Height(32)))
             {
                 SaveCurrentGame();
             }
-            GUILayout.Space(8);
-            if (GUILayout.Button("Retornar ao Globo", menuButtonStyle, GUILayout.Height(34)))
+            GUILayout.Space(6);
+            if (GUILayout.Button("Retornar ao Globo", menuButtonStyle, GUILayout.Height(32)))
             {
                 ReturnToGlobe();
             }
-            GUILayout.Space(8);
-            if (GUILayout.Button("Salvar e Sair", menuButtonDangerStyle, GUILayout.Height(34)))
+            GUILayout.Space(6);
+            if (GUILayout.Button("Salvar e Sair", menuButtonDangerStyle, GUILayout.Height(32)))
             {
                 ReturnToGlobe();
             }
+            GUILayout.EndVertical();
 
+            GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
 
@@ -569,57 +569,73 @@ namespace ProjectTerra.Sandbox
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), whiteTex);
             GUI.color = Color.white;
 
-            float w = 420f;
-            float h = Mathf.Min(560f, Screen.height - 40f);
+            float w = 440f;
+            float h = Mathf.Min(580f, Screen.height - 40f);
             Rect panel = new Rect((Screen.width - w) * 0.5f, (Screen.height - h) * 0.5f, w, h);
 
             // Painel modal com bordas arredondadas e glow ciano
-            UIThemeHelper.DrawRoundedBox(panel, new Color(0.05f, 0.07f, 0.11f, 0.98f), new Color(0.25f, 0.7f, 1f, 0.9f), 12f, 1.5f);
+            UIThemeHelper.DrawRoundedBox(panel, new Color(0.04f, 0.07f, 0.12f, 0.98f), new Color(0.25f, 0.7f, 1f, 0.9f), 14f, 1.5f);
 
-            GUI.Label(new Rect(panel.x + 16f, panel.y + 10f, w - 32f, 28f), "CONFIGURAÇÕES", phoneHeaderStyle);
+            GUI.Label(new Rect(panel.x + 16f, panel.y + 10f, w - 32f, 28f), "CONFIGURAÇÕES DO JOGO", phoneHeaderStyle);
 
-            GUILayout.BeginArea(new Rect(panel.x + 16f, panel.y + 46f, w - 32f, h - 58f));
+            GUILayout.BeginArea(new Rect(panel.x + 16f, panel.y + 44f, w - 32f, h - 56f));
             settingsScroll = GUILayout.BeginScrollView(settingsScroll);
 
-            GUILayout.Label($"Volume: {Mathf.RoundToInt(AudioListener.volume * 100f)}%", phoneSectionStyle);
+            // Caixa 1: Áudio
+            GUILayout.BeginVertical(menuCardSectionStyle);
+            GUILayout.Label($"Áudio • Volume Geral: {Mathf.RoundToInt(AudioListener.volume * 100f)}%", phoneSectionStyle);
             AudioListener.volume = GUILayout.HorizontalSlider(AudioListener.volume, 0f, 1f);
-            GUILayout.Space(12);
+            GUILayout.EndVertical();
 
-            GUILayout.Label("Interface (HUD):", phoneSectionStyle);
-            ShowCompass = GUILayout.Toggle(ShowCompass, "Bússola");
-            GUILayout.Space(3);
-            ShowMissionTracker = GUILayout.Toggle(ShowMissionTracker, "Rastreador de Missões");
-            GUILayout.Space(3);
-            ShowTelemetry = GUILayout.Toggle(ShowTelemetry, "Telemetria do Veículo");
-            GUILayout.Space(12);
+            GUILayout.Space(8);
 
-            GUILayout.Label($"Qualidade: {QualitySettings.names[QualitySettings.GetQualityLevel()]}", phoneSectionStyle);
+            // Caixa 2: Interface (HUD)
+            GUILayout.BeginVertical(menuCardSectionStyle);
+            GUILayout.Label("Interface (HUD)", phoneSectionStyle);
+            ShowCompass = GUILayout.Toggle(ShowCompass, " Bússola 360°");
+            GUILayout.Space(3);
+            ShowMissionTracker = GUILayout.Toggle(ShowMissionTracker, " Rastreador de Missões");
+            GUILayout.Space(3);
+            ShowTelemetry = GUILayout.Toggle(ShowTelemetry, " Telemetria do Veículo");
+            GUILayout.EndVertical();
+
+            GUILayout.Space(8);
+
+            // Caixa 3: Qualidade Gráfica
+            GUILayout.BeginVertical(menuCardSectionStyle);
+            GUILayout.Label($"Gráficos • Qualidade: {QualitySettings.names[QualitySettings.GetQualityLevel()]}", phoneSectionStyle);
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Médio", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(1, true);
             if (GUILayout.Button("Alto", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(2, true);
             if (GUILayout.Button("Ultra", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(3, true);
             GUILayout.EndHorizontal();
-            GUILayout.Space(16);
+            GUILayout.EndVertical();
 
-            if (GUILayout.Button("Continuar", menuButtonPrimaryStyle, GUILayout.Height(36)))
+            GUILayout.Space(8);
+
+            // Caixa 4: Ações da Sessão
+            GUILayout.BeginVertical(menuCardSectionStyle);
+            GUILayout.Label("Sessão & Jogo", phoneSectionStyle);
+            if (GUILayout.Button("Continuar", menuButtonPrimaryStyle, GUILayout.Height(34)))
             {
                 CloseSettingsMenu();
             }
-            GUILayout.Space(8);
-            if (GUILayout.Button("Salvar Jogo", menuButtonStyle, GUILayout.Height(34)))
+            GUILayout.Space(6);
+            if (GUILayout.Button("Salvar Jogo", menuButtonStyle, GUILayout.Height(32)))
             {
                 SaveCurrentGame();
             }
-            GUILayout.Space(8);
-            if (GUILayout.Button("Retornar ao Globo", menuButtonStyle, GUILayout.Height(34)))
+            GUILayout.Space(6);
+            if (GUILayout.Button("Retornar ao Globo", menuButtonStyle, GUILayout.Height(32)))
             {
                 ReturnToGlobe();
             }
-            GUILayout.Space(8);
-            if (GUILayout.Button("Salvar e Sair", menuButtonDangerStyle, GUILayout.Height(34)))
+            GUILayout.Space(6);
+            if (GUILayout.Button("Salvar e Sair", menuButtonDangerStyle, GUILayout.Height(32)))
             {
                 ReturnToGlobe();
             }
+            GUILayout.EndVertical();
 
             GUILayout.EndScrollView();
             GUILayout.EndArea();

@@ -265,10 +265,10 @@ namespace ProjectTerra.Sandbox
             {
                 fontSize = 11,
                 alignment = TextAnchor.MiddleLeft,
-                border = new RectOffset(6, 6, 6, 6),
+                border = new RectOffset(8, 8, 8, 8),
                 padding = new RectOffset(8, 8, 3, 3)
             };
-            phoneUrlStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.10f, 0.14f, 0.22f, 0.95f), new Color(0.25f, 0.55f, 0.85f, 0.70f), 1f, 6f, 32);
+            phoneUrlStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.10f, 0.14f, 0.22f, 0.95f), new Color(0.25f, 0.55f, 0.85f, 0.70f), 1.2f, 8f, 32);
             phoneUrlStyle.normal.textColor = new Color(0.8f, 0.9f, 1f);
 
             phoneSectionStyle = new GUIStyle(GUI.skin.label)
@@ -276,7 +276,7 @@ namespace ProjectTerra.Sandbox
                 fontSize = 12,
                 fontStyle = FontStyle.Bold
             };
-            phoneSectionStyle.normal.textColor = new Color(0.4f, 0.85f, 1f);
+            phoneSectionStyle.normal.textColor = Color.white;
 
             phoneListButtonStyle = new GUIStyle(GUI.skin.button)
             {
@@ -339,6 +339,88 @@ namespace ProjectTerra.Sandbox
                 alignment = TextAnchor.MiddleCenter
             };
             phoneClockSubStyle.normal.textColor = new Color(0.7f, 0.85f, 1f, 0.85f);
+
+            phoneCardStyle = UIThemeHelper.CreateRoundedCardStyle(
+                new Color(0.04f, 0.08f, 0.14f, 0.65f),
+                new Color(0.20f, 0.50f, 0.80f, 0.40f),
+                radius: 8f,
+                borderThickness: 1.2f,
+                padding: new RectOffset(10, 10, 8, 8)
+            );
+
+            menuCardSectionStyle = UIThemeHelper.CreateRoundedCardStyle(
+                new Color(0.06f, 0.10f, 0.16f, 0.85f),
+                new Color(0.20f, 0.50f, 0.80f, 0.45f),
+                radius: 8f,
+                borderThickness: 1.2f,
+                padding: new RectOffset(12, 12, 10, 10)
+            );
+
+            // Estilos da Barra Horizontal de Construção (Menu Inferior)
+            buildBarTitleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            buildBarTitleStyle.normal.textColor = Color.white;
+
+            buildTabStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            buildTabStyle.normal.textColor = Color.white;
+
+            buildSubtabStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Normal,
+                alignment = TextAnchor.MiddleCenter
+            };
+            buildSubtabStyle.normal.textColor = Color.white;
+
+            buildCloseBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 13,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            UIThemeHelper.ApplyModernButtonSkin(buildCloseBtnStyle);
+
+            buildArrowStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            UIThemeHelper.ApplyModernButtonSkin(buildArrowStyle);
+
+            buildCardNameStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.UpperCenter,
+                wordWrap = true
+            };
+            buildCardNameStyle.normal.textColor = new Color(0.92f, 0.96f, 1f);
+
+            buildCardPriceStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            buildCardPriceStyle.normal.textColor = new Color(0.35f, 0.95f, 0.55f);
+
+            buildCardLockedStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            buildCardLockedStyle.normal.textColor = new Color(1f, 0.72f, 0.3f);
 
             stylesReady = true;
         }

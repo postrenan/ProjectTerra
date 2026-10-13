@@ -291,21 +291,21 @@ namespace ProjectTerra.Sandbox
             int ownedCount = save != null && save.ownedParcels != null ? save.ownedParcels.Count : 0;
             string moneyStr = save != null ? save.GetFormattedMoney() : "$ --";
 
-            GUILayout.BeginArea(new Rect(panel.x + 16f, panel.y + 16f, panel.width - 32f, panel.height - 32f));
+            GUILayout.BeginArea(new Rect(panel.x + 20f, panel.y + 20f, panel.width - 40f, panel.height - 40f));
             landPanelScroll = GUILayout.BeginScrollView(landPanelScroll);
 
-            GUI.Label(new Rect(0, 0, panel.width - 32f, 22f), "Dossiê da Propriedade", brPageH2Style);
-            GUI.Label(new Rect(0, 24f, panel.width - 32f, 18f), $"Suas terras: {ownedCount} parcelas adquiridas", brBodyStyle);
-            GUI.Label(new Rect(0, 44f, panel.width - 32f, 22f), $"Saldo: {moneyStr}", brPriceStyle);
+            GUI.Label(new Rect(0, 0, panel.width - 40f, 22f), "Dossiê da Propriedade", brPageH2Style);
+            GUI.Label(new Rect(0, 26f, panel.width - 40f, 18f), $"Suas terras: {ownedCount} parcelas adquiridas", brBodyStyle);
+            GUI.Label(new Rect(0, 48f, panel.width - 40f, 22f), $"Saldo: {moneyStr}", brPriceStyle);
 
-            GUILayout.Space(76);
+            GUILayout.Space(82);
 
             if (landSelected < 0 || landSelected >= landForSale.Length)
             {
-                Rect tip = GUILayoutUtility.GetRect(panel.width - 32f, 70f);
+                Rect tip = GUILayoutUtility.GetRect(panel.width - 40f, 74f);
                 Fill(tip, new Color(0.96f, 0.97f, 0.99f));
                 DrawOutline(tip, UiBorderLight);
-                GUI.Label(new Rect(tip.x + 12f, tip.y + 14f, tip.width - 24f, 40f),
+                GUI.Label(new Rect(tip.x + 14f, tip.y + 16f, tip.width - 28f, 42f),
                     "Clique sobre qualquer parcela no mapa para consultar dimensão, área e valor de aquisição.", brSmallStyle);
             }
             else
@@ -315,25 +315,25 @@ namespace ProjectTerra.Sandbox
                 bool owned = save != null && save.ownedParcels != null && save.ownedParcels.Contains(id);
                 string code = $"Gleba {(char)('A' + Mathf.Min(col, 25))}-{row + 1}";
 
-                Rect info = GUILayoutUtility.GetRect(panel.width - 32f, 140f);
+                Rect info = GUILayoutUtility.GetRect(panel.width - 40f, 144f);
                 Fill(info, new Color(0.97f, 0.98f, 1f));
                 DrawOutline(info, UiBorderLight);
 
-                GUI.Label(new Rect(info.x + 14f, info.y + 12f, info.width - 28f, 24f), code, brPageH1Style);
-                GUI.Label(new Rect(info.x + 14f, info.y + 40f, info.width - 28f, 20f), $"Área: {landAreaHa[id]:N0} hectares", brBodyStyle);
-                GUI.Label(new Rect(info.x + 14f, info.y + 60f, info.width - 28f, 20f),
+                GUI.Label(new Rect(info.x + 16f, info.y + 14f, info.width - 32f, 24f), code, brPageH1Style);
+                GUI.Label(new Rect(info.x + 16f, info.y + 42f, info.width - 32f, 20f), $"Área: {landAreaHa[id]:N0} hectares", brBodyStyle);
+                GUI.Label(new Rect(info.x + 16f, info.y + 64f, info.width - 32f, 20f),
                     $"Dimensões: {landCacheW / landCols / 1000f:0.0} x {landCacheL / landRows / 1000f:0.0} km", brSmallStyle);
-                GUI.Label(new Rect(info.x + 14f, info.y + 80f, info.width - 28f, 20f),
+                GUI.Label(new Rect(info.x + 16f, info.y + 86f, info.width - 32f, 20f),
                     owned ? "Situação: Sua propriedade (Adquirida)" : "Situação: Disponível para compra", brSmallStyle);
 
-                GUI.Label(new Rect(info.x + 14f, info.y + 104f, info.width - 28f, 26f), FormatPrice(landPrice[id]), brPriceStyle);
+                GUI.Label(new Rect(info.x + 16f, info.y + 110f, info.width - 32f, 26f), FormatPrice(landPrice[id]), brPriceStyle);
 
-                GUILayout.Space(16);
+                GUILayout.Space(20);
 
                 bool canAfford = save != null && save.currentMoney >= landPrice[id];
                 GUI.enabled = !owned && canAfford;
                 string label = owned ? "Já Adquirida" : (canAfford ? "Adquirir Parcela" : "Saldo Insuficiente");
-                if (GUILayout.Button(label, brBuyPrimaryStyle, GUILayout.Height(38)))
+                if (GUILayout.Button(label, brBuyPrimaryStyle, GUILayout.Height(42)))
                 {
                     PurchaseLandParcel(id);
                 }
