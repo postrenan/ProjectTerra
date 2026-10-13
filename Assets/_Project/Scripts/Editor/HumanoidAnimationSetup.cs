@@ -58,7 +58,7 @@ namespace ProjectTerra.Editor
                 return;
             }
 
-            importer.animationType = ModelImporterAnimationType.Humanoid;
+            importer.animationType = ModelImporterAnimationType.Human;
             importer.importAnimation = true;
 
             var defaultClips = importer.defaultClipAnimations;

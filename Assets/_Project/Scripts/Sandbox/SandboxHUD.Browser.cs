@@ -38,6 +38,7 @@ namespace ProjectTerra.Sandbox
         private static readonly Color UiBorderLight = new Color(0.86f, 0.88f, 0.92f);
         private static readonly Color UiBorderFocus = new Color(0.20f, 0.45f, 0.95f);
         private static readonly Color UiPrimaryBlue = new Color(0.12f, 0.42f, 0.90f);
+        private static readonly Color UiPrimaryBlueHover = new Color(0.20f, 0.50f, 0.98f);
         private static readonly Color UiSuccessGreen = new Color(0.06f, 0.62f, 0.35f);
         private static readonly Color UiTextPrimary = new Color(0.08f, 0.10f, 0.15f);
         private static readonly Color UiTextSecondary = new Color(0.40f, 0.44f, 0.52f);

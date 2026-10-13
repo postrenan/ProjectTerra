@@ -266,6 +266,8 @@ namespace ProjectTerra.Sandbox
             // Entradas de movimentação
             float horizontal = TerraInput.GetAxis("Horizontal");
             float vertical = TerraInput.GetAxis("Vertical");
+            Vector3 moveDir = transform.forward * vertical + transform.right * horizontal;
+            if (moveDir.magnitude > 1f) moveDir.Normalize();
 
             if (isSwimming)
             {
@@ -313,9 +315,6 @@ namespace ProjectTerra.Sandbox
             else
             {
                 // MODO TERRESTRE / VADEAMENTO
-                Vector3 moveDir = transform.forward * vertical + transform.right * horizontal;
-                if (moveDir.magnitude > 1f) moveDir.Normalize();
-
                 bool wantsSprint = TerraInput.GetKey(Key.LeftShift) && stamina > 5f && moveDir.sqrMagnitude > 0.05f;
                 isSprinting = wantsSprint;
                 float speed = wantsSprint ? sprintSpeed : walkSpeed;

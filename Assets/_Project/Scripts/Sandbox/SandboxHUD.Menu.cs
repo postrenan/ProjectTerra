@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using ProjectTerra.Gameplay;
+using ProjectTerra.UI;
 
 namespace ProjectTerra.Sandbox
 {

@@ -82,6 +82,8 @@ namespace ProjectTerra.Sandbox
         private GUIStyle hudGearTextStyle;
         private GUIStyle hudMiniValueStyle;
         private GUIStyle hudKeyBadgeStyle;
+        private GUIStyle hudNeedValStyle;
+        private GUIStyle hudNeedColLabelStyle;
 
         // Estilos do Celular (estilo GTA V)
         private GUIStyle phoneStatusStyle;

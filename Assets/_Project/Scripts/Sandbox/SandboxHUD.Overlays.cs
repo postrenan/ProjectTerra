@@ -6,8 +6,8 @@ namespace ProjectTerra.Sandbox
 {
     public partial class SandboxHUD
     {
-        private static readonly Color HudBoxBg = new Color(0.04f, 0.08f, 0.14f, 0.90f);
-        private static readonly Color HudBoxBorder = new Color(0.35f, 0.65f, 0.95f, 0.75f);
+        private static readonly Color HudBoxBg = new Color(0.05f, 0.14f, 0.28f, 0.20f);
+        private static readonly Color HudBoxBorder = new Color(0.35f, 0.65f, 0.95f, 0.35f);
 
         #region 1. Topo Esquerdo: Ajuda de Botões (Print 1 & Print 2)
 
@@ -95,7 +95,7 @@ namespace ProjectTerra.Sandbox
             Rect tapeRect = new Rect(x + 8f, y + 18f, w - 16f, 24f);
 
             // Fundo escuro interno da fita
-            GUI.color = new Color(0.02f, 0.05f, 0.09f, 0.8f);
+            GUI.color = new Color(0.02f, 0.05f, 0.09f, 0.4f);
             GUI.DrawTexture(tapeRect, whiteTex);
             GUI.color = Color.white;
 
@@ -330,49 +330,76 @@ namespace ProjectTerra.Sandbox
 
         #endregion
 
-        #region 5. HUD A Pé (Print 2): Canto Inferior Direito -> Estamina + Fome + Sono
+        #region 5. HUD A Pé (Print 2): Canto Inferior Direito -> Estamina + Fome + Sono (Barras Verticais)
 
         private void DrawOnFootHUDCluster(PlayerCharacterController player)
         {
             if (player == null) return;
 
-            float w = 115f;
-            float h = 180f;
+            float w = 142f;
+            float h = 170f;
             float x = Screen.width - w - 20f;
             float y = Screen.height - h - 20f;
             Rect rect = new Rect(x, y, w, h);
 
-            // Caixa vertical com cantos arredondados
-            UIThemeHelper.DrawRoundedBox(rect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.5f);
+            // Caixa vertical com fundo azul suave e quase transparente
+            UIThemeHelper.DrawRoundedBox(rect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
 
-            GUILayout.BeginArea(new Rect(rect.x + 8f, rect.y + 8f, w - 16f, h - 16f));
+            // 3 Colunas verticais lado a lado
+            float padX = 8f;
+            float padY = 8f;
+            float colGap = 4f;
+            float totalColsW = w - (padX * 2f);
+            float colW = (totalColsW - (colGap * 2f)) / 3f;
+            float contentH = h - (padY * 2f);
+
+            float col1X = rect.x + padX;
+            float col2X = col1X + colW + colGap;
+            float col3X = col2X + colW + colGap;
+            float colY = rect.y + padY;
 
             // 1. Estamina
-            DrawVerticalNeedModule("ESTAMINA", player.stamina, player.maxStamina, new Color(0.1f, 0.9f, 0.75f), TerraIcon.TrendingUp);
-            GUILayout.Space(6);
+            DrawVerticalNeedColumn(new Rect(col1X, colY, colW, contentH), "ESTAMINA", player.stamina, player.maxStamina, new Color(0.1f, 0.9f, 0.75f), TerraIcon.TrendingUp);
 
             // 2. Fome
-            DrawVerticalNeedModule("FOME", player.hunger, player.maxHunger, new Color(1f, 0.65f, 0.2f), TerraIcon.Crops);
-            GUILayout.Space(6);
+            DrawVerticalNeedColumn(new Rect(col2X, colY, colW, contentH), "FOME", player.hunger, player.maxHunger, new Color(1f, 0.65f, 0.2f), TerraIcon.Crops);
 
             // 3. Sono
-            DrawVerticalNeedModule("SONO", player.sleep, player.maxSleep, new Color(0.55f, 0.65f, 1f), TerraIcon.Clock);
-
-            GUILayout.EndArea();
+            DrawVerticalNeedColumn(new Rect(col3X, colY, colW, contentH), "SONO", player.sleep, player.maxSleep, new Color(0.55f, 0.65f, 1f), TerraIcon.Clock);
         }
 
-        private void DrawVerticalNeedModule(string label, float current, float max, Color barColor, TerraIcon icon)
+        private void DrawVerticalNeedColumn(Rect colRect, string label, float current, float max, Color barColor, TerraIcon icon)
         {
-            GUILayout.BeginHorizontal();
-            HudLayoutIcon(icon, 13f, barColor);
-            GUILayout.Space(2);
-            GUILayout.Label(label, hudBoxTitleStyle);
-            GUILayout.FlexibleSpace();
-            GUILayout.Label($"{current:F0}%", hudMiniValueStyle);
-            GUILayout.EndHorizontal();
+            float valH = 16f;
+            float iconSize = 16f;
+            float labelH = 13f;
+            float spacing = 3f;
 
-            Rect barRect = GUILayoutUtility.GetRect(80, 8);
-            DrawProgressBar(barRect, (current / max) * 100f, barColor, new Color(0.15f, 0.20f, 0.28f, 0.9f));
+            // 1. Porcentagem no topo (ex: "100%")
+            Rect valRect = new Rect(colRect.x, colRect.y + 2f, colRect.width, valH);
+            GUI.Label(valRect, $"{current:F0}%", hudNeedValStyle);
+
+            // 2. Barra Vertical com preenchimento de baixo para cima
+            float barW = 14f;
+            float barX = colRect.x + (colRect.width - barW) * 0.5f;
+            float barY = valRect.y + valH + spacing;
+            float barH = Mathf.Max(25f, colRect.height - (valH + spacing + spacing + iconSize + 2f + labelH + 2f));
+            Rect barRect = new Rect(barX, barY, barW, barH);
+            DrawVerticalProgressBar(barRect, (current / max) * 100f, barColor, new Color(0.06f, 0.14f, 0.24f, 0.40f));
+
+            // 3. Ícone correspondente (colorido com a cor do módulo)
+            float iconX = colRect.x + (colRect.width - iconSize) * 0.5f;
+            float iconY = barY + barH + spacing;
+            Rect iconRect = new Rect(iconX, iconY, iconSize, iconSize);
+            if (Event.current.type == EventType.Repaint)
+            {
+                TerraIcons.Draw(iconRect, icon, barColor);
+            }
+
+            // 4. Rótulo inferior (ESTAMINA, FOME, SONO, TANQUE, DANO)
+            float labelY = iconY + iconSize + 2f;
+            Rect labelRect = new Rect(colRect.x, labelY, colRect.width, labelH);
+            GUI.Label(labelRect, label, hudNeedColLabelStyle);
         }
 
         #endregion
@@ -385,42 +412,55 @@ namespace ProjectTerra.Sandbox
 
             var player = PlayerCharacterController.Instance;
 
-            float hGroup = 180f;
+            float hGroup = 170f;
             float yGroup = Screen.height - hGroup - 20f;
 
-            // 1. Caixa Vertical da Extrema Direita: Combustivel + Dano + Sono
-            float wVert = 115f;
+            // 1. Caixa Vertical da Extrema Direita: Tanque + Dano + Estamina + Sono (4 Colunas Verticais)
+            float wVert = 175f;
             float xVert = Screen.width - wVert - 20f;
             Rect vertRect = new Rect(xVert, yGroup, wVert, hGroup);
-            UIThemeHelper.DrawRoundedBox(vertRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.5f);
+            UIThemeHelper.DrawRoundedBox(vertRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
 
-            GUILayout.BeginArea(new Rect(vertRect.x + 8f, vertRect.y + 8f, wVert - 16f, hGroup - 16f));
+            float padX = 8f;
+            float padY = 8f;
+            float colGap = 4f;
+            float totalColsW = wVert - (padX * 2f);
+            float colW = (totalColsW - (colGap * 3f)) / 4f;
+            float contentH = hGroup - (padY * 2f);
 
-            // Combustível
+            float col1X = vertRect.x + padX;
+            float col2X = col1X + colW + colGap;
+            float col3X = col2X + colW + colGap;
+            float col4X = col3X + colW + colGap;
+            float colY = vertRect.y + padY;
+
+            // 1. Combustível do Veículo
             Color fuelColor = vehicle.fuelPercent > 45f ? new Color(0.2f, 0.85f, 0.4f) :
                              (vehicle.fuelPercent > 20f ? new Color(1f, 0.8f, 0.2f) : new Color(1f, 0.3f, 0.3f));
-            DrawVerticalNeedModule("TANQUE", vehicle.fuelPercent, 100f, fuelColor, TerraIcon.Fuel);
-            GUILayout.Space(6);
+            DrawVerticalNeedColumn(new Rect(col1X, colY, colW, contentH), "TANQUE", vehicle.fuelPercent, 100f, fuelColor, TerraIcon.Fuel);
 
-            // Dano / Integridade
+            // 2. Dano / Integridade do Veículo
             Color condColor = vehicle.conditionPercent > 60f ? new Color(0.2f, 0.85f, 0.4f) :
                              (vehicle.conditionPercent > 30f ? new Color(1f, 0.8f, 0.2f) : new Color(1f, 0.3f, 0.3f));
-            DrawVerticalNeedModule("DANO", vehicle.conditionPercent, 100f, condColor, TerraIcon.Wrench);
-            GUILayout.Space(6);
+            DrawVerticalNeedColumn(new Rect(col2X, colY, colW, contentH), "DANO", vehicle.conditionPercent, 100f, condColor, TerraIcon.Wrench);
 
-            // Sono do motorista
+            // 3. Estamina do Jogador (recuperação durante a condução)
+            float stamVal = player != null ? player.stamina : 100f;
+            float maxStam = player != null ? player.maxStamina : 100f;
+            DrawVerticalNeedColumn(new Rect(col3X, colY, colW, contentH), "ESTAMINA", stamVal, maxStam, new Color(0.1f, 0.9f, 0.75f), TerraIcon.TrendingUp);
+
+            // 4. Sono do Motorista
             float sleepVal = player != null ? player.sleep : 100f;
-            DrawVerticalNeedModule("SONO", sleepVal, 100f, new Color(0.55f, 0.65f, 1f), TerraIcon.Clock);
+            DrawVerticalNeedColumn(new Rect(col4X, colY, colW, contentH), "SONO", sleepVal, 100f, new Color(0.55f, 0.65f, 1f), TerraIcon.Clock);
 
-            GUILayout.EndArea();
-
-            // 2. Caixa Central: Velocímetro + Marcha
+            // 2. Caixa Central: Velocímetro + Marcha + Aceleração Vertical
             float wSpeed = 150f;
             float xSpeed = xVert - wSpeed - 10f;
             Rect speedRect = new Rect(xSpeed, yGroup, wSpeed, hGroup);
-            UIThemeHelper.DrawRoundedBox(speedRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.5f);
+            UIThemeHelper.DrawRoundedBox(speedRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
 
-            GUILayout.BeginArea(new Rect(speedRect.x + 8f, speedRect.y + 6f, wSpeed - 16f, hGroup - 12f));
+            float mainSpeedW = wSpeed - 30f;
+            GUILayout.BeginArea(new Rect(speedRect.x + 8f, speedRect.y + 6f, mainSpeedW, hGroup - 12f));
 
             // Topo do Velocímetro: Categoria / Nome
             GUILayout.BeginHorizontal();
@@ -443,49 +483,53 @@ namespace ProjectTerra.Sandbox
             string gear = vehicle.CurrentGearString;
             string transMode = vehicle.TransmissionModeString;
 
-            Rect gearPill = GUILayoutUtility.GetRect(wSpeed - 16f, 26f);
-            UIThemeHelper.DrawRoundedBox(gearPill, new Color(0.12f, 0.2f, 0.32f, 0.9f), new Color(0.4f, 0.75f, 1f, 0.9f), radius: 6f, borderThickness: 1f);
-            GUI.Label(gearPill, $"MARCHA [{gear}] • {transMode}", hudGearTextStyle);
-
-            // Barra de Aceleração / Força
-            float throttleFill = Mathf.Abs(vehicle.currentThrottle) * 100f;
-            Rect throttleBar = GUILayoutUtility.GetRect(wSpeed - 16f, 5f);
-            DrawProgressBar(throttleBar, throttleFill, new Color(0.35f, 0.9f, 0.45f), new Color(0.15f, 0.20f, 0.28f, 0.9f));
+            Rect gearPill = GUILayoutUtility.GetRect(mainSpeedW, 26f);
+            UIThemeHelper.DrawRoundedBox(gearPill, new Color(0.10f, 0.20f, 0.35f, 0.45f), new Color(0.4f, 0.75f, 1f, 0.50f), radius: 6f, borderThickness: 1f);
+            GUI.Label(gearPill, $"[{gear}] • {transMode}", hudGearTextStyle);
 
             GUILayout.EndArea();
 
+            // Medidor vertical de aceleração/potência na lateral da caixa do velocímetro
+            float throttleFill = Mathf.Abs(vehicle.currentThrottle) * 100f;
+            float throtW = 10f;
+            float throtH = hGroup - 28f;
+            float throtX = speedRect.x + wSpeed - throtW - 8f;
+            float throtY = speedRect.y + 14f;
+            DrawVerticalProgressBar(new Rect(throtX, throtY, throtW, throtH), throttleFill, new Color(0.35f, 0.9f, 0.45f), new Color(0.06f, 0.14f, 0.24f, 0.40f));
+
             // 3. Duas Caixas Empilhadas à Esquerda do Velocímetro
             float wLeft = 160f;
-            float hSub = (hGroup - 10f) * 0.5f; // 85px cada
+            float hSub = (hGroup - 10f) * 0.5f; // 80px cada
             float xLeft = xSpeed - wLeft - 10f;
 
-            // Caixa Superior: % Produto Carregado
+            // Caixa Superior: % Produto Carregado (com medidor vertical à direita)
             Rect cargoBoxRect = new Rect(xLeft, yGroup, wLeft, hSub);
-            UIThemeHelper.DrawRoundedBox(cargoBoxRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.5f);
+            UIThemeHelper.DrawRoundedBox(cargoBoxRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
 
-            GUILayout.BeginArea(new Rect(cargoBoxRect.x + 8f, cargoBoxRect.y + 6f, wLeft - 16f, hSub - 12f));
+            float cargoInfoW = wLeft - 30f;
+            GUILayout.BeginArea(new Rect(cargoBoxRect.x + 8f, cargoBoxRect.y + 6f, cargoInfoW, hSub - 12f));
             GUILayout.BeginHorizontal();
             HudLayoutIcon(TerraIcon.CargoBox, 14f, new Color(0.35f, 0.85f, 1f));
             GUILayout.Space(2);
-            GUILayout.Label("% PRODUTO CARREGADO", hudBoxTitleStyle);
+            GUILayout.Label("% CARGA", hudBoxTitleStyle);
             GUILayout.EndHorizontal();
 
             string cargoName = string.IsNullOrEmpty(vehicle.cargoItemName) || vehicle.cargoItemName == "Vazio" ? "Vazio" : vehicle.cargoItemName;
             GUILayout.Label(cargoName, hudBoxSubStyle);
 
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Capacidade:", subtitleStyle);
-            GUILayout.FlexibleSpace();
-            GUILayout.Label($"{vehicle.cargoFillPercent:F0}%", hudMiniValueStyle);
-            GUILayout.EndHorizontal();
-
-            Rect cargoBar = GUILayoutUtility.GetRect(wLeft - 16f, 6f);
-            DrawProgressBar(cargoBar, vehicle.cargoFillPercent, new Color(0.25f, 0.8f, 1f), new Color(0.15f, 0.20f, 0.28f, 0.9f));
+            GUILayout.Label($"Capacidade: {vehicle.cargoFillPercent:F0}%", subtitleStyle);
             GUILayout.EndArea();
+
+            // Medidor vertical de carga
+            float cargoBarW = 10f;
+            float cargoBarH = hSub - 20f;
+            float cargoBarX = cargoBoxRect.x + wLeft - cargoBarW - 8f;
+            float cargoBarY = cargoBoxRect.y + 10f;
+            DrawVerticalProgressBar(new Rect(cargoBarX, cargoBarY, cargoBarW, cargoBarH), vehicle.cargoFillPercent, new Color(0.25f, 0.8f, 1f), new Color(0.06f, 0.14f, 0.24f, 0.40f));
 
             // Caixa Inferior: Conexões do Veículo
             Rect connBoxRect = new Rect(xLeft, yGroup + hSub + 10f, wLeft, hSub);
-            UIThemeHelper.DrawRoundedBox(connBoxRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.5f);
+            UIThemeHelper.DrawRoundedBox(connBoxRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
 
             GUILayout.BeginArea(new Rect(connBoxRect.x + 8f, connBoxRect.y + 6f, wLeft - 16f, hSub - 12f));
             GUILayout.BeginHorizontal();
@@ -521,6 +565,19 @@ namespace ProjectTerra.Sandbox
             }
         }
 
+        private void DrawVerticalProgressBar(Rect rect, float fillPercent, Color fillColor, Color bgColor)
+        {
+            UIThemeHelper.DrawRoundedBox(rect, bgColor, Color.clear, 3f, 0f);
+
+            float clamped = Mathf.Clamp01(fillPercent / 100f);
+            float fillH = clamped * rect.height;
+            if (fillH > 1f)
+            {
+                Rect fillRect = new Rect(rect.x, rect.y + rect.height - fillH, rect.width, fillH);
+                UIThemeHelper.DrawRoundedBox(fillRect, fillColor, Color.clear, 3f, 0f);
+            }
+        }
+
         private void HudLayoutIcon(TerraIcon icon, float size, Color tint)
         {
             Rect r = GUILayoutUtility.GetRect(size, size, GUILayout.Width(size), GUILayout.Height(size));
@@ -532,6 +589,19 @@ namespace ProjectTerra.Sandbox
         {
             if (Event.current.type == EventType.Repaint)
                 ProjectTerra.UI.TerraIcons.Draw(r, icon, tint);
+        }
+
+        private bool HudIconButton(TerraIcon icon, GUIStyle style, float iconSize, params GUILayoutOption[] options)
+        {
+            Rect r = GUILayoutUtility.GetRect(iconSize + 14f, iconSize + 14f, style, options);
+            bool clicked = GUI.Button(r, GUIContent.none, style);
+            if (Event.current.type == EventType.Repaint)
+            {
+                float x = r.x + (r.width - iconSize) * 0.5f;
+                float y = r.y + (r.height - iconSize) * 0.5f;
+                ProjectTerra.UI.TerraIcons.Draw(new Rect(x, y, iconSize, iconSize), icon, Color.white);
+            }
+            return clicked;
         }
 
         private static TerraIcon VehicleCategoryIcon(VehicleCategory cat)

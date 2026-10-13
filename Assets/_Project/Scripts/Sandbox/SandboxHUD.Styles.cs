@@ -15,7 +15,7 @@ namespace ProjectTerra.Sandbox
             {
                 border = new RectOffset(8, 8, 8, 8)
             };
-            pillStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.04f, 0.08f, 0.14f, 0.90f), new Color(0.2f, 0.7f, 1f, 0.85f), 1.5f, 8f, 32);
+            pillStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.05f, 0.14f, 0.28f, 0.20f), new Color(0.35f, 0.65f, 0.95f, 0.35f), 1.5f, 8f, 32);
 
             titleStyle = new GUIStyle(GUI.skin.label)
             {
@@ -50,7 +50,7 @@ namespace ProjectTerra.Sandbox
             {
                 border = new RectOffset(8, 8, 8, 8)
             };
-            missionCardStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.05f, 0.08f, 0.14f, 0.90f), new Color(1f, 0.82f, 0.25f, 0.85f), 1.5f, 8f, 32);
+            missionCardStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.05f, 0.14f, 0.28f, 0.20f), new Color(1f, 0.82f, 0.25f, 0.55f), 1.5f, 8f, 32);
 
             missionTitleStyle = new GUIStyle(GUI.skin.label)
             {
@@ -72,7 +72,7 @@ namespace ProjectTerra.Sandbox
             {
                 border = new RectOffset(8, 8, 8, 8)
             };
-            telemetryBoxStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.04f, 0.07f, 0.12f, 0.92f), new Color(0.2f, 0.7f, 1f, 0.85f), 1.5f, 8f, 32);
+            telemetryBoxStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.05f, 0.14f, 0.28f, 0.20f), new Color(0.35f, 0.65f, 0.95f, 0.35f), 1.5f, 8f, 32);
 
             speedValueStyle = new GUIStyle(GUI.skin.label)
             {
@@ -199,6 +199,26 @@ namespace ProjectTerra.Sandbox
                 alignment = TextAnchor.MiddleLeft
             };
             hudKeyBadgeStyle.normal.textColor = new Color(1f, 0.88f, 0.45f);
+
+            hudNeedValStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            hudNeedValStyle.normal.textColor = new Color(0.92f, 0.97f, 1f);
+            hudNeedValStyle.padding = new RectOffset(0, 0, 0, 0);
+            hudNeedValStyle.margin = new RectOffset(0, 0, 0, 0);
+
+            hudNeedColLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 8,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            hudNeedColLabelStyle.normal.textColor = new Color(0.70f, 0.85f, 1f, 0.90f);
+            hudNeedColLabelStyle.padding = new RectOffset(0, 0, 0, 0);
+            hudNeedColLabelStyle.margin = new RectOffset(0, 0, 0, 0);
 
             // ---- Estilos do Celular ----
             phoneStatusStyle = new GUIStyle(GUI.skin.label)
