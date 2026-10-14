@@ -57,6 +57,10 @@ namespace ProjectTerra.Sandbox
             EnsureFloatingOrigin();
             BuildAtmosphereAndLighting();
             BuildRealisticTerrainAndHydrography();
+            // Vegetação a partir da cobertura do solo REAL de satélite (ESA WorldCover 10m).
+            // Planta florestas/arbustos como árvores nativas do Terrain onde o satélite indica mata.
+            VegetationSpawner.Populate(activeTerrain, activeSave.regionId, activeSave.regionId + 7,
+                activeRegionData != null ? activeRegionData.centerLat : 0f);
             // BuildStarterTown(); // [removido] casas/predios da cidade nao sao relevantes para a cena atual
             BuildRegionalInfrastructure();
             BuildStarterCareerInfrastructure();

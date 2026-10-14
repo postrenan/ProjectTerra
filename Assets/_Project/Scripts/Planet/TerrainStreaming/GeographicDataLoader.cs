@@ -164,5 +164,71 @@ namespace ProjectTerra.Planet.TerrainStreaming
                 }
             }
         }
+
+        /// <summary>
+        /// Carrega a camada de cobertura do solo (ESA WorldCover 10m) da região, gerada
+        /// offline por Tools/GenerateRegionVegetation.py em landcover_&lt;id&gt;.raw.
+        /// O grid vem em orientação NORTE-no-topo (linha 0 = maxLat); cada célula guarda
+        /// o código de classe WorldCover (10=árvore, 20=arbusto, 30=campo, 40=lavoura,
+        /// 50=urbano, 60=solo exposto, 80=água, 90=pântano, 95=mangue, 0=sem dado).
+        /// Retorna false (sem erro) quando a região ainda não tem dataset de vegetação.
+        /// </summary>
+        public static bool LoadRegionalLandcover(int regionId, out byte[,] classes, out int resolution)
+        {
+            classes = null;
+            resolution = 0;
+
+            string geoDir = Path.Combine(Application.streamingAssetsPath, "GeographicData");
+            string path = Path.Combine(geoDir, $"landcover_{regionId}.raw");
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            try
+            {
+                byte[] bytes = File.ReadAllBytes(path);
+                if (bytes.Length < 14 || bytes[0] != (byte)'L' || bytes[1] != (byte)'C' || bytes[2] != (byte)'O' || bytes[3] != (byte)'V')
+                {
+                    Debug.LogWarning($"[GeographicDataLoader] landcover_{regionId}.raw com magic inválido.");
+                    return false;
+                }
+
+                using (var ms = new MemoryStream(bytes))
+                using (var reader = new BinaryReader(ms, System.Text.Encoding.UTF8))
+                {
+                    reader.ReadUInt32();                 // magic 'LCOV'
+                    reader.ReadUInt16();                 // version
+                    ushort headerSize = reader.ReadUInt16();
+                    ushort res = reader.ReadUInt16();
+                    reader.ReadInt32();                  // regionId
+                    reader.ReadUInt16();                 // year
+                    // (string de origem é ignorada; o headerSize já aponta o início dos dados)
+
+                    if (res < 2 || bytes.Length < headerSize + res * res)
+                    {
+                        Debug.LogWarning($"[GeographicDataLoader] landcover_{regionId}.raw truncado (res={res}, {bytes.Length} bytes).");
+                        return false;
+                    }
+
+                    classes = new byte[res, res];
+                    int idx = headerSize;
+                    for (int y = 0; y < res; y++)
+                    {
+                        for (int x = 0; x < res; x++)
+                        {
+                            classes[y, x] = bytes[idx++];
+                        }
+                    }
+                    resolution = res;
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[GeographicDataLoader] Falha ao carregar landcover_{regionId}.raw: {ex.Message}");
+                return false;
+            }
+        }
     }
 }
