@@ -55,10 +55,12 @@ namespace ProjectTerra.UI
             whiteTex = MakeSolidColorTexture(Color.white);
             darkGlassTex = MakeSolidColorTexture(new Color(0.02f, 0.05f, 0.10f, 0.94f));
             headerGlowTex = MakeSolidColorTexture(new Color(0.08f, 0.22f, 0.45f, 0.85f));
-            buttonNormalTex = MakeSolidColorTexture(new Color(0.06f, 0.12f, 0.22f, 0.88f));
-            buttonHoverTex = MakeSolidColorTexture(new Color(0.12f, 0.28f, 0.50f, 0.95f));
-            buttonPrimaryTex = MakeSolidColorTexture(new Color(0.14f, 0.42f, 0.78f, 0.98f));
-            buttonDangerTex = MakeSolidColorTexture(new Color(0.55f, 0.14f, 0.14f, 0.95f));
+
+            // Texturas procedurais com cantos arredondados (9-slice)
+            buttonNormalTex = UIThemeHelper.CreateRoundedTexture(new Color(0.06f, 0.12f, 0.22f, 0.88f), new Color(0.20f, 0.50f, 0.80f, 0.70f), 1.5f, 7f, 32);
+            buttonHoverTex = UIThemeHelper.CreateRoundedTexture(new Color(0.12f, 0.28f, 0.50f, 0.95f), new Color(0.40f, 0.85f, 1.0f, 0.95f), 1.5f, 7f, 32);
+            buttonPrimaryTex = UIThemeHelper.CreateRoundedTexture(new Color(0.14f, 0.42f, 0.78f, 0.98f), new Color(0.55f, 0.90f, 1.0f, 1.0f), 1.5f, 7f, 32);
+            buttonDangerTex = UIThemeHelper.CreateRoundedTexture(new Color(0.55f, 0.14f, 0.14f, 0.95f), new Color(0.95f, 0.35f, 0.35f, 0.90f), 1.5f, 7f, 32);
 
             // Textura sutil de vinheta nas laterais para reforçar o centro onde fica o globo
             vignetteTex = MakeGradientVignetteTexture(256, 256);
@@ -128,7 +130,8 @@ namespace ProjectTerra.UI
                 fontSize = 14,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleLeft,
-                padding = new RectOffset(16, 16, 6, 6)
+                padding = new RectOffset(16, 16, 6, 6),
+                border = new RectOffset(8, 8, 8, 8)
             };
             menuBtnStyle.normal.background = buttonNormalTex;
             menuBtnStyle.hover.background = buttonHoverTex;
@@ -147,9 +150,11 @@ namespace ProjectTerra.UI
             activeMenuBtnStyle = new GUIStyle(menuBtnStyle);
             activeMenuBtnStyle.normal.background = buttonPrimaryTex;
             activeMenuBtnStyle.normal.textColor = new Color(1.0f, 0.95f, 0.40f);
+            activeMenuBtnStyle.border = new RectOffset(8, 8, 8, 8);
 
             modalBoxStyle = new GUIStyle(GUI.skin.box);
-            modalBoxStyle.normal.background = darkGlassTex;
+            modalBoxStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.02f, 0.05f, 0.10f, 0.94f), new Color(0.20f, 0.55f, 0.85f, 0.70f), 1.5f, 10f, 48);
+            modalBoxStyle.border = new RectOffset(12, 12, 12, 12);
 
             modalHeaderTitleStyle = new GUIStyle(GUI.skin.label)
             {
@@ -169,15 +174,18 @@ namespace ProjectTerra.UI
 
             cardStyle = new GUIStyle(GUI.skin.box);
             cardStyle.normal.background = buttonNormalTex;
+            cardStyle.border = new RectOffset(8, 8, 8, 8);
 
             cardActiveStyle = new GUIStyle(GUI.skin.box);
             cardActiveStyle.normal.background = buttonHoverTex;
+            cardActiveStyle.border = new RectOffset(8, 8, 8, 8);
 
             tabButtonStyle = new GUIStyle(GUI.skin.button)
             {
                 fontSize = 12,
                 fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
+                alignment = TextAnchor.MiddleCenter,
+                border = new RectOffset(8, 8, 8, 8)
             };
             tabButtonStyle.normal.background = buttonNormalTex;
             tabButtonStyle.hover.background = buttonHoverTex;
@@ -186,6 +194,7 @@ namespace ProjectTerra.UI
             activeTabButtonStyle = new GUIStyle(tabButtonStyle);
             activeTabButtonStyle.normal.background = buttonPrimaryTex;
             activeTabButtonStyle.normal.textColor = new Color(1.0f, 0.95f, 0.40f);
+            activeTabButtonStyle.border = new RectOffset(8, 8, 8, 8);
 
             sectionHeaderStyle = new GUIStyle(GUI.skin.label)
             {
@@ -223,14 +232,18 @@ namespace ProjectTerra.UI
             {
                 fontSize = 12,
                 fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleLeft
+                alignment = TextAnchor.MiddleLeft,
+                border = new RectOffset(8, 8, 8, 8),
+                padding = new RectOffset(10, 10, 6, 6)
             };
+            modernTextFieldStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.04f, 0.08f, 0.16f, 0.90f), new Color(0.20f, 0.50f, 0.80f, 0.70f), 1.5f, 7f, 32);
 
             actionBtnStyle = new GUIStyle(GUI.skin.button)
             {
                 fontSize = 12,
                 fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
+                alignment = TextAnchor.MiddleCenter,
+                border = new RectOffset(8, 8, 8, 8)
             };
             actionBtnStyle.normal.background = buttonNormalTex;
             actionBtnStyle.hover.background = buttonHoverTex;
@@ -239,31 +252,28 @@ namespace ProjectTerra.UI
             primaryActionBtnStyle = new GUIStyle(actionBtnStyle);
             primaryActionBtnStyle.normal.background = buttonPrimaryTex;
             primaryActionBtnStyle.normal.textColor = new Color(1.0f, 0.95f, 0.45f);
+            primaryActionBtnStyle.border = new RectOffset(8, 8, 8, 8);
 
             dangerActionBtnStyle = new GUIStyle(actionBtnStyle);
             dangerActionBtnStyle.normal.background = buttonDangerTex;
             dangerActionBtnStyle.normal.textColor = new Color(1.0f, 0.80f, 0.80f);
+            dangerActionBtnStyle.border = new RectOffset(8, 8, 8, 8);
 
             floatingBackBtnStyle = new GUIStyle(GUI.skin.button)
             {
                 fontSize = 12,
                 fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
+                alignment = TextAnchor.MiddleCenter,
+                border = new RectOffset(8, 8, 8, 8)
             };
             floatingBackBtnStyle.normal.background = buttonPrimaryTex;
             floatingBackBtnStyle.hover.background = buttonHoverTex;
             floatingBackBtnStyle.normal.textColor = Color.white;
         }
 
-        private void DrawBorder(Rect r, Color col, float thickness = 1f)
+        private void DrawBorder(Rect r, Color col, float thickness = 1.5f, float radius = 8f)
         {
-            Color old = GUI.color;
-            GUI.color = col;
-            GUI.DrawTexture(new Rect(r.x, r.y, r.width, thickness), whiteTex);
-            GUI.DrawTexture(new Rect(r.x, r.y + r.height - thickness, r.width, thickness), whiteTex);
-            GUI.DrawTexture(new Rect(r.x, r.y, thickness, r.height), whiteTex);
-            GUI.DrawTexture(new Rect(r.x + r.width - thickness, r.y, thickness, r.height), whiteTex);
-            GUI.color = old;
+            UIThemeHelper.DrawRoundedBorder(r, col, thickness, radius);
         }
     }
 }

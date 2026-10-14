@@ -39,124 +39,8 @@ namespace ProjectTerra.UI
         private void InitModHub()
         {
             modCatalog.Clear();
-
-            // 1. Maquinário
-            modCatalog.Add(new ModEntry
-            {
-                id = "mod_jd_8r",
-                title = "John Deere 8R Series & Alfaias Pesadas",
-                category = "Maquinário Agrícola",
-                author = "AgroSim Modding Team",
-                version = "v2.4.0",
-                sizeMb = 48.5f,
-                rating = 5,
-                description = "Adiciona os tratores de alta potência da série 8R com tração articulada, grade aradora de 32 discos e semeadeira a vácuo de precisão.",
-                isInstalled = true,
-                isEnabled = true
-            });
-
-            modCatalog.Add(new ModEntry
-            {
-                id = "mod_case_magnum",
-                title = "Case IH Magnum 380 Rowtrac HD",
-                category = "Maquinário Agrícola",
-                author = "RedPower Studio",
-                version = "v1.8.2",
-                sizeMb = 36.2f,
-                rating = 5,
-                description = "Trator com esteiras traseiras para redução de compactação de solo úmido e suporte a piloto automático por telemetria.",
-                isInstalled = false,
-                isEnabled = false
-            });
-
-            // 2. Caminhões
-            modCatalog.Add(new ModEntry
-            {
-                id = "mod_scania_r730",
-                title = "Scania R730 V8 Bitrem Graneleiro 30m",
-                category = "Caminhões & Rodoviário",
-                author = "Estrada Real Modding",
-                version = "v3.1.0",
-                sizeMb = 54.0f,
-                rating = 5,
-                description = "Cavalo mecânico 6x4 de 730cv com conjunto bitrem graneleiro para 60 toneladas, suspensão pneumática e física de freio a tambor.",
-                isInstalled = true,
-                isEnabled = true
-            });
-
-            modCatalog.Add(new ModEntry
-            {
-                id = "mod_volvo_fh16",
-                title = "Volvo FH16 750 Carga Pesada & Prancha",
-                category = "Caminhões & Rodoviário",
-                author = "Nordic Haulers",
-                version = "v2.0.1",
-                sizeMb = 42.8f,
-                rating = 4,
-                description = "Caminhão para transporte de colheitadeiras e maquinário pesado entre fazendas com luzes de escolta e sinalização homologada.",
-                isInstalled = false,
-                isEnabled = false
-            });
-
-            // 3. Aviação
-            modCatalog.Add(new ModEntry
-            {
-                id = "mod_cessna_172",
-                title = "Cessna 172 Skyhawk HD Flight Dynamics",
-                category = "Aviação & Aeronaves",
-                author = "AeroLab Global",
-                version = "v1.6.0",
-                sizeMb = 29.4f,
-                rating = 5,
-                description = "Monoplano de instrução e reconhecimento aéreo de lavouras com modelo de voo aerodinâmico realista e painel de instrumentos funcional.",
-                isInstalled = true,
-                isEnabled = true
-            });
-
-            modCatalog.Add(new ModEntry
-            {
-                id = "mod_air_tractor_at802",
-                title = "Air Tractor AT-802A Pulverizador Aéreo",
-                category = "Aviação & Aeronaves",
-                author = "AgroWings BR",
-                version = "v1.2.5",
-                sizeMb = 38.7f,
-                rating = 5,
-                description = "Aeronave agrícola de turbina com tanque de calda de 3.000 litros e barras atomizadoras para aplicação aérea veloz sobre talhões.",
-                isInstalled = false,
-                isEnabled = false
-            });
-
-            // 4. Mapas e Cenários
-            modCatalog.Add(new ModEntry
-            {
-                id = "mod_pantanal_biome",
-                title = "Bioma Pantanal & Rios Navegáveis Brasileiros",
-                category = "Mapas & Cenários",
-                author = "TerraGeo Maps",
-                version = "v1.0.4",
-                sizeMb = 82.0f,
-                rating = 5,
-                description = "Expande a malha fluvial do Centro-Oeste com bacias alagadiças, fauna nativa enriquecida e portos de transbordo graneleiro de barcaças.",
-                isInstalled = false,
-                isEnabled = false
-            });
-
-            // 5. Sistemas
-            modCatalog.Add(new ModEntry
-            {
-                id = "mod_rtk_gps",
-                title = "GPS Agrícola de Precisão RTK & Linhas Guia",
-                category = "Sistemas & Scripts",
-                author = "TechFarm Solutions",
-                version = "v2.2.0",
-                sizeMb = 9.8f,
-                rating = 5,
-                description = "Cria linhas de orientação AB retas e curvas no terreno para o trator seguir com margem de erro submétrica e piloto automático.",
-                isInstalled = true,
-                isEnabled = true
-            });
         }
+
 
         private void UpdateModHubDownloads()
         {
@@ -342,6 +226,12 @@ namespace ProjectTerra.UI
 
                 GUILayout.EndVertical();
                 GUILayout.Space(6);
+            }
+
+            if (modCatalog.Count == 0)
+            {
+                GUILayout.Space(40);
+                GUILayout.Label("Nenhum mod disponível no catálogo.", labelBoldStyle);
             }
 
             GUILayout.EndScrollView();

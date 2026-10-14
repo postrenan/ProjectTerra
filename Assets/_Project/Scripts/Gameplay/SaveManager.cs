@@ -16,6 +16,12 @@ namespace ProjectTerra.Gameplay
 
         public RegionSaveData ActiveSave { get; set; }
 
+        /// <summary>
+        /// Perfil de conta — o estado que viaja entre regiões (perícia, renome, poupança
+        /// global). Nunca é null após o Awake; se o arquivo não existir, começa zerado.
+        /// </summary>
+        public PlayerProfile Profile { get; private set; }
+
         private string saveDirectory;
         private Dictionary<string, RegionSaveData> loadedSaves = new Dictionary<string, RegionSaveData>();
 
@@ -39,10 +45,15 @@ namespace ProjectTerra.Gameplay
             }
 
             LoadAllSaves();
+            LoadProfile();
         }
 
         private const uint SaveMagic = 0x56415350; // 'PSAV'
         private const byte SaveVersion = RegionSaveData.CurrentVersion;
+
+        private const uint ProfileMagic = 0x50524650; // 'PFRP'
+        private const byte ProfileVersion = PlayerProfile.CurrentVersion;
+        private string ProfilePath => Path.Combine(saveDirectory, "profile.bin");
 
         public void LoadAllSaves()
         {
@@ -229,7 +240,7 @@ namespace ProjectTerra.Gameplay
             return string.Compare(b.lastSavedDate, a.lastSavedDate, StringComparison.Ordinal);
         }
 
-        public RegionSaveData CreateNewSave(RegionData region, string saveName, long startingMoney, StarterCareer career = StarterCareer.Farmer)
+        public RegionSaveData CreateNewSave(RegionData region, string saveName, long startingMoney, StarterCareer career = StarterCareer.Farmer, GameDifficulty difficulty = GameDifficulty.Balanced)
         {
             if (region == null) return null;
 
@@ -260,13 +271,20 @@ namespace ProjectTerra.Gameplay
                 originalForestPercent = region.forestPercent,
                 originalMineralsPercent = region.mineralsPercent,
                 originalArablePercent = region.arablePercent,
-                originalWaterPercent = region.waterPercent
+                originalWaterPercent = region.waterPercent,
+
+                // Economia avançada (save v3): ligada em toda partida nova.
+                advancedEconomy = true,
+                difficulty = (int)difficulty,
+                gameDay = 1,
+                fuelPricePerLiter = DifficultySettingsCatalog.Get(difficulty).fuelPricePerLiter,
+                totalExpenses = 0
             };
 
             SaveToFile(save);
             loadedSaves[save.saveId] = save;
             ActiveSave = save;
-            Debug.Log($"[SaveManager] Nova partida criada: {save.saveName} na região {save.regionName} com verba de ${save.startingMoney:N0} e carreira {save.starterCareer}");
+            Debug.Log($"[SaveManager] Nova partida criada: {save.saveName} na região {save.regionName} com verba de ${save.startingMoney:N0}, carreira {save.starterCareer} e dificuldade {save.Difficulty}");
             return save;
         }
 
@@ -306,6 +324,91 @@ namespace ProjectTerra.Gameplay
                 Debug.LogError($"[SaveManager] Falha ao salvar '{save.saveId}': {ex.Message}");
                 // O .tmp é preservado de propósito: o LoadAllSaves tenta recuperá-lo.
             }
+        }
+
+        // ---------------------------------------------------------------------
+        //  Perfil de conta (progresso que viaja entre regiões)
+        // ---------------------------------------------------------------------
+
+        private void LoadProfile()
+        {
+            Profile = null;
+            if (File.Exists(ProfilePath))
+            {
+                try
+                {
+                    using (var fs = new FileStream(ProfilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (var reader = new BinaryReader(fs, System.Text.Encoding.UTF8))
+                    {
+                        uint magic = reader.ReadUInt32();
+                        if (magic == ProfileMagic)
+                        {
+                            byte ver = reader.ReadByte();
+                            Profile = PlayerProfile.ReadBinary(reader, ver);
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"[SaveManager] Assinatura inválida em profile.bin (magic 0x{magic:X8}). Começando com perfil novo.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[SaveManager] Erro ao carregar perfil: {ex.Message}. Começando com perfil novo.");
+                }
+            }
+
+            if (Profile == null) Profile = new PlayerProfile();
+            Debug.Log($"[SaveManager] Perfil carregado: {Profile.GlobalLicenses} (licenças globais), renome {Profile.renown}.");
+        }
+
+        public void SaveProfile()
+        {
+            if (Profile == null) return;
+            string tempPath = ProfilePath + ".tmp";
+            try
+            {
+                using (var fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var writer = new BinaryWriter(fs, System.Text.Encoding.UTF8))
+                {
+                    writer.Write(ProfileMagic);
+                    writer.Write(ProfileVersion);
+                    Profile.WriteBinary(writer);
+                    writer.Flush();
+                    fs.Flush(true);
+                }
+                if (File.Exists(ProfilePath)) File.Delete(ProfilePath);
+                File.Move(tempPath, ProfilePath);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[SaveManager] Falha ao salvar perfil: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Licenças que valem na prática: o que o jogador sabe no mundo todo (perfil)
+        /// unido ao que a carreira inicial do save ativo concedeu localmente.
+        /// </summary>
+        public DriverLicense EffectiveLicenses =>
+            (Profile != null ? Profile.GlobalLicenses : DriverLicense.None) |
+            (ActiveSave != null ? ActiveSave.Licenses : DriverLicense.None);
+
+        public bool HasLicense(DriverLicense lic) => (EffectiveLicenses & lic) == lic;
+
+        /// <summary>
+        /// Compra/adquire uma licença: aprende para sempre (perfil global) e registra
+        /// no save ativo. O débito do dinheiro continua a cargo de quem chama (a dívida
+        /// é local à região). Persiste o perfil imediatamente.
+        /// </summary>
+        public void BuyLicense(DriverLicense lic)
+        {
+            if (Profile != null)
+            {
+                Profile.LearnLicense(lic);
+                SaveProfile();
+            }
+            ActiveSave?.GrantLicense(lic);
         }
 
         public void DeleteSave(string saveId)

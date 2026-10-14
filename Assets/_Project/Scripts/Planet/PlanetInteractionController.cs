@@ -209,7 +209,7 @@ namespace ProjectTerra.Planet
             }
         }
 
-        private void SelectRegionAt(float lat, float lon)
+        private void SelectRegionAt(float lat, float lon, Vector3 localNormal, Vector3 worldPoint)
         {
             if (!isDatabaseLoaded || database == null || database.regions.Count == 0)
             {
@@ -277,6 +277,10 @@ namespace ProjectTerra.Planet
                 Debug.Log($"[PlanetInteraction] Clique no mar ignorado - Lat: {lat:F2}°, Lon: {lon:F2}°");
                 return;
             }
+
+            // Região válida confirmada: agora sim comita o ponto selecionado.
+            selectedLocalNormal = localNormal;
+            selectedWorldPoint = worldPoint;
 
             selectedRegion = match;
             SetTerrainHighlight(match.id);

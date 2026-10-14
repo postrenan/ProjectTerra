@@ -37,7 +37,9 @@ namespace ProjectTerra.UI
 
         [Header("Cinematic Orbit")]
         [SerializeField] private bool autoRotateGlobe = true;
+#pragma warning disable CS0414
         [SerializeField] private float globeRotationSpeed = 1.8f; // Graus por segundo no menu inicial
+#pragma warning restore CS0414
 
         // Animação e Opacidade
         private float screenAlpha = 1.0f;

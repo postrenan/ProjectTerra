@@ -83,7 +83,11 @@ namespace ProjectTerra.Sandbox
             dist[LayerLandmark] = DistLandmark;
 
             cam.layerCullDistances = dist;
-            cam.layerCullSpherical = true;
+            // layerCullSpherical só é suportado no renderer built-in; no SRP (URP/HDRP) causa aviso de pipeline incompatível
+            if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null)
+            {
+                cam.layerCullSpherical = true;
+            }
 
             // Precisa de far clip grande para enxergar montanhas/vulcões ao longe (vista da região).
             cam.farClipPlane = Mathf.Max(cam.farClipPlane, DistLandmark + 3000f);

@@ -88,7 +88,7 @@ namespace ProjectTerra.Gameplay
         public const int MaxActiveLoans = 3;
 
         // Dia corrente do jogo (incrementa a cada virada de meia-noite in-game).
-        // Usado para agendar parcelas e cobrar multa por atraso.
+        // Usado para agendar parcelas, cobrar multa por atraso e as despesas diárias.
         public long gameDay = 0;
 
         // Histórico de movimentações bancárias (mais recentes no fim da lista).
@@ -125,6 +125,33 @@ namespace ProjectTerra.Gameplay
                 return n;
             }
         }
+
+        // --- Economia avançada da campanha (save v3) ---
+        // Gate mestre: só partidas criadas com os sistemas novos ligam custos operacionais,
+        // despesa diária, prazos e metas. Saves v1/v2 carregam com isto em false e seguem
+        // jogando como antes (mas o sistema de empréstimos acima vale para todos).
+        public bool advancedEconomy = false;
+        // Dificuldade escolhida na criação (índice de GameDifficulty).
+        public int difficulty = (int)GameDifficulty.Balanced;
+
+        // Parcelas de terreno compradas na Loja de Terrenos (índice linha * colunas + coluna).
+        public List<int> ownedParcels = new List<int>();
+        // Preço corrente do combustível por litro. 0 = ainda não definido → derivado da dificuldade.
+        public float fuelPricePerLiter = 0f;
+        // Total gasto em custos operacionais (combustível, reparo, despesa diária) — estatística.
+        public long totalExpenses = 0;
+        // Bitmask das metas de campanha já resgatadas (ver CampaignGoalCatalog).
+        public long milestonesClaimed = 0;
+        // Entregas atrasadas e perdidas (estatística / pressão).
+        public int lateDeliveries = 0;
+
+        public GameDifficulty Difficulty => (GameDifficulty)difficulty;
+
+        /// <summary>Parâmetros econômicos da dificuldade desta partida.</summary>
+        public DifficultySettings DifficultyConfig => DifficultySettingsCatalog.Get(Difficulty);
+
+        /// <summary>Preço do combustível efetivo; deriva da dificuldade se nunca definido.</summary>
+        public float EffectiveFuelPrice => fuelPricePerLiter > 0f ? fuelPricePerLiter : DifficultyConfig.fuelPricePerLiter;
 
         /// <summary>Adiciona um registro ao histórico, mantendo apenas os mais recentes.</summary>
         public void AddLoanHistory(string bankName, string type, long amount)
@@ -203,6 +230,7 @@ namespace ProjectTerra.Gameplay
 
         public bool HasLicense(DriverLicense lic) => (Licenses & lic) == lic;
         public void GrantLicense(DriverLicense lic) { Licenses |= lic; }
+        public void AddLicense(DriverLicense lic) => GrantLicense(lic);
 
         public int forestPercent;
         public int mineralsPercent;
@@ -314,7 +342,15 @@ namespace ProjectTerra.Gameplay
                 writer.Write(h.amount);
             }
 
-            // v4: progresso da campanha do modo carreira.
+            // v3: economia avançada da campanha (custos, dificuldade, metas).
+            writer.Write(advancedEconomy);
+            writer.Write(difficulty);
+            writer.Write(fuelPricePerLiter);
+            writer.Write(totalExpenses);
+            writer.Write(milestonesClaimed);
+            writer.Write(lateDeliveries);
+
+            // v4: progresso da campanha do modo carreira (appended após o bloco v3).
             writer.Write(storyBeatIndex);
             int resolvedCount = resolvedBeats != null ? resolvedBeats.Count : 0;
             writer.Write(resolvedCount);
@@ -449,11 +485,23 @@ namespace ProjectTerra.Gameplay
             }
         }
 
+        /// <summary>Lê o bloco de economia avançada (comum a v3 e v4).</summary>
+        private static void ReadAdvancedEconomy(System.IO.BinaryReader reader, RegionSaveData save)
+        {
+            save.advancedEconomy = reader.ReadBoolean();
+            save.difficulty = reader.ReadInt32();
+            save.fuelPricePerLiter = reader.ReadSingle();
+            save.totalExpenses = reader.ReadInt64();
+            save.milestonesClaimed = reader.ReadInt64();
+            save.lateDeliveries = reader.ReadInt32();
+        }
+
         private static RegionSaveData ReadBinaryV3(System.IO.BinaryReader reader)
         {
             var save = new RegionSaveData();
             ReadCore(reader, save);
             ReadLoansAndHistory(reader, save);
+            ReadAdvancedEconomy(reader, save);
             // Campos v4 ausentes: campanha começa do zero (storyBeatIndex=0, inbox vazia).
             return save;
         }
@@ -463,7 +511,9 @@ namespace ProjectTerra.Gameplay
             var save = new RegionSaveData();
             ReadCore(reader, save);
             ReadLoansAndHistory(reader, save);
+            ReadAdvancedEconomy(reader, save);
 
+            // v4: progresso da campanha do modo carreira.
             save.storyBeatIndex = reader.ReadInt32();
 
             int resolvedCount = reader.ReadInt32();

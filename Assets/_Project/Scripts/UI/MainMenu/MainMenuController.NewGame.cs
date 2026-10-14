@@ -14,6 +14,7 @@ namespace ProjectTerra.UI
         // Dados do Formulário
         private string campaignName = "Nova Partida";
         private StarterCareer initialCareer = StarterCareer.Farmer;
+        private GameDifficulty selectedDifficulty = GameDifficulty.Balanced;
         private long startingBudget = 500000;
         private int selectedFeaturedIndex = 0;
         private Vector2 newGameScrollPos = Vector2.zero;
@@ -194,7 +195,18 @@ namespace ProjectTerra.UI
 
             GUILayout.Space(16);
 
-            // 5. BOTÃO PRINCIPAL DE INÍCIO
+            // 5. DIFICULDADE DA CAMPANHA
+            GUILayout.Label("5. Dificuldade da Campanha:", sectionHeaderStyle);
+            GUILayout.BeginHorizontal();
+            DrawDifficultyButton("Relaxado", GameDifficulty.Relaxed);
+            DrawDifficultyButton("Equilibrado", GameDifficulty.Balanced);
+            DrawDifficultyButton("Hardcore", GameDifficulty.Hardcore);
+            GUILayout.EndHorizontal();
+            GUILayout.Label(DifficultySettingsCatalog.Get(selectedDifficulty).description, menuBtnSubtextStyle);
+
+            GUILayout.Space(16);
+
+            // 6. BOTÃO PRINCIPAL DE INÍCIO
             GUI.color = new Color(0.18f, 0.85f, 0.40f);
             if (IconBtn(TerraIcon.Airplane, "INICIAR PARTIDA & DESEMBARCAR NA TERRA", primaryActionBtnStyle, GUILayout.Height(44)))
             {
@@ -203,6 +215,17 @@ namespace ProjectTerra.UI
             GUI.color = Color.white;
 
             GUILayout.EndScrollView();
+        }
+
+        private void DrawDifficultyButton(string label, GameDifficulty difficulty)
+        {
+            bool isCurrent = selectedDifficulty == difficulty;
+            GUI.color = isCurrent ? new Color(1.0f, 0.65f, 0.25f) : Color.white;
+            if (GUILayout.Button(label, isCurrent ? activeTabButtonStyle : tabButtonStyle, GUILayout.Height(30)))
+            {
+                selectedDifficulty = difficulty;
+            }
+            GUI.color = Color.white;
         }
 
         private void DrawCareerButton(string label, StarterCareer career, string tooltip)
@@ -273,7 +296,7 @@ namespace ProjectTerra.UI
             RegionSaveData save = null;
             if (SaveManager.Instance != null)
             {
-                save = SaveManager.Instance.CreateNewSave(region, campaignName, startingBudget, initialCareer);
+                save = SaveManager.Instance.CreateNewSave(region, campaignName, startingBudget, initialCareer, selectedDifficulty);
             }
 
             isMenuOpen = false;

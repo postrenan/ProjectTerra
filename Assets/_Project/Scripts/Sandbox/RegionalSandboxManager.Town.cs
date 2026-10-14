@@ -120,8 +120,7 @@ namespace ProjectTerra.Sandbox
 
         private void CreateBuilding(Transform parent, Vector3 pos, Vector3 size, Color color, string name)
         {
-            // [removido] Assets de prédios/edifícios desativados do cenário
-            return;
+            DowntownBuildingBuilder.BuildBuilding(parent, pos, size, color, name);
         }
 
         private static Material cachedCommercialMat;

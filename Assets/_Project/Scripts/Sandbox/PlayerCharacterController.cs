@@ -60,6 +60,9 @@ namespace ProjectTerra.Sandbox
         public float swimFastSpeed = 5.2f;
         public float waterBuoyancy = 8.5f;
 
+        [Header("Animações do Personagem (Universal Animation Library)")]
+        public Animator playerAnimator;
+
         private CharacterController controller;
         private Vector3 velocity;
         private bool isGrounded;
@@ -100,8 +103,20 @@ namespace ProjectTerra.Sandbox
                 Debug.Log($"[PlayerCharacterController] Usando Camera.main existente: '{activeCamera.name}' em {activeCamera.transform.position}. Jogador em: {transform.position}");
             }
 
-            activeCamera.nearClipPlane = 0.75f;
+            activeCamera.nearClipPlane = 0.3f;
             activeCamera.farClipPlane = 48000f;
+
+            // Ativar Anti-Aliasing (SMAA) no URP para eliminar cintilação subpixel de texturas e normais do solo em movimento
+            var camData = activeCamera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+            if (camData == null)
+            {
+                camData = activeCamera.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+            }
+            if (camData != null)
+            {
+                camData.antialiasing = UnityEngine.Rendering.Universal.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+                camData.antialiasingQuality = UnityEngine.Rendering.Universal.AntialiasingQuality.High;
+            }
 
             yaw = transform.eulerAngles.y;
             pitch = 0f;
@@ -124,6 +139,11 @@ namespace ProjectTerra.Sandbox
 
             // Configurar malhas do jogador para modo 1ª pessoa (somente sombras para não obstruir visão)
             SetupFirstPersonMeshes();
+
+            if (playerAnimator == null)
+            {
+                playerAnimator = GetComponentInChildren<Animator>();
+            }
         }
 
         private void SetupFirstPersonMeshes()
@@ -147,6 +167,7 @@ namespace ProjectTerra.Sandbox
         private void Update()
         {
             HandleCursorLock();
+            UpdatePlayerNeeds();
 
             // Interrompe movimentação e atalhos se o Menu de Opções, Mapa Regional ou Console de Comandos estiver aberto
             if (IsInputBlocked())
@@ -177,12 +198,11 @@ namespace ProjectTerra.Sandbox
 
         private void HandleCursorLock()
         {
-            // Navegador da loja: cursor do SO oculto (o HUD desenha a setinha retrô), mas o
-            // mouse continua livre para operar a interface.
+            // Navegador da loja: cursor do SO visível e liberado para operar a interface.
             if (SandboxHUD.Instance != null && SandboxHUD.Instance.IsBrowserOpen)
             {
                 Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = false;
+                Cursor.visible = true;
                 return;
             }
 
@@ -246,6 +266,8 @@ namespace ProjectTerra.Sandbox
             // Entradas de movimentação
             float horizontal = TerraInput.GetAxis("Horizontal");
             float vertical = TerraInput.GetAxis("Vertical");
+            Vector3 moveDir = transform.forward * vertical + transform.right * horizontal;
+            if (moveDir.magnitude > 1f) moveDir.Normalize();
 
             if (isSwimming)
             {
@@ -293,10 +315,9 @@ namespace ProjectTerra.Sandbox
             else
             {
                 // MODO TERRESTRE / VADEAMENTO
-                Vector3 moveDir = transform.forward * vertical + transform.right * horizontal;
-                if (moveDir.magnitude > 1f) moveDir.Normalize();
-
-                float speed = TerraInput.GetKey(Key.LeftShift) ? sprintSpeed : walkSpeed;
+                bool wantsSprint = TerraInput.GetKey(Key.LeftShift) && stamina > 5f && moveDir.sqrMagnitude > 0.05f;
+                isSprinting = wantsSprint;
+                float speed = wantsSprint ? sprintSpeed : walkSpeed;
                 if (isWading)
                 {
                     // Arrasto hidrodinâmico desacelera o caminhar na água rasa
@@ -308,22 +329,32 @@ namespace ProjectTerra.Sandbox
                 if (TerraInput.GetButtonDown("Jump") && isGrounded)
                 {
                     velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                    if (playerAnimator != null) playerAnimator.SetTrigger("Jump");
                 }
 
                 // Gravidade
                 velocity.y += gravity * Time.deltaTime;
 
                 // Movimento unificado: horizontal + vertical em UMA ÚNICA chamada Move.
-                // Antes eram duas chamadas (horizontal e depois vertical). Uma chamada só-horizontal
-                // com isGrounded=true faz o CharacterController "colar"no solo (snap de até stepOffset),
-                // o que engolia o primeiro quadro do salto — a travada "como se preso ao chão".
-                // Combinando o impulso vertical no mesmo Move, o salto decola limpo no primeiro frame.
                 Vector3 frameMove = moveDir * speed + Vector3.up * velocity.y;
                 if (isWading)
                 {
                     frameMove += waterInfo.flowVelocity * (submersion / 1.25f);
                 }
                 controller.Move(frameMove * Time.deltaTime);
+            }
+
+            // Atualização de parâmetros de animação do personagem (Universal Animation Library)
+            if (playerAnimator != null)
+            {
+                float spd = isSwimming ? (TerraInput.GetKey(Key.LeftShift) ? swimFastSpeed : swimSpeed) : (isSprinting ? sprintSpeed : walkSpeed);
+                bool moving = isSwimming || moveDir.sqrMagnitude > 0.01f;
+                playerAnimator.SetFloat("Speed", moving ? spd : 0f);
+                playerAnimator.SetBool("IsMoving", moving);
+                playerAnimator.SetBool("IsSprinting", isSprinting);
+                playerAnimator.SetBool("IsGrounded", isGrounded);
+                playerAnimator.SetBool("IsSwimming", isSwimming);
+                playerAnimator.SetBool("IsDriving", false);
             }
 
             // Proteção contra queda no vazio / perda de colisão do terreno
@@ -406,6 +437,8 @@ namespace ProjectTerra.Sandbox
             transform.SetParent(vehicle.transform);
             transform.localPosition = vehicle.driverSeatPoint != null ? vehicle.driverSeatPoint.localPosition : Vector3.zero;
 
+            if (playerAnimator != null) playerAnimator.SetBool("IsDriving", true);
+
             Debug.Log($"[Player] Embarcou no veículo: {vehicle.vehicleName}");
         }
 
@@ -441,6 +474,8 @@ namespace ProjectTerra.Sandbox
 
             isDriving = false;
             currentVehicle = null;
+
+            if (playerAnimator != null) playerAnimator.SetBool("IsDriving", false);
 
             Debug.Log("[Player] Desembarcou do veículo.");
         }

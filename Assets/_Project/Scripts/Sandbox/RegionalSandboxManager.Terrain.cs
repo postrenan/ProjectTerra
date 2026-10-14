@@ -115,7 +115,8 @@ namespace ProjectTerra.Sandbox
             terrainObj.transform.position = new Vector3(-worldWidthMeters * 0.5f, 0f, -worldLengthMeters * 0.5f);
             activeTerrain = terrainObj.GetComponent<Terrain>();
             activeTerrain.drawTreesAndFoliage = true;
-            activeTerrain.heightmapPixelError = 5;
+            activeTerrain.drawInstanced = true;
+            activeTerrain.heightmapPixelError = 1;
 
             // Garantir que o colisor do terreno está ativo
             var tc = terrainObj.GetComponent<Collider>();
@@ -155,7 +156,8 @@ namespace ProjectTerra.Sandbox
 
             // Renderiza as camadas PBR reais em todo o setor ativo (até 60 km), sem cair no basemap de baixa-res.
             terrain.basemapDistance = 40000f;
-            terrain.heightmapPixelError = 5;
+            terrain.heightmapPixelError = 1;
+            terrain.drawInstanced = true;
         }
 
         private int ChooseHeightmapResolution(float widthMeters)

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectTerra.Gameplay;
+using ProjectTerra.UI;
 
 namespace ProjectTerra.Planet
 {
@@ -10,34 +11,26 @@ namespace ProjectTerra.Planet
         {
             int totalSaves = SaveManager.Instance != null ? SaveManager.Instance.TotalSaveCount : 0;
 
-            // 1. Botão Retrátil Superior Esquerdo
-            float btnX = 24f;
-            float btnY = 24f;
+            // 1. Botão Retrátil Superior Direito
             float btnWidth = 240f;
+            float btnY = 24f;
+            float btnX = Screen.width - btnWidth - 24f;
             float btnHeight = 38f;
             recentSavesButtonRect = new Rect(btnX, btnY, btnWidth, btnHeight);
 
-            // Fundo estilizado do botão
-            GUI.color = isRecentSavesOpen ? new Color(0.06f, 0.14f, 0.28f, 0.96f) : new Color(0.02f, 0.06f, 0.14f, 0.90f);
-            GUI.DrawTexture(recentSavesButtonRect, whiteTex);
-
-            // Borda do botão
-            Color borderColor = isRecentSavesOpen ? new Color(0.4f, 0.85f, 1.0f, 0.95f) : new Color(0.25f, 0.6f, 0.85f, 0.75f);
-            GUI.color = borderColor;
-            GUI.DrawTexture(new Rect(btnX, btnY, btnWidth, 2), whiteTex);
-            GUI.DrawTexture(new Rect(btnX, btnY + btnHeight - 2, btnWidth, 2), whiteTex);
-            GUI.DrawTexture(new Rect(btnX, btnY, 2, btnHeight), whiteTex);
-            GUI.DrawTexture(new Rect(btnX + btnWidth - 2, btnY, 2, btnHeight), whiteTex);
+            // Fundo estilizado do botão com cantos arredondados
+            Color prevCol = GUI.color;
             GUI.color = Color.white;
 
             // Texto do botão
             string arrow = isRecentSavesOpen ? "(aberto)" : "";
             string buttonLabel = totalSaves > 0 ? $"Saves Recentes ({totalSaves}) {arrow}" : $"Saves Recentes (0) {arrow}";
 
-            if (GUI.Button(recentSavesButtonRect, buttonLabel, recentBtnStyle ?? primaryButtonStyle))
+            if (GUI.Button(recentSavesButtonRect, buttonLabel, isRecentSavesOpen ? (playBtnStyle ?? primaryButtonStyle) : (recentBtnStyle ?? buttonStyle)))
             {
                 ToggleRecentSavesModal();
             }
+            GUI.color = prevCol;
 
             // 2. Modal Retrátil com Animação Fluida
             if (recentSavesAnimProgress <= 0.001f)
@@ -46,26 +39,17 @@ namespace ProjectTerra.Planet
                 return;
             }
 
-            float modalX = btnX;
-            float modalY = btnY + btnHeight + 6f;
             float modalWidth = 440f;
-            float maxModalHeight = Mathf.Min(Screen.height - modalY - 24f, 560f);
+            float modalY = btnY + btnHeight + 6f;
+            float modalX = Screen.width - modalWidth - 24f;
+            float maxModalHeight = Mathf.Min(Screen.height - modalY - 70f, 560f);
             float smoothProgress = Mathf.SmoothStep(0f, 1f, recentSavesAnimProgress);
             float currentModalHeight = maxModalHeight * smoothProgress;
 
             recentSavesModalRect = new Rect(modalX, modalY, modalWidth, currentModalHeight);
 
-            // Fundo escuro translúcido com fade da animação
-            GUI.color = new Color(0.02f, 0.05f, 0.12f, 0.96f * smoothProgress);
-            GUI.DrawTexture(recentSavesModalRect, whiteTex);
-
-            // Bordas do modal
-            GUI.color = new Color(0.3f, 0.75f, 1.0f, 0.85f * smoothProgress);
-            GUI.DrawTexture(new Rect(modalX, modalY, modalWidth, 2), whiteTex);
-            GUI.DrawTexture(new Rect(modalX, modalY + currentModalHeight - 2, modalWidth, 2), whiteTex);
-            GUI.DrawTexture(new Rect(modalX, modalY, 2, currentModalHeight), whiteTex);
-            GUI.DrawTexture(new Rect(modalX + modalWidth - 2, modalY, 2, currentModalHeight), whiteTex);
-            GUI.color = Color.white;
+            // Fundo escuro translúcido com bordas arredondadas e fade da animação
+            UIThemeHelper.DrawRoundedBox(recentSavesModalRect, new Color(0.02f, 0.05f, 0.12f, 0.96f * smoothProgress), new Color(0.3f, 0.75f, 1.0f, 0.85f * smoothProgress), 10f, 1.5f);
 
             // Grupo de recorte para efeito retrátil sanfonado suave
             GUI.BeginGroup(recentSavesModalRect);

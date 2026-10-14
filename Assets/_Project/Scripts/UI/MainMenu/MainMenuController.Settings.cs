@@ -10,7 +10,9 @@ namespace ProjectTerra.UI
 
         // Opções de Vídeo
         private int qualityLevel = 2; // 0..4
+#pragma warning disable CS0414
         private int selectedResolutionIndex = 0;
+#pragma warning restore CS0414
         private int windowModeIndex = 0; // 0=Fullscreen, 1=Borderless, 2=Windowed
         private int vsyncIndex = 1; // 0=Off, 1=60Hz, 2=120Hz
         private int targetFPS = 120;

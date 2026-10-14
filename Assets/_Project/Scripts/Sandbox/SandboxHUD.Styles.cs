@@ -1,4 +1,5 @@
 using UnityEngine;
+using ProjectTerra.UI;
 
 namespace ProjectTerra.Sandbox
 {
@@ -10,8 +11,11 @@ namespace ProjectTerra.Sandbox
         {
             if (stylesReady) return;
 
-            pillStyle = new GUIStyle(GUI.skin.box);
-            pillStyle.normal.background = whiteTex;
+            pillStyle = new GUIStyle(GUI.skin.box)
+            {
+                border = new RectOffset(8, 8, 8, 8)
+            };
+            pillStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.05f, 0.14f, 0.28f, 0.20f), new Color(0.35f, 0.65f, 0.95f, 0.35f), 1.5f, 8f, 32);
 
             titleStyle = new GUIStyle(GUI.skin.label)
             {
@@ -42,8 +46,11 @@ namespace ProjectTerra.Sandbox
             };
             timeWarpStyle.normal.textColor = new Color(1f, 0.85f, 0.25f);
 
-            missionCardStyle = new GUIStyle(GUI.skin.box);
-            missionCardStyle.normal.background = whiteTex;
+            missionCardStyle = new GUIStyle(GUI.skin.box)
+            {
+                border = new RectOffset(8, 8, 8, 8)
+            };
+            missionCardStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.05f, 0.14f, 0.28f, 0.20f), new Color(1f, 0.82f, 0.25f, 0.55f), 1.5f, 8f, 32);
 
             missionTitleStyle = new GUIStyle(GUI.skin.label)
             {
@@ -61,8 +68,11 @@ namespace ProjectTerra.Sandbox
             };
             missionDescStyle.normal.textColor = new Color(0.9f, 0.95f, 1f);
 
-            telemetryBoxStyle = new GUIStyle(GUI.skin.box);
-            telemetryBoxStyle.normal.background = whiteTex;
+            telemetryBoxStyle = new GUIStyle(GUI.skin.box)
+            {
+                border = new RectOffset(8, 8, 8, 8)
+            };
+            telemetryBoxStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.05f, 0.14f, 0.28f, 0.20f), new Color(0.35f, 0.65f, 0.95f, 0.35f), 1.5f, 8f, 32);
 
             speedValueStyle = new GUIStyle(GUI.skin.label)
             {
@@ -80,13 +90,12 @@ namespace ProjectTerra.Sandbox
             };
             speedUnitStyle.normal.textColor = new Color(0.4f, 0.85f, 1f);
 
-            hintBoxStyle = new GUIStyle(GUI.skin.box)
+            hintBoxStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter
             };
-            hintBoxStyle.normal.background = whiteTex;
             hintBoxStyle.normal.textColor = Color.white;
 
             compassLabelStyle = new GUIStyle(GUI.skin.label)
@@ -97,8 +106,11 @@ namespace ProjectTerra.Sandbox
             };
             compassLabelStyle.normal.textColor = new Color(0.8f, 0.95f, 1f);
 
-            modalBoxStyle = new GUIStyle(GUI.skin.box);
-            modalBoxStyle.normal.background = whiteTex;
+            modalBoxStyle = new GUIStyle(GUI.skin.box)
+            {
+                border = new RectOffset(10, 10, 10, 10)
+            };
+            modalBoxStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.05f, 0.07f, 0.11f, 0.98f), new Color(0.25f, 0.7f, 1f, 0.9f), 1.5f, 10f, 32);
 
             modalTitleStyle = new GUIStyle(GUI.skin.label)
             {
@@ -113,12 +125,14 @@ namespace ProjectTerra.Sandbox
                 fontSize = 13,
                 fontStyle = FontStyle.Bold
             };
+            UIThemeHelper.ApplyModernButtonSkin(menuButtonStyle);
 
             menuButtonPrimaryStyle = new GUIStyle(GUI.skin.button)
             {
                 fontSize = 13,
                 fontStyle = FontStyle.Bold
             };
+            UIThemeHelper.ApplyPrimaryButtonSkin(menuButtonPrimaryStyle);
             menuButtonPrimaryStyle.normal.textColor = new Color(0.2f, 1f, 0.4f);
 
             menuButtonDangerStyle = new GUIStyle(GUI.skin.button)
@@ -126,16 +140,85 @@ namespace ProjectTerra.Sandbox
                 fontSize = 13,
                 fontStyle = FontStyle.Bold
             };
+            UIThemeHelper.ApplyDangerButtonSkin(menuButtonDangerStyle);
             menuButtonDangerStyle.normal.textColor = new Color(1f, 0.4f, 0.4f);
 
-            toastStyle = new GUIStyle(GUI.skin.box)
+            toastStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter
             };
-            toastStyle.normal.background = whiteTex;
             toastStyle.normal.textColor = new Color(0.3f, 1f, 0.5f);
+
+            // Novos estilos do HUD
+            hudBoxTitleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            hudBoxTitleStyle.normal.textColor = new Color(0.65f, 0.82f, 1f, 0.85f);
+
+            hudBoxSubStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Normal,
+                alignment = TextAnchor.MiddleLeft
+            };
+            hudBoxSubStyle.normal.textColor = Color.white;
+
+            hudSpeedBigStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 40,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            hudSpeedBigStyle.normal.textColor = Color.white;
+
+            hudGearTextStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 16,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            hudGearTextStyle.normal.textColor = new Color(1f, 0.85f, 0.3f);
+
+            hudMiniValueStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleRight
+            };
+            hudMiniValueStyle.normal.textColor = new Color(0.85f, 0.95f, 1f);
+
+            hudKeyBadgeStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            hudKeyBadgeStyle.normal.textColor = new Color(1f, 0.88f, 0.45f);
+
+            hudNeedValStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            hudNeedValStyle.normal.textColor = new Color(0.92f, 0.97f, 1f);
+            hudNeedValStyle.padding = new RectOffset(0, 0, 0, 0);
+            hudNeedValStyle.margin = new RectOffset(0, 0, 0, 0);
+
+            hudNeedColLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 8,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            hudNeedColLabelStyle.normal.textColor = new Color(0.70f, 0.85f, 1f, 0.90f);
+            hudNeedColLabelStyle.padding = new RectOffset(0, 0, 0, 0);
+            hudNeedColLabelStyle.margin = new RectOffset(0, 0, 0, 0);
 
             // ---- Estilos do Celular ----
             phoneStatusStyle = new GUIStyle(GUI.skin.label)
@@ -176,13 +259,16 @@ namespace ProjectTerra.Sandbox
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter
             };
+            UIThemeHelper.ApplyModernButtonSkin(phoneBackStyle);
 
             phoneUrlStyle = new GUIStyle(GUI.skin.box)
             {
                 fontSize = 11,
-                alignment = TextAnchor.MiddleLeft
+                alignment = TextAnchor.MiddleLeft,
+                border = new RectOffset(8, 8, 8, 8),
+                padding = new RectOffset(8, 8, 3, 3)
             };
-            phoneUrlStyle.normal.background = whiteTex;
+            phoneUrlStyle.normal.background = UIThemeHelper.CreateRoundedTexture(new Color(0.10f, 0.14f, 0.22f, 0.95f), new Color(0.25f, 0.55f, 0.85f, 0.70f), 1.2f, 8f, 32);
             phoneUrlStyle.normal.textColor = new Color(0.8f, 0.9f, 1f);
 
             phoneSectionStyle = new GUIStyle(GUI.skin.label)
@@ -190,7 +276,7 @@ namespace ProjectTerra.Sandbox
                 fontSize = 12,
                 fontStyle = FontStyle.Bold
             };
-            phoneSectionStyle.normal.textColor = new Color(0.4f, 0.85f, 1f);
+            phoneSectionStyle.normal.textColor = Color.white;
 
             phoneListButtonStyle = new GUIStyle(GUI.skin.button)
             {
@@ -199,6 +285,7 @@ namespace ProjectTerra.Sandbox
                 alignment = TextAnchor.MiddleLeft,
                 padding = new RectOffset(10, 6, 4, 4)
             };
+            UIThemeHelper.ApplyModernButtonSkin(phoneListButtonStyle);
 
             phoneLinkStyle = new GUIStyle(GUI.skin.label)
             {
@@ -253,6 +340,88 @@ namespace ProjectTerra.Sandbox
             };
             phoneClockSubStyle.normal.textColor = new Color(0.7f, 0.85f, 1f, 0.85f);
 
+            phoneCardStyle = UIThemeHelper.CreateRoundedCardStyle(
+                new Color(0.04f, 0.08f, 0.14f, 0.65f),
+                new Color(0.20f, 0.50f, 0.80f, 0.40f),
+                radius: 8f,
+                borderThickness: 1.2f,
+                padding: new RectOffset(10, 10, 8, 8)
+            );
+
+            menuCardSectionStyle = UIThemeHelper.CreateRoundedCardStyle(
+                new Color(0.06f, 0.10f, 0.16f, 0.85f),
+                new Color(0.20f, 0.50f, 0.80f, 0.45f),
+                radius: 8f,
+                borderThickness: 1.2f,
+                padding: new RectOffset(12, 12, 10, 10)
+            );
+
+            // Estilos da Barra Horizontal de Construção (Menu Inferior)
+            buildBarTitleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            buildBarTitleStyle.normal.textColor = Color.white;
+
+            buildTabStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            buildTabStyle.normal.textColor = Color.white;
+
+            buildSubtabStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Normal,
+                alignment = TextAnchor.MiddleCenter
+            };
+            buildSubtabStyle.normal.textColor = Color.white;
+
+            buildCloseBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 13,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            UIThemeHelper.ApplyModernButtonSkin(buildCloseBtnStyle);
+
+            buildArrowStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            UIThemeHelper.ApplyModernButtonSkin(buildArrowStyle);
+
+            buildCardNameStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.UpperCenter,
+                wordWrap = true
+            };
+            buildCardNameStyle.normal.textColor = new Color(0.92f, 0.96f, 1f);
+
+            buildCardPriceStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            buildCardPriceStyle.normal.textColor = new Color(0.35f, 0.95f, 0.55f);
+
+            buildCardLockedStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            buildCardLockedStyle.normal.textColor = new Color(1f, 0.72f, 0.3f);
+
             stylesReady = true;
         }
 
@@ -274,11 +443,7 @@ namespace ProjectTerra.Sandbox
             float h = 34f;
             Rect rect = new Rect((Screen.width - w) * 0.5f, Screen.height * 0.2f, w, h);
 
-            GUI.color = new Color(0.04f, 0.15f, 0.08f, 0.95f);
-            GUI.DrawTexture(rect, whiteTex);
-            GUI.color = new Color(0.3f, 1f, 0.5f);
-            GUI.DrawTexture(new Rect(rect.x, rect.y, w, 2), whiteTex);
-            GUI.color = Color.white;
+            UIThemeHelper.DrawRoundedBox(rect, new Color(0.04f, 0.15f, 0.08f, 0.95f), new Color(0.3f, 1f, 0.5f, 0.90f), 8f, 1.5f);
 
             GUI.Label(rect, saveToastMessage, toastStyle);
         }

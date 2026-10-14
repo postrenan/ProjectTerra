@@ -1,4 +1,5 @@
 using System;
+using ProjectTerra.UI;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -134,7 +135,13 @@ namespace ProjectTerra.Sandbox
             float worldL = rsm != null ? rsm.worldLengthMeters : 60000f;
 
             // 1. Extração da Máscara Geográfica Exata da Província (Silhueta Real)
-            bool[,] insideMask = new bool[res, res];
+            // O contorno real vem de um raster de IDs de baixa resolução. Amostrar 1 pixel
+            // por célula produzia uma silhueta "escada"(linhas retas e cantos quadrados).
+            // Para obter FRONTEIRAS CURVAS suavizamos a silhueta com supersampling: cada
+            // pixel do mapa guarda uma COBERTURA fracionária (0..1) obtida de SS×SS
+            // subamostras do raster. Essa cobertura, depois suavizada, gera uma borda
+            // anti-aliased contínua em vez de degraus pixelados.
+            float[,] coverage = new float[res, res];
             ushort[,] pixelRegionIds = new ushort[res, res];
             bool hasRegionMask = false;
             int insideCount = 0;
@@ -146,19 +153,35 @@ namespace ProjectTerra.Sandbox
                 RegionBoundaryService.EnsureLoaded();
                 float dLat = region.maxLat - region.minLat;
                 float dLon = region.maxLon - region.minLon;
+                const int SS = 3; // 3×3 subamostras por pixel (anti-aliasing da costa/divisa)
+                float invRes = 1f / (res - 1);
 
                 for (int y = 0; y < res; y++)
                 {
-                    float ny = y / (float)(res - 1);
+                    float ny = y * invRes;
                     float lat = region.minLat + ny * dLat;
                     for (int x = 0; x < res; x++)
                     {
-                        float nx = x / (float)(res - 1);
+                        float nx = x * invRes;
                         float lon = region.minLon + nx * dLon;
                         ushort pid = RegionBoundaryService.GetRegionIdAt(lat, lon);
                         pixelRegionIds[y, x] = pid;
-                        bool inside = RegionBoundaryService.IsInsideRegion(region.id, lat, lon);
-                        insideMask[y, x] = inside;
+
+                        // Cobertura fracionária: proporção das subamostras que caem dentro da província.
+                        int subHit = 0;
+                        for (int sy = 0; sy < SS; sy++)
+                        {
+                            float slat = region.minLat + (ny + ((sy + 0.5f) / SS - 0.5f) * invRes) * dLat;
+                            for (int sx = 0; sx < SS; sx++)
+                            {
+                                float slon = region.minLon + (nx + ((sx + 0.5f) / SS - 0.5f) * invRes) * dLon;
+                                if (RegionBoundaryService.IsInsideRegion(region.id, slat, slon)) subHit++;
+                            }
+                        }
+                        float cov = subHit / (float)(SS * SS);
+                        coverage[y, x] = cov;
+
+                        bool inside = cov >= 0.5f;
                         if (inside)
                         {
                             insideCount++;
@@ -252,40 +275,34 @@ namespace ProjectTerra.Sandbox
                 }
             }
 
-            // 2. Detecção de Bordas / Contorno da Província com Glow Halo
-            bool[,] isBorder = new bool[res, res];
-            bool[,] isOuterGlow = new bool[res, res];
-
+            // 2. Suavização do Campo de Cobertura (Blur Gaussiano aproximado)
+            // Espalha a transição 0→1 por alguns pixels de modo que a isolinha de 0,5
+            // (o contorno da província) seja uma CURVA suave, sem cantos quadrados.
+            // A borda em si é derivada depois, por proximidade dessa isolinha, dando
+            // uma linha de fronteira anti-aliased contínua.
             if (hasRegionMask)
             {
-                for (int y = 1; y < res - 1; y++)
+                for (int pass = 0; pass < 2; pass++)
                 {
-                    for (int x = 1; x < res - 1; x++)
+                    float[,] blurred = new float[res, res];
+                    for (int y = 0; y < res; y++)
                     {
-                        bool cur = insideMask[y, x];
-                        if (cur)
+                        for (int x = 0; x < res; x++)
                         {
-                            if (!insideMask[y, x - 1] || !insideMask[y, x + 1] ||
-                                !insideMask[y - 1, x] || !insideMask[y + 1, x])
+                            float sum = 0f; int cnt = 0;
+                            for (int dy = -1; dy <= 1; dy++)
                             {
-                                isBorder[y, x] = true;
+                                int yy = y + dy; if (yy < 0 || yy >= res) continue;
+                                for (int dx = -1; dx <= 1; dx++)
+                                {
+                                    int xx = x + dx; if (xx < 0 || xx >= res) continue;
+                                    sum += coverage[yy, xx]; cnt++;
+                                }
                             }
-                        }
-                        else
-                        {
-                            // Só é "borda externa"quando o pixel está junto da região na horizontal
-                            // (há vizinho dentro) e longe dela na vertical (vizinho fora).
-                            // A condição anterior (A || B || !C || !D) era verdadeira para
-                            // praticamente todo pixel fora da região — basta um vizinho
-                            // vertical fora para o || curto-circuitar — e deixava os ramos
-                            // de oceano, terra cinza e linha de divisa inalcançáveis.
-                            if ((insideMask[y, x - 1] || insideMask[y, x + 1]) &&
-                                (!insideMask[y - 1, x] || !insideMask[y + 1, x]))
-                            {
-                                isOuterGlow[y, x] = true;
-                            }
+                            blurred[y, x] = sum / cnt;
                         }
                     }
+                    coverage = blurred;
                 }
             }
 
@@ -385,62 +402,59 @@ namespace ProjectTerra.Sandbox
                         terrainCol *= (isMajorContour ? 0.70f : 0.84f);
                     }
 
-                    // 4. Aplicação da Silhueta no Formato da Província
+                    // 4. Aplicação da Silhueta no Formato da Província (bordas curvas suavizadas)
                     Color finalCol;
                     if (hasRegionMask)
                     {
-                        if (isBorder[y, x])
+                        float cov = coverage[y, x];
+
+                        // Cor do território (dentro da província): relevo colorido nítido.
+                        Color insideColor = new Color(terrainCol.r, terrainCol.g, terrainCol.b);
+
+                        // Cor de fora: água cartográfica (pid 0) ou vizinhos em cinza neutro.
+                        Color outsideColor;
+                        ushort pid = pixelRegionIds[y, x];
+                        if (pid == 0)
                         {
-                            // Traçado da Linha de Fronteira Tática (Ciano tático brilhante)
-                            finalCol = new Color(0.15f, 0.95f, 1.0f, 1.0f);
-                        }
-                        else if (isOuterGlow[y, x])
-                        {
-                            // Halo / Glow exterior suave da fronteira
-                            finalCol = new Color(0.12f, 0.75f, 0.95f, 0.55f);
-                        }
-                        else if (insideMask[y, x])
-                        {
-                            // TERRITÓRIO DA PROVÍNCIA: Totalmente visível, nítido e colorido
-                            finalCol = new Color(terrainCol.r, terrainCol.g, terrainCol.b, 1.0f);
+                            // ÁGUA / OCEANO ABERTO: Azul cartográfico com batimetria e profundidade
+                            float depthNorm = Mathf.Clamp01((seaLvl + 0.02f - h) / 0.05f);
+                            Color shallowOcean = new Color(0.12f, 0.38f, 0.62f);
+                            Color deepOcean = new Color(0.04f, 0.15f, 0.30f);
+                            outsideColor = Color.Lerp(shallowOcean, deepOcean, depthNorm) * Mathf.Clamp(hillshade, 0.75f, 1.25f);
                         }
                         else
                         {
-                            // FORA DA PROVÍNCIA:
-                            // Azul APENAS onde for água (pid == 0); cinza onde forem outros municípios/províncias (pid > 0)!
-                            ushort pid = pixelRegionIds[y, x];
-                            if (pid == 0)
-                            {
-                                // ÁGUA / OCEANO ABERTO: Azul cartográfico com batimetria e profundidade
-                                float depthNorm = Mathf.Clamp01((seaLvl + 0.02f - h) / 0.05f);
-                                Color shallowOcean = new Color(0.12f, 0.38f, 0.62f);
-                                Color deepOcean = new Color(0.04f, 0.15f, 0.30f);
-                                finalCol = Color.Lerp(shallowOcean, deepOcean, depthNorm) * Mathf.Clamp(hillshade, 0.75f, 1.25f);
-                            }
-                            else
-                            {
-                                // OUTROS MUNICÍPIOS / PROVÍNCIAS: Terreno em tom cinza neutro elegante
-                                // com relevo / hillshading topográfico
-                                float baseGray = 0.35f;
-                                float grayShaded = Mathf.Clamp(baseGray * hillshade, 0.22f, 0.52f);
+                            // OUTROS MUNICÍPIOS / PROVÍNCIAS: cinza neutro com hillshading
+                            float baseGray = 0.35f;
+                            float grayShaded = Mathf.Clamp(baseGray * hillshade, 0.22f, 0.52f);
 
-                                // Se for divisa entre dois municípios/províncias vizinhos distintos, desenha linha divisória sutil
-                                bool isNeighborBorder = false;
-                                if (x < res - 1 && pixelRegionIds[y, x + 1] > 0 && pixelRegionIds[y, x + 1] != pid && !insideMask[y, x + 1])
-                                    isNeighborBorder = true;
-                                else if (y < res - 1 && pixelRegionIds[y + 1, x] > 0 && pixelRegionIds[y + 1, x] != pid && !insideMask[y + 1, x])
-                                    isNeighborBorder = true;
+                            // Divisa entre dois vizinhos distintos: linha divisória sutil
+                            bool isNeighborBorder = false;
+                            if (x < res - 1 && pixelRegionIds[y, x + 1] > 0 && pixelRegionIds[y, x + 1] != pid && coverage[y, x + 1] < 0.5f)
+                                isNeighborBorder = true;
+                            else if (y < res - 1 && pixelRegionIds[y + 1, x] > 0 && pixelRegionIds[y + 1, x] != pid && coverage[y + 1, x] < 0.5f)
+                                isNeighborBorder = true;
 
-                                if (isNeighborBorder)
-                                {
-                                    finalCol = new Color(0.18f, 0.18f, 0.20f, 1.0f);
-                                }
-                                else
-                                {
-                                    finalCol = new Color(grayShaded, grayShaded, grayShaded, 1.0f);
-                                }
-                            }
+                            outsideColor = isNeighborBorder
+                                ? new Color(0.18f, 0.18f, 0.20f)
+                                : new Color(grayShaded, grayShaded, grayShaded);
                         }
+
+                        // Transição anti-aliased dentro↔fora: a borda do preenchimento acompanha
+                        // a isolinha curva de 0,5 em vez de um degrau de 1 pixel.
+                        float insideA = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((cov - 0.38f) / 0.24f));
+                        Color baseCol = Color.Lerp(outsideColor, insideColor, insideA);
+
+                        // Linha de Fronteira Tática (ciano): intensidade cai com a distância à
+                        // isolinha de 0,5 do campo de cobertura suavizado → curva contínua, sem
+                        // cantos quadrados, com halo suave para fora.
+                        float dEdge = Mathf.Abs(cov - 0.5f);
+                        float borderAlpha = Mathf.Clamp01(1f - dEdge / 0.28f);
+                        borderAlpha *= borderAlpha; // núcleo mais nítido, decaimento suave (glow)
+                        Color borderCol = new Color(0.15f, 0.95f, 1.0f);
+
+                        finalCol = Color.Lerp(baseCol, borderCol, borderAlpha * 0.92f);
+                        finalCol.a = 1.0f;
                     }
                     else
                     {
@@ -598,6 +612,22 @@ namespace ProjectTerra.Sandbox
                 DrawMapMarker(rsm.starterVehicle.transform.position, worldW, worldL, mapImageRect, "Veículo", new Color(1f, 0.65f, 0.25f));
             }
 
+            // 8.5. Estruturas Comerciais e de Serviços Regionais
+            var structures = RegionalStructuresManager.ActiveStructures;
+            if (structures != null)
+            {
+                for (int sIdx = 0; sIdx < structures.Count; sIdx++)
+                {
+                    var s = structures[sIdx];
+                    if (s == null) continue;
+                    var def = s.Definition;
+                    Color markerCol = def != null ? def.themeColor : new Color(0.3f, 0.8f, 1f);
+                    string label = def != null ? def.shortName : s.customName;
+                    Vector3 sPos = s.interactionPoint != null ? s.interactionPoint.position : s.transform.position;
+                    DrawMapMarker(sPos, worldW, worldL, mapImageRect, label, markerCol);
+                }
+            }
+
             // 9. Jogador com Radar Pulsante e Seta de Rotação 360°
             if (player != null)
             {
@@ -715,24 +745,49 @@ namespace ProjectTerra.Sandbox
             float panelH = 198f;
             Rect panelRect = new Rect(14f, 58f, panelW, panelH);
 
-            GUI.color = new Color(0.04f, 0.08f, 0.14f, 0.92f);
-            GUI.DrawTexture(panelRect, whiteTex);
-            GUI.color = new Color(0.2f, 0.6f, 0.9f, 0.7f);
-            GUI.DrawTexture(new Rect(panelRect.x, panelRect.y, panelRect.width, 1), whiteTex);
-            GUI.color = Color.white;
+            // Fundo escuro com cantos arredondados e borda neon
+            UIThemeHelper.DrawRoundedBox(panelRect, new Color(0.04f, 0.08f, 0.14f, 0.92f), new Color(0.2f, 0.6f, 0.9f, 0.7f), 8f, 1.2f);
 
             GUILayout.BeginArea(panelRect);
             GUILayout.Space(6);
             GUILayout.Label("CAMADAS GIS", titleStyle);
             GUILayout.Space(4);
 
-            showRoadsLayer = GUILayout.Toggle(showRoadsLayer, " ️ Rodovias / Trilhos");
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.HeavyTruck, 14f, new Color(0.75f, 0.8f, 0.9f));
+            GUILayout.Space(3);
+            showRoadsLayer = GUILayout.Toggle(showRoadsLayer, "Rodovias / Trilhos");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.WaterDrop, 14f, new Color(0.35f, 0.75f, 1f));
+            GUILayout.Space(3);
             showRiversLayer = GUILayout.Toggle(showRiversLayer, "Hidrografia / Rios");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Metropolis, 14f, new Color(0.9f, 0.85f, 0.4f));
+            GUILayout.Space(3);
             showCitiesLayer = GUILayout.Toggle(showCitiesLayer, "Cidades & Sedes");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Flag, 14f, new Color(0.9f, 0.5f, 0.9f));
+            GUILayout.Space(3);
             showDivisasLayer = GUILayout.Toggle(showDivisasLayer, "Divisas / Vizinhos");
-            showContoursLayer = GUILayout.Toggle(showContoursLayer, " ️ Curvas de Nível");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.TrendingUp, 14f, new Color(0.6f, 0.8f, 0.6f));
+            GUILayout.Space(3);
+            showContoursLayer = GUILayout.Toggle(showContoursLayer, "Curvas de Nível");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Compass, 14f, new Color(0.5f, 0.75f, 0.95f));
+            GUILayout.Space(3);
             showGridLayer = GUILayout.Toggle(showGridLayer, "Grade Tática");
-            showLandmarksLayer = GUILayout.Toggle(showLandmarksLayer, " ▲ Marcos e Serras");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Mountain, 14f, new Color(0.85f, 0.7f, 0.45f));
+            GUILayout.Space(3);
+            showLandmarksLayer = GUILayout.Toggle(showLandmarksLayer, "Marcos e Serras");
+            GUILayout.EndHorizontal();
 
             GUILayout.EndArea();
         }
@@ -743,17 +798,14 @@ namespace ProjectTerra.Sandbox
             float navH = 250f;
             Rect navRect = new Rect(Screen.width - navW - 14f, 58f, navW, navH);
 
-            GUI.color = new Color(0.04f, 0.08f, 0.14f, 0.92f);
-            GUI.DrawTexture(navRect, whiteTex);
-            GUI.color = new Color(0.2f, 0.6f, 0.9f, 0.7f);
-            GUI.DrawTexture(new Rect(navRect.x, navRect.y, navRect.width, 1), whiteTex);
-            GUI.color = Color.white;
+            // Painel de navegação com cantos arredondados e borda neon
+            UIThemeHelper.DrawRoundedBox(navRect, new Color(0.04f, 0.08f, 0.14f, 0.92f), new Color(0.2f, 0.6f, 0.9f, 0.7f), 8f, 1.2f);
 
             GUILayout.BeginArea(navRect);
             GUILayout.Space(6);
 
             // Zoom In [+]
-            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button("+", menuButtonStyle, GUILayout.Height(32)))
             {
                 ZoomAt(mapZoom * 1.3f, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
             }
@@ -766,7 +818,7 @@ namespace ProjectTerra.Sandbox
             GUILayout.Space(2);
 
             // Zoom Out [-]
-            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button("−", menuButtonStyle, GUILayout.Height(32)))
             {
                 ZoomAt(mapZoom * 0.77f, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f));
             }
@@ -774,13 +826,13 @@ namespace ProjectTerra.Sandbox
             GUILayout.Space(8);
 
             // Centralizar no Jogador []
-            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
+            if (HudIconButton(TerraIcon.LocationPin, menuButtonStyle, 18f, GUILayout.Height(32)))
             {
                 CenterOnPlayer(worldW, worldL, baseW, baseH);
             }
 
             // Centralizar na Capital []
-            if (GUILayout.Button("", menuButtonStyle, GUILayout.Height(32)))
+            if (HudIconButton(TerraIcon.Historic, menuButtonStyle, 18f, GUILayout.Height(32)))
             {
                 CenterOnCapital(worldW, worldL, baseW, baseH);
             }
@@ -1272,15 +1324,8 @@ namespace ProjectTerra.Sandbox
                 float badgeH = string.IsNullOrEmpty(lbl.subtitle) ? 24f : 36f;
                 Rect badgeRect = new Rect(sx - badgeW * 0.5f, sy - badgeH * 0.5f, badgeW, badgeH);
 
-                // Fundo do badge tático cinza-ardósia escuro com borda metálica
-                GUI.color = new Color(0.08f, 0.10f, 0.14f, 0.88f);
-                GUI.DrawTexture(badgeRect, whiteTex);
-
-                GUI.color = new Color(0.48f, 0.54f, 0.62f, 0.85f);
-                GUI.DrawTexture(new Rect(badgeRect.x, badgeRect.y, badgeRect.width, 1), whiteTex);
-                GUI.DrawTexture(new Rect(badgeRect.x, badgeRect.y + badgeRect.height - 1, badgeRect.width, 1), whiteTex);
-                GUI.DrawTexture(new Rect(badgeRect.x, badgeRect.y, 1, badgeRect.height), whiteTex);
-                GUI.DrawTexture(new Rect(badgeRect.x + badgeRect.width - 1, badgeRect.y, 1, badgeRect.height), whiteTex);
+                // Fundo do badge tático com cantos arredondados e borda metálica
+                UIThemeHelper.DrawRoundedBox(badgeRect, new Color(0.08f, 0.10f, 0.14f, 0.90f), new Color(0.48f, 0.54f, 0.62f, 0.85f), 6f, 1.2f);
 
                 // Título em cinza claro brilhante / prata
                 GUI.color = Color.white;

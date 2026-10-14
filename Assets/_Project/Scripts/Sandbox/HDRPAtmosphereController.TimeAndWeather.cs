@@ -56,6 +56,23 @@ namespace ProjectTerra.Sandbox
 
         #region Clima e Atmosfera
 
+        public string currentWeatherKey { get; private set; } = "clear";
+        public string currentWeatherDisplayName { get; private set; } = "Ensolarado";
+
+        public float CurrentTemperatureCelsius
+        {
+            get
+            {
+                // Temperatura calculada com base na curva solar (mais quente às 14h, mais frio de madrugada)
+                float t = timeOfDay;
+                float sunInfluence = Mathf.Cos((t - 14f) / 24f * Mathf.PI * 2f);
+                float baseTemp = Mathf.Lerp(17f, 29f, (sunInfluence + 1f) * 0.5f);
+                if (currentWeatherKey == "storm") baseTemp -= 4f;
+                else if (currentWeatherKey == "fog" || currentWeatherKey == "densefog") baseTemp -= 2.5f;
+                return Mathf.Round(baseTemp);
+            }
+        }
+
         public void SetWeather(string weatherType)
         {
             string key = (weatherType ?? "").Trim().ToLower();
@@ -64,28 +81,38 @@ namespace ProjectTerra.Sandbox
                 case "clear":
                 case "limpo":
                 case "ensolarado":
+                    currentWeatherKey = "clear";
+                    currentWeatherDisplayName = "Ensolarado";
                     SetFogDistance(45000f);
                     SandboxHUD.Instance?.ShowToast("Clima alterado para: Céu Limpo", 2.0f);
                     break;
                 case "fog":
                 case "neblina":
                 case "nevoeiro":
+                    currentWeatherKey = "fog";
+                    currentWeatherDisplayName = "Neblina";
                     SetFogDistance(1200f);
                     SandboxHUD.Instance?.ShowToast("Clima alterado para: Neblina Moderada", 2.0f);
                     break;
                 case "densefog":
                 case "denso":
+                    currentWeatherKey = "densefog";
+                    currentWeatherDisplayName = "Neblina Densa";
                     SetFogDistance(450f);
                     SandboxHUD.Instance?.ShowToast("Clima alterado para: Neblina Densa", 2.0f);
                     break;
                 case "overcast":
                 case "nublado":
+                    currentWeatherKey = "overcast";
+                    currentWeatherDisplayName = "Nublado";
                     SetFogDistance(8000f);
                     SandboxHUD.Instance?.ShowToast("Clima alterado para: Nublado", 2.0f);
                     break;
                 case "storm":
                 case "tempestade":
                 case "chuva":
+                    currentWeatherKey = "storm";
+                    currentWeatherDisplayName = "Chuva";
                     SetFogDistance(900f);
                     SandboxHUD.Instance?.ShowToast("Clima alterado para: Tempestade", 2.0f);
                     break;

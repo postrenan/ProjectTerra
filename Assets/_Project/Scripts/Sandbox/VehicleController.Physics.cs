@@ -113,21 +113,21 @@ namespace ProjectTerra.Sandbox
                     float targetMax = Mathf.Max(5f, maxSpeedKmh);
                     float speedRatio = Mathf.Clamp01(forwardSpeedKmh / targetMax);
 
-                    // Curva de torque: força máxima em baixa velocidade, atenuando conforme atinge a velocidade máxima
-                    float torqueCurve = Mathf.Clamp01(1.0f - Mathf.Pow(speedRatio, 1.4f));
+                    // Curva de torque: torque sustentado em rotações intermediárias e atenuação suave ao atingir a máxima
+                    float torqueCurve = Mathf.Clamp01(1.0f - Mathf.Pow(speedRatio, 2.0f));
 
                     // Assistência de torque em subidas íngremes para tratores e caminhões pesados
                     float slopeAssist = 0f;
                     if (category == VehicleCategory.Tractor || category == VehicleCategory.Truck)
                     {
                         float slope = -transform.forward.y;
-                        if (slope > 0.04f && speedRatio < 0.65f)
+                        if (slope > 0.02f)
                         {
-                            slopeAssist = slope * 3.2f * (1.0f - speedRatio);
+                            slopeAssist = slope * 5.5f * (1.0f - speedRatio * 0.5f);
                         }
                     }
 
-                    float netAccel = (accelerationRate * torqueCurve + slopeAssist) * Mathf.Max(0.05f, smoothedThrottle);
+                    float netAccel = (accelerationRate * torqueCurve + slopeAssist) * Mathf.Max(0.05f, smoothedThrottle) * ConditionPowerFactor;
 
                     if (forwardSpeedKmh < maxSpeedKmh)
                     {
@@ -158,7 +158,7 @@ namespace ProjectTerra.Sandbox
                     float revRatio = Mathf.Clamp01(revSpeedKmh / targetRevMax);
                     float revTorqueCurve = Mathf.Clamp01(1.0f - (revRatio * revRatio));
 
-                    float revAccel = (accelerationRate * 0.55f * revTorqueCurve) * Mathf.Abs(smoothedThrottle);
+                    float revAccel = (accelerationRate * 0.65f * revTorqueCurve) * Mathf.Abs(smoothedThrottle);
 
                     if (revSpeedKmh < targetRevMax)
                     {
@@ -271,36 +271,36 @@ namespace ProjectTerra.Sandbox
             float forwardSpeed = Vector3.Dot(rb.linearVelocity, transform.forward);
             float forwardSpeedKmh = forwardSpeed * 3.6f;
             float totalSpeed = rb.linearVelocity.magnitude;
-            float vTakeoff = Mathf.Max(5f, takeOffSpeedKmh / 3.6f); // ~18.0 m/s (65 km/h)
+            float vTakeoff = Mathf.Max(5f, takeOffSpeedKmh / 3.6f); // ~14.4 m/s (52 km/h)
 
             float airSpeedRatio = Mathf.Clamp01(forwardSpeedKmh / Mathf.Max(20f, maxSpeedKmh));
-            float thrustFalloff = Mathf.Clamp01(1.0f - Mathf.Pow(airSpeedRatio, 1.5f));
+            float thrustFalloff = Mathf.Clamp01(1.0f - Mathf.Pow(airSpeedRatio, 1.8f));
 
-            // Aceleração máxima realista do empuxo da hélice (~2.6 m/s² na rolagem de pista)
-            float effectiveThrustAccel = accelerationRate * smoothedThrottle * Mathf.Max(0.12f, thrustFalloff);
+            // Aceleração do empuxo da hélice (potência abundante para corrida curta na pista)
+            float effectiveThrustAccel = accelerationRate * smoothedThrottle * Mathf.Max(0.18f, thrustFalloff);
             Vector3 thrust = transform.forward * (effectiveThrustAccel * rb.mass);
             rb.AddForce(thrust, ForceMode.Force);
 
-            // Freio de rodas no solo durante táxi/rolamento (se throttle estiver zerado)
+            // Freio de rodas no solo durante táxi/rolamento (apenas se comando de freio ativo e throttle baixo)
             if (currentAltitudeMeters < 1.0f && smoothedThrottle < 0.05f && forwardSpeed > 0.4f)
             {
-                bool brakePressed = TerraInput.GetKey(Key.LeftCtrl) || TerraInput.GetKey(Key.S) || TerraInput.GetKey(Key.C);
-                float brakeStrength = brakePressed ? brakeDeceleration : 0.6f;
+                bool brakePressed = TerraInput.GetKey(Key.LeftCtrl) || TerraInput.GetKey(Key.C);
+                float brakeStrength = brakePressed ? brakeDeceleration : 0.4f;
                 rb.AddForce(-transform.forward * (brakeStrength * rb.mass), ForceMode.Force);
             }
 
             // Sustentação Aerodinâmica (Lift):
-            // Na velocidade de decolagem (vTakeoff), o perfil alar gera sustentação positiva (~1.05x peso)
-            // permitindo que o avião decole naturalmente e suba suavemente
+            // Na velocidade de decolagem (vTakeoff), a asa gera sustentação que equilibra e supera o peso,
+            // permitindo que o avião decole naturalmente e suba com comando de cabrar/Espaço
             if (forwardSpeed > 2.0f)
             {
                 float speedRatio = forwardSpeed / vTakeoff;
                 float baseWeight = rb.mass * Physics.gravity.magnitude;
-                float liftMagnitude = baseWeight * Mathf.Min(3.2f, speedRatio * speedRatio * 1.05f);
 
-                // Efeito do ângulo de ataque (cabrar/empinar o nariz aumenta a sustentação alar)
-                float pitchBonus = 1.0f + Mathf.Clamp(transform.forward.y, -0.3f, 0.85f) * 1.4f;
-                liftMagnitude *= pitchBonus;
+                // Fator de ângulo de ataque (cabrar/empinar o nariz ou segurar Espaço aumenta a sustentação alar)
+                float aoaFactor = 1.0f + Mathf.Clamp(transform.forward.y, -0.3f, 0.85f) * 1.8f;
+                float dynamicLift = Mathf.Clamp(speedRatio * speedRatio, 0f, 1.4f) * Mathf.Clamp(aoaFactor, 0.1f, 2.5f);
+                float liftMagnitude = baseWeight * dynamicLift;
 
                 Vector3 lift = transform.up * liftMagnitude;
                 rb.AddForce(lift, ForceMode.Force);
@@ -316,13 +316,19 @@ namespace ProjectTerra.Sandbox
 
             if (!inputBlocked && isPlayerDriven)
             {
-                float controlAuth = Mathf.Clamp01(forwardSpeed / (vTakeoff * 0.45f));
+                float controlAuth = Mathf.Clamp01(forwardSpeed / (vTakeoff * 0.40f));
                 float vertInput = TerraInput.GetAxis("Vertical"); // W=+1 (picar/descer), S=-1 (cabrar/subir)
                 bool spaceClimb = TerraInput.GetKey(Key.Space); // Barra de Espaço também sobe / decola
 
                 if (spaceClimb && vertInput >= -0.1f)
                 {
                     vertInput = -1.0f; // Cabrar / subir
+                }
+
+                // No solo (< 1.5m de altitude), impedir que comando 'W' crave o nariz no asfalto:
+                if (currentAltitudeMeters < 1.5f && vertInput > 0f)
+                {
+                    vertInput = 0f;
                 }
 
                 float horizInput = TerraInput.GetAxis("Horizontal"); // D=+1, A=-1
@@ -332,8 +338,6 @@ namespace ProjectTerra.Sandbox
                 // +Z (frente) até -Y. Logo o sinal tem de ser:
                 // W (+1) -> torque positivo -> nariz para baixo (picar)
                 // S/Espaço (-1) -> torque negativo -> nariz para cima (cabrar)
-                // Com o sinal anterior (-vertInput) era o contrário: W subia e o
-                // Espaço ("sobe/decola") mergulhava o nariz.
                 pitch = vertInput * pitchRate * controlAuth;
 
                 // A ou Seta Esq (-1): Rolar para a esquerda -> torque positivo

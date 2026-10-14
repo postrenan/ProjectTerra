@@ -33,11 +33,11 @@ namespace ProjectTerra.Sandbox
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Tractor;
             vehicle.vehicleName = "Trator Agrícola TerraMaster 110";
-            vehicle.maxSpeedKmh = 32f;
-            vehicle.maxReverseSpeedKmh = 10f;
-            vehicle.accelerationRate = 1.6f;
-            vehicle.brakeDeceleration = 6.0f;
-            vehicle.throttleResponseRate = 1.4f;
+            vehicle.maxSpeedKmh = 42f;
+            vehicle.maxReverseSpeedKmh = 16f;
+            vehicle.accelerationRate = 4.2f;
+            vehicle.brakeDeceleration = 8.0f;
+            vehicle.throttleResponseRate = 2.5f;
             vehicle.enginePower = 3400f;
             vehicle.maxCargoCapacityKg = 2000f;
             vehicle.steerAngleMax = 32f;
@@ -116,11 +116,11 @@ namespace ProjectTerra.Sandbox
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Truck;
             vehicle.vehicleName = "Caminhão de Carga Atlas Hauler";
-            vehicle.maxSpeedKmh = 80f;
-            vehicle.maxReverseSpeedKmh = 12f;
-            vehicle.accelerationRate = 1.8f;
-            vehicle.brakeDeceleration = 6.5f;
-            vehicle.throttleResponseRate = 1.2f;
+            vehicle.maxSpeedKmh = 85f;
+            vehicle.maxReverseSpeedKmh = 15f;
+            vehicle.accelerationRate = 3.6f;
+            vehicle.brakeDeceleration = 7.5f;
+            vehicle.throttleResponseRate = 2.0f;
             vehicle.enginePower = 4800f;
             vehicle.maxCargoCapacityKg = 6000f;
             vehicle.steerAngleMax = 28f;
@@ -192,11 +192,11 @@ namespace ProjectTerra.Sandbox
             var vehicle = root.AddComponent<VehicleController>();
             vehicle.category = VehicleCategory.Plane;
             vehicle.vehicleName = "Aeronave Utilitária Skylark 180";
-            vehicle.maxSpeedKmh = 175f;
-            vehicle.takeOffSpeedKmh = 65f;
-            vehicle.accelerationRate = 2.6f;
-            vehicle.brakeDeceleration = 4.0f;
-            vehicle.throttleResponseRate = 1.5f;
+            vehicle.maxSpeedKmh = 180f;
+            vehicle.takeOffSpeedKmh = 52f;
+            vehicle.accelerationRate = 7.0f;
+            vehicle.brakeDeceleration = 5.0f;
+            vehicle.throttleResponseRate = 2.4f;
             vehicle.enginePower = 5400f;
             vehicle.maxCargoCapacityKg = 650f;
 
@@ -585,8 +585,8 @@ namespace ProjectTerra.Sandbox
                 "Trator Realista PBR", VehicleCategory.Tractor,
                 visualScale: 1.0f,
                 colliderSize: new Vector3(2.2f, 2.4f, 4.0f), colliderCenter: new Vector3(0f, 1.2f, 0f),
-                maxSpeedKmh: 32f, enginePower: 3400f, cargoKg: 2000f, visualOffset: Vector3.zero,
-                maxReverseSpeedKmh: 10f, accelerationRate: 1.6f, brakeDeceleration: 6.0f, throttleResponseRate: 1.4f);
+                maxSpeedKmh: 42f, enginePower: 3400f, cargoKg: 2000f, visualOffset: Vector3.zero,
+                maxReverseSpeedKmh: 16f, accelerationRate: 4.2f, brakeDeceleration: 8.0f, throttleResponseRate: 2.5f);
         }
 
         public static VehicleController CreateScania(Vector3 position)
@@ -597,7 +597,7 @@ namespace ProjectTerra.Sandbox
                 visualScale: 1.0f,
                 colliderSize: new Vector3(2.6f, 3.4f, 9.0f), colliderCenter: new Vector3(0f, 1.8f, 0f),
                 maxSpeedKmh: 85f, enginePower: 6000f, cargoKg: 12000f, visualOffset: Vector3.zero,
-                maxReverseSpeedKmh: 12f, accelerationRate: 1.8f, brakeDeceleration: 6.5f, throttleResponseRate: 1.2f);
+                maxReverseSpeedKmh: 15f, accelerationRate: 3.6f, brakeDeceleration: 7.5f, throttleResponseRate: 2.0f);
         }
 
         public static VehicleController CreateRealisticCarPack(Vector3 position)

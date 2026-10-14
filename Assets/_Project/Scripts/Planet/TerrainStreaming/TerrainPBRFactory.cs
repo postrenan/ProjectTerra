@@ -16,7 +16,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
 
         private enum TextureMapType { Albedo, Normal, MaskMap }
 
-        public const int LayerCount = 16;
+        public const int LayerCount = 34;
         public const int LayerGrass = 0; // Grama Lush (Pradaria Verde)
         public const int LayerJungle = 1; // Selva / Floresta Tropical
         public const int LayerSavanna = 2; // Savana / Pasto Seco
@@ -25,15 +25,38 @@ namespace ProjectTerra.Planet.TerrainStreaming
         public const int LayerGravel = 5; // Cascalho de Rio / Britas
         public const int LayerRock = 6; // Rocha de Encosta / Penhasco
         public const int LayerSnow = 7; // Neve Alpina / Tundra
-        // Camadas adicionais de pintura e engenharia civil:
+        // Camadas de infraestrutura e engenharia civil base:
         public const int LayerDirtSimple = 8; // Terra Simples / Chão Batido
         public const int LayerConcrete = 9; // Concreto Urbano / Cimento
         public const int LayerAsphalt = 10; // Asfalto Pavimentado
         public const int LayerCobblestone = 11; // Paralelepípedo / Calçada de Pedra
-        public const int LayerWhiteGravel = 12; // Pedrisco / Brita Fina
+        public const int LayerWhiteGravel = 12; // Pedrisco / Brita Branca Fina
         public const int LayerMud = 13; // Lama Úmida / Barro
         public const int LayerRedClay = 14; // Argila Vermelha / Terra Roxa
         public const int LayerDeadGrass = 15; // Grama Queimada / Feno Seco
+        // Sementes & Agricultura:
+        public const int LayerSeeds = 16; // Solo Semeado / Grãos em Sulcos
+        public const int LayerSeedbed = 17; // Canteiro Germinado / Brotos e Sementes
+        public const int LayerGrainSpelt = 18; // Grãos e Sementes Colhidos (Silo/Cereais)
+        // Solos Especializados:
+        public const int LayerFertileSoil = 19; // Terra Preta Fértil / Húmus Rico
+        public const int LayerDryCracked = 20; // Solo Seco Rachado / Barro Fendido
+        // Gramas Especiais:
+        public const int LayerMeadowGrass = 21; // Grama de Prado com Trevos e Flores
+        public const int LayerWildGrass = 22; // Grama Silvestre Alta e Espessa
+        public const int LayerLawnGrass = 23; // Grama de Jardim Aparada
+        // Vegetação & Floresta:
+        public const int LayerForestFloor = 24; // Chão de Floresta / Serapilheira
+        public const int LayerMossyGround = 25; // Solo de Musgo Verde Aveludado
+        public const int LayerDenseShrub = 26; // Vegetação Rasteira Densa / Moitas
+        public const int LayerCropSprouts = 27; // Lavouras Jovens com Linhas de Brotos
+        // Concretos & Pavimentos Avançados:
+        public const int LayerConcreteRough = 28; // Concreto Áspero / Calçada Britada
+        public const int LayerConcreteCracked = 29; // Concreto Rachado / Pavimento Envelhecido
+        public const int LayerConcretePavers = 30; // Blocos de Concreto Intertravados (Pavers)
+        public const int LayerConcretePolished = 31; // Concreto Industrial Polido Espelhado
+        public const int LayerAsphaltWorn = 32; // Asfalto Desgastado com Brita Aparente
+        public const int LayerCobblestoneRustic = 33; // Calçamento de Pedras Rústicas Irregulares
 
         public static TerrainLayer[] CreateTerrainLayers()
         {
@@ -64,7 +87,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
             layers[LayerSnow] = CreateLayer("Neve_Alpina", "Ground/Snow", new Vector2(16f, 16f), new Color(0.9f, 0.92f, 0.96f), smoothness: 0.15f);
 
             // 8: Terra Simples / Chão Batido (Solo compactado não-cultivado)
-            layers[LayerDirtSimple] = CreateLayer("Terra_Simples", "Ground/Soil", new Vector2(8f, 8f), new Color(0.48f, 0.35f, 0.22f), smoothness: 0.05f);
+            layers[LayerDirtSimple] = CreateLayer("Terra_Simples", "Ground/DirtSimple", new Vector2(8f, 8f), new Color(0.48f, 0.35f, 0.22f), smoothness: 0.08f);
 
             // 9: Concreto Urbano / Cimento Armado (Piso pavimentado moderno)
             layers[LayerConcrete] = CreateLayer("Concreto_Urbano", "Infrastructure/Concrete", new Vector2(6f, 6f), new Color(0.72f, 0.72f, 0.74f), smoothness: 0.28f);
@@ -76,7 +99,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
             layers[LayerCobblestone] = CreateLayer("Paralelepipedo_Pedra", "Infrastructure/Cobblestone", new Vector2(5f, 5f), new Color(0.52f, 0.51f, 0.49f), smoothness: 0.18f);
 
             // 12: Pedrisco Fino / Brita Branca de Paisagismo
-            layers[LayerWhiteGravel] = CreateLayer("Pedrisco_Fino", "Ground/Gravel", new Vector2(5f, 5f), new Color(0.72f, 0.71f, 0.69f), smoothness: 0.12f);
+            layers[LayerWhiteGravel] = CreateLayer("Pedrisco_Fino", "Infrastructure/WhiteGravel", new Vector2(5f, 5f), new Color(0.78f, 0.77f, 0.75f), smoothness: 0.16f);
 
             // 13: Lama Úmida / Barro Encharcado
             layers[LayerMud] = CreateLayer("Lama_Umida", "Ground/Mud", new Vector2(7f, 7f), new Color(0.25f, 0.18f, 0.11f), smoothness: 0.42f);
@@ -85,7 +108,61 @@ namespace ProjectTerra.Planet.TerrainStreaming
             layers[LayerRedClay] = CreateLayer("Argila_Vermelha", "Ground/RedClay", new Vector2(8f, 8f), new Color(0.62f, 0.27f, 0.15f), smoothness: 0.06f);
 
             // 15: Grama Queimada / Feno Seco
-            layers[LayerDeadGrass] = CreateLayer("Grama_Seca_Palha", "Ground/DryGrass", new Vector2(12f, 12f), new Color(0.68f, 0.58f, 0.28f), smoothness: 0.05f);
+            layers[LayerDeadGrass] = CreateLayer("Grama_Seca_Palha", "Ground/DeadGrass", new Vector2(12f, 12f), new Color(0.68f, 0.58f, 0.28f), smoothness: 0.05f);
+
+            // 16: Solo Semeado / Grãos em Sulcos
+            layers[LayerSeeds] = CreateLayer("Solo_Semeado", "Ground/Seeds", new Vector2(8f, 8f), new Color(0.35f, 0.26f, 0.15f), smoothness: 0.15f);
+
+            // 17: Canteiro Germinado / Brotos e Sementes
+            layers[LayerSeedbed] = CreateLayer("Canteiro_Brotos", "Ground/Seedbed", new Vector2(8f, 8f), new Color(0.25f, 0.35f, 0.15f), smoothness: 0.18f);
+
+            // 18: Grãos e Sementes Colhidos (Silo/Cereais)
+            layers[LayerGrainSpelt] = CreateLayer("Graos_Cereais", "Ground/GrainSpelt", new Vector2(6f, 6f), new Color(0.78f, 0.62f, 0.28f), smoothness: 0.30f);
+
+            // 19: Terra Preta Fértil / Húmus Rico
+            layers[LayerFertileSoil] = CreateLayer("Terra_Preta_Humus", "Ground/FertileSoil", new Vector2(10f, 10f), new Color(0.18f, 0.14f, 0.10f), smoothness: 0.06f);
+
+            // 20: Solo Seco Rachado / Barro Fendido
+            layers[LayerDryCracked] = CreateLayer("Solo_Seco_Rachado", "Ground/DryCracked", new Vector2(12f, 12f), new Color(0.62f, 0.52f, 0.38f), smoothness: 0.05f);
+
+            // 21: Grama de Prado com Trevos e Flores
+            layers[LayerMeadowGrass] = CreateLayer("Grama_Prado_Flores", "Ground/MeadowGrass", new Vector2(12f, 12f), new Color(0.26f, 0.52f, 0.20f), smoothness: 0.12f);
+
+            // 22: Grama Silvestre Alta e Espessa
+            layers[LayerWildGrass] = CreateLayer("Grama_Silvestre_Alta", "Ground/WildGrass", new Vector2(14f, 14f), new Color(0.22f, 0.42f, 0.18f), smoothness: 0.08f);
+
+            // 23: Grama de Jardim Aparada
+            layers[LayerLawnGrass] = CreateLayer("Grama_Jardim_Aparada", "Ground/LawnGrass", new Vector2(10f, 10f), new Color(0.26f, 0.54f, 0.18f), smoothness: 0.12f);
+
+            // 24: Chão de Floresta / Serapilheira
+            layers[LayerForestFloor] = CreateLayer("Chao_Floresta_Folhas", "Vegetation/ForestFloor", new Vector2(12f, 12f), new Color(0.35f, 0.26f, 0.16f), smoothness: 0.08f);
+
+            // 25: Solo de Musgo Verde Aveludado
+            layers[LayerMossyGround] = CreateLayer("Solo_Musgo_Verde", "Vegetation/MossyGround", new Vector2(10f, 10f), new Color(0.22f, 0.48f, 0.18f), smoothness: 0.05f);
+
+            // 26: Vegetação Rasteira Densa / Moitas
+            layers[LayerDenseShrub] = CreateLayer("Vegetacao_Rasteira", "Vegetation/DenseShrub", new Vector2(12f, 12f), new Color(0.18f, 0.42f, 0.16f), smoothness: 0.10f);
+
+            // 27: Lavouras Jovens com Linhas de Brotos
+            layers[LayerCropSprouts] = CreateLayer("Lavouras_Brotos", "Vegetation/CropSprouts", new Vector2(12f, 12f), new Color(0.25f, 0.38f, 0.18f), smoothness: 0.14f);
+
+            // 28: Concreto Áspero / Calçada Britada
+            layers[LayerConcreteRough] = CreateLayer("Concreto_Aspero", "Infrastructure/ConcreteRough", new Vector2(6f, 6f), new Color(0.68f, 0.68f, 0.70f), smoothness: 0.20f);
+
+            // 29: Concreto Rachado / Pavimento Envelhecido
+            layers[LayerConcreteCracked] = CreateLayer("Concreto_Rachado", "Infrastructure/ConcreteCracked", new Vector2(8f, 8f), new Color(0.64f, 0.64f, 0.65f), smoothness: 0.22f);
+
+            // 30: Blocos de Concreto Intertravados (Pavers)
+            layers[LayerConcretePavers] = CreateLayer("Blocos_Pavers_Concreto", "Infrastructure/ConcretePavers", new Vector2(5f, 5f), new Color(0.66f, 0.64f, 0.62f), smoothness: 0.24f);
+
+            // 31: Concreto Industrial Polido Espelhado
+            layers[LayerConcretePolished] = CreateLayer("Concreto_Polido", "Infrastructure/ConcretePolished", new Vector2(8f, 8f), new Color(0.74f, 0.74f, 0.76f), smoothness: 0.65f);
+
+            // 32: Asfalto Desgastado com Brita Aparente
+            layers[LayerAsphaltWorn] = CreateLayer("Asfalto_Desgastado", "Infrastructure/AsphaltWorn", new Vector2(6f, 6f), new Color(0.30f, 0.30f, 0.31f), smoothness: 0.18f);
+
+            // 33: Calçamento de Pedras Rústicas Irregulares
+            layers[LayerCobblestoneRustic] = CreateLayer("Calcada_Pedra_Rustica", "Infrastructure/CobblestoneRustic", new Vector2(6f, 6f), new Color(0.55f, 0.53f, 0.50f), smoothness: 0.16f);
 
             return layers;
         }
@@ -118,13 +195,30 @@ namespace ProjectTerra.Planet.TerrainStreaming
             bool usedFallback = (layer.diffuseTexture != null && layer.diffuseTexture.width == 16 && layer.diffuseTexture.height == 16);
             Debug.Log($"[TerrainPBRFactory] Layer '{name}' ({subPath}): diffuse={(layer.diffuseTexture != null ? $"{layer.diffuseTexture.width}x{layer.diffuseTexture.height}" : "NULL")} {(usedFallback ? "[FALLBACK COLORIDO]" : "[TEXTURA REAL]")}");
 
+            // Garantir filtragem trilinear e filtragem anisotrópica 16x para eliminar cintilação/shimmering ao caminhar/correr
+            ConfigureTextureFiltering(layer.diffuseTexture);
+            ConfigureTextureFiltering(layer.normalMapTexture);
+            ConfigureTextureFiltering(layer.maskMapTexture);
+
             return layer;
+        }
+
+        private static void ConfigureTextureFiltering(Texture2D tex)
+        {
+            if (tex == null) return;
+            tex.wrapMode = TextureWrapMode.Repeat;
+            tex.filterMode = FilterMode.Trilinear;
+            tex.anisoLevel = 16;
         }
 
         private static Texture2D LoadPBRTexture(string baseDir, string subPath, string fileName, TextureMapType mapType, Color fallbackColor)
         {
             string cacheKey = $"{subPath}_{fileName}";
-            if (textureCache.TryGetValue(cacheKey, out var cached) && cached != null) return cached;
+            if (textureCache.TryGetValue(cacheKey, out var cached) && cached != null)
+            {
+                ConfigureTextureFiltering(cached);
+                return cached;
+            }
 
 #if UNITY_EDITOR
             string assetPath = $"Assets/_Project/Textures/PBR/{subPath}/{fileName}.png";
@@ -136,6 +230,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
             }
             if (editorTex != null)
             {
+                ConfigureTextureFiltering(editorTex);
                 textureCache[cacheKey] = editorTex;
                 return editorTex;
             }
@@ -151,8 +246,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
                     var tex = new Texture2D(2, 2, TextureFormat.RGBA32, true);
                     if (tex.LoadImage(data))
                     {
-                        tex.wrapMode = TextureWrapMode.Repeat;
-                        tex.filterMode = FilterMode.Trilinear;
+                        ConfigureTextureFiltering(tex);
                         textureCache[cacheKey] = tex;
                         return tex;
                     }
@@ -173,8 +267,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
                     var tgaTex = DecodeTGA(data);
                     if (tgaTex != null)
                     {
-                        tgaTex.wrapMode = TextureWrapMode.Repeat;
-                        tgaTex.filterMode = FilterMode.Trilinear;
+                        ConfigureTextureFiltering(tgaTex);
                         textureCache[cacheKey] = tgaTex;
                         return tgaTex;
                     }
@@ -186,6 +279,7 @@ namespace ProjectTerra.Planet.TerrainStreaming
             }
 
             var fallbackTex = GenerateFallbackTexture(mapType, fallbackColor);
+            ConfigureTextureFiltering(fallbackTex);
             textureCache[cacheKey] = fallbackTex;
             return fallbackTex;
         }

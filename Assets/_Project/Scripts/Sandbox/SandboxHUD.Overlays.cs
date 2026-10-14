@@ -1,58 +1,72 @@
 using UnityEngine;
 using ProjectTerra.Gameplay;
+using ProjectTerra.UI;
 
 namespace ProjectTerra.Sandbox
 {
     public partial class SandboxHUD
     {
-        #region Componente 1: Status Pill (Topo Esquerdo Redesenhado)
+        private static readonly Color HudBoxBg = new Color(0.05f, 0.14f, 0.28f, 0.20f);
+        private static readonly Color HudBoxBorder = new Color(0.35f, 0.65f, 0.95f, 0.35f);
 
-        private void DrawTopLeftStatusPill()
+        #region 1. Topo Esquerdo: Ajuda de Botões (Print 1 & Print 2)
+
+        private void DrawTopLeftButtonHelp()
         {
-            if (activeSave == null && SaveManager.Instance != null)
-            {
-                activeSave = SaveManager.Instance.ActiveSave;
-            }
+            var player = PlayerCharacterController.Instance;
+            bool inVehicle = player != null && player.isDriving && player.currentVehicle != null;
 
-            float w = 310f;
-            float h = 50f;
+            float w = inVehicle ? 430f : 410f;
+            float h = 48f;
             Rect rect = new Rect(20f, 15f, w, h);
 
-            // Fundo escuro aerodinâmico com linha ciano sutil
-            GUI.color = new Color(0.04f, 0.08f, 0.14f, 0.90f);
-            GUI.DrawTexture(rect, whiteTex);
-            GUI.color = new Color(0.2f, 0.7f, 1f, 0.85f);
-            GUI.DrawTexture(new Rect(rect.x, rect.y, w, 2), whiteTex);
-            GUI.color = Color.white;
+            UIThemeHelper.DrawRoundedBox(rect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.5f);
 
-            GUILayout.BeginArea(new Rect(rect.x + 10f, rect.y + 5f, w - 20f, h - 8f));
+            GUILayout.BeginArea(new Rect(rect.x + 10f, rect.y + 4f, w - 20f, h - 8f));
 
-            // Linha 1: Região, País e Horário Solar
-            string regName = activeSave != null ? activeSave.regionName : "Região";
-            string country = activeSave != null ? activeSave.countryName : "Mundo";
-            string timeStr = FormattedInGameTimeString;
-
+            // Cabeçalho da Caixa
             GUILayout.BeginHorizontal();
-            GUILayout.Label($" {regName}, {country}", titleStyle);
-            GUILayout.FlexibleSpace();
-            GUILayout.Label($" {timeStr}", subtitleStyle);
+            HudLayoutIcon(TerraIcon.Tools, 13f, new Color(0.45f, 0.85f, 1f));
+            GUILayout.Space(4);
+            GUILayout.Label("AJUDA DE BOTÕES", hudBoxTitleStyle);
             GUILayout.EndHorizontal();
 
-            // Linha 2: Saldo + Time Warp compacto
+            // Atalhos Contextuais
             GUILayout.BeginHorizontal();
-            string money = activeSave != null ? activeSave.GetFormattedMoney() : "$500,000";
-            GUILayout.Label(money, moneyStyle);
-            GUILayout.FlexibleSpace();
-
-            int curMultiplier = timeWarpPresets[currentTimeWarpIdx];
-            if (GUILayout.Button("◀", GUILayout.Width(20), GUILayout.Height(18)))
+            if (IsConstructionBarOpen)
             {
-                SetTimeWarp(currentTimeWarpIdx - 1);
+                GUILayout.Label("[Esc / X] Voltar ao Celular  [Clique] Selecionar/Construir  [Scroll / ◀ ▶] Navegar", hudBoxSubStyle);
             }
-            GUILayout.Label($" {curMultiplier}x", timeWarpStyle, GUILayout.Width(45));
-            if (GUILayout.Button("", GUILayout.Width(20), GUILayout.Height(18)))
+            else if (inVehicle)
             {
-                SetTimeWarp(currentTimeWarpIdx + 1);
+                var v = player.currentVehicle;
+                if (v.category == VehicleCategory.Plane)
+                {
+                    GUILayout.Label("[W / Shift] Acelerar  [Espaço / S] Decolar/Subir  [A/D] Curva/Rolar  [Ctrl] Freio  [E] Sair", hudBoxSubStyle);
+                }
+                else if (v.category == VehicleCategory.Tractor)
+                {
+                    GUILayout.Label("[WASD] Conduzir  [G] Engatar  [X] Arado  [F] Estrutura  [E] Sair", hudBoxSubStyle);
+                }
+                else if (v.category == VehicleCategory.Boat)
+                {
+                    GUILayout.Label("[WASD] Navegar  [F] Estrutura/Porto  [C] Câm.  [E] Sair  [M] Mapa", hudBoxSubStyle);
+                }
+                else
+                {
+                    GUILayout.Label("[WASD] Conduzir  [F] Estrutura/Posto  [L] Farol  [E] Sair  [M] Mapa", hudBoxSubStyle);
+                }
+            }
+            else
+            {
+                if (player != null && player.nearbyVehicle != null)
+                {
+                    GUILayout.Label("[E] Entrar Veículo  [F] Estrutura  [WASD] Andar  [Shift] Correr  [M] Mapa", hudBoxSubStyle);
+                }
+                else
+                {
+                    GUILayout.Label("[WASD] Andar  [Shift] Correr  [Espaço] Pular  [F] Estrutura  [M] Mapa", hudBoxSubStyle);
+                }
             }
             GUILayout.EndHorizontal();
 
@@ -61,42 +75,53 @@ namespace ProjectTerra.Sandbox
 
         #endregion
 
-        #region Componente 2: Bússola 360° no Topo Central (Compass Ribbon)
+        #region 2. Topo Centro: Bússola (Print 1 & Print 2)
 
-        private void DrawTopCompassTape()
+        private void DrawTopCenterCompass()
         {
             Camera cam = Camera.main;
             if (cam == null) return;
 
             float heading = cam.transform.eulerAngles.y;
             float w = 340f;
-            float h = 32f;
+            float h = 48f;
             float x = (Screen.width - w) * 0.5f;
             float y = 15f;
             Rect rect = new Rect(x, y, w, h);
 
-            // Fundo da fita com borda superior
-            GUI.color = new Color(0.04f, 0.07f, 0.12f, 0.85f);
-            GUI.DrawTexture(rect, whiteTex);
-            GUI.color = new Color(0.3f, 0.75f, 1f, 0.6f);
-            GUI.DrawTexture(new Rect(x, y + h - 1, w, 1), whiteTex);
-            // Marcador central (Triângulo/Linha do Norte)
+            UIThemeHelper.DrawRoundedBox(rect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.5f);
+
+            // Título sutil no topo da caixa da bússola
+            Rect titleRect = new Rect(x + 10f, y + 2f, w - 20f, 14f);
+            GUI.Label(titleRect, $"BÚSSOLA • {heading:F0}° {GetCompassCardinal(heading)}", hudBoxTitleStyle);
+
+            // Área de rolagem da fita navegacional
+            Rect tapeRect = new Rect(x + 8f, y + 18f, w - 16f, 24f);
+
+            // Fundo escuro interno da fita
+            GUI.color = new Color(0.02f, 0.05f, 0.09f, 0.4f);
+            GUI.DrawTexture(tapeRect, whiteTex);
+            GUI.color = Color.white;
+
+            // Marcador central fixo (Indicador dourado do rumo)
             GUI.color = new Color(1f, 0.85f, 0.25f, 0.95f);
-            GUI.DrawTexture(new Rect(x + w * 0.5f - 1, y, 2, h), whiteTex);
+            GUI.DrawTexture(new Rect(tapeRect.x + tapeRect.width * 0.5f - 1f, tapeRect.y, 2f, tapeRect.height), whiteTex);
             GUI.color = Color.white;
 
             // Marcadores de Pontos Cardeais na fita
             string[] cardinals = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
             float[] angles = { 0f, 45f, 90f, 135f, 180f, 225f, 270f, 315f };
 
-            GUI.BeginGroup(rect);
+            GUI.BeginGroup(tapeRect);
             for (int i = 0; i < angles.Length; i++)
             {
                 float diff = Mathf.DeltaAngle(heading, angles[i]);
                 if (Mathf.Abs(diff) <= 60f)
                 {
-                    float posX = (w * 0.5f) + (diff / 60f) * (w * 0.48f);
-                    GUI.Label(new Rect(posX - 15f, 4f, 30f, 24f), cardinals[i], compassLabelStyle);
+                    float posX = (tapeRect.width * 0.5f) + (diff / 60f) * (tapeRect.width * 0.48f);
+                    bool isNorth = i == 0;
+                    compassLabelStyle.normal.textColor = isNorth ? new Color(1f, 0.35f, 0.35f) : new Color(0.8f, 0.95f, 1f);
+                    GUI.Label(new Rect(posX - 15f, 2f, 30f, 20f), cardinals[i], compassLabelStyle);
                 }
             }
 
@@ -109,10 +134,8 @@ namespace ProjectTerra.Sandbox
                 float diff = Mathf.DeltaAngle(heading, targetAngle);
                 if (Mathf.Abs(diff) <= 60f)
                 {
-                    float posX = (w * 0.5f) + (diff / 60f) * (w * 0.48f);
-                    GUI.color = new Color(1f, 0.85f, 0.2f);
-                    GUI.Label(new Rect(posX - 12f, 12f, 24f, 18f), "", compassLabelStyle);
-                    GUI.color = Color.white;
+                    float posX = (tapeRect.width * 0.5f) + (diff / 60f) * (tapeRect.width * 0.48f);
+                    HudIconRect(new Rect(posX - 7f, 4f, 14f, 14f), TerraIcon.Flag, new Color(1f, 0.85f, 0.2f));
                 }
             }
 
@@ -125,19 +148,136 @@ namespace ProjectTerra.Sandbox
                 float diff = Mathf.DeltaAngle(heading, wpAngle);
                 if (Mathf.Abs(diff) <= 60f)
                 {
-                    float posX = (w * 0.5f) + (diff / 60f) * (w * 0.48f);
-                    GUI.color = new Color(0.9f, 0.3f, 1f);
-                    GUI.Label(new Rect(posX - 12f, 12f, 24f, 18f), "", compassLabelStyle);
-                    GUI.color = Color.white;
+                    float posX = (tapeRect.width * 0.5f) + (diff / 60f) * (tapeRect.width * 0.48f);
+                    HudIconRect(new Rect(posX - 7f, 4f, 14f, 14f), TerraIcon.LocationPin, new Color(0.9f, 0.3f, 1f));
                 }
             }
 
             GUI.EndGroup();
         }
 
+        private string GetCompassCardinal(float degrees)
+        {
+            degrees = Mathf.Repeat(degrees, 360f);
+            if (degrees >= 337.5f || degrees < 22.5f) return "N";
+            if (degrees < 67.5f) return "NE";
+            if (degrees < 112.5f) return "E";
+            if (degrees < 157.5f) return "SE";
+            if (degrees < 202.5f) return "S";
+            if (degrees < 247.5f) return "SW";
+            if (degrees < 292.5f) return "W";
+            return "NW";
+        }
+
         #endregion
 
-        #region Componente 3: Rastreador de Missão no Topo Direito (Card Discreto)
+        #region 3. Topo Direito: Data + Finança + Hora + Clima(ícone) (Print 1 & Print 2)
+
+        private void DrawTopRightStatusBox()
+        {
+            if (activeSave == null && SaveManager.Instance != null)
+            {
+                activeSave = SaveManager.Instance.ActiveSave;
+            }
+
+            float w = 380f;
+            float h = 48f;
+            float x = Screen.width - w - 20f;
+            float y = 15f;
+            Rect rect = new Rect(x, y, w, h);
+
+            UIThemeHelper.DrawRoundedBox(rect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.5f);
+
+            GUILayout.BeginArea(new Rect(rect.x + 10f, rect.y + 12f, w - 20f, h - 16f));
+            GUILayout.BeginHorizontal();
+
+            // 1. Data (Dia do Save)
+            long day = activeSave != null ? activeSave.gameDay : 1;
+            HudLayoutIcon(TerraIcon.Calendar, 15f, new Color(0.45f, 0.85f, 1f));
+            GUILayout.Space(2);
+            GUILayout.Label($"Dia {day}", subtitleStyle);
+
+            GUILayout.Space(8);
+            DrawVerticalDivider();
+            GUILayout.Space(8);
+
+            // 2. Finança (Saldo com cor verde destacada)
+            string money = activeSave != null ? activeSave.GetFormattedMoney() : "$500,000";
+            HudLayoutIcon(TerraIcon.Wallet, 15f, new Color(0.35f, 0.95f, 0.5f));
+            GUILayout.Space(2);
+            GUILayout.Label(money, moneyStyle);
+
+            GUILayout.Space(8);
+            DrawVerticalDivider();
+            GUILayout.Space(8);
+
+            // 3. Hora (Horário solar formatado HH:mm)
+            string timeStr = FormattedInGameTimeString;
+            HudLayoutIcon(TerraIcon.Clock, 14f, new Color(0.95f, 0.85f, 0.35f));
+            GUILayout.Space(2);
+            GUILayout.Label(timeStr, subtitleStyle);
+
+            GUILayout.Space(8);
+            DrawVerticalDivider();
+            GUILayout.Space(8);
+
+            // 4. Clima (Ícone + Temperatura estimada)
+            DrawWeatherIndicator();
+
+            GUILayout.EndHorizontal();
+            GUILayout.EndArea();
+        }
+
+        private void DrawWeatherIndicator()
+        {
+            var atmos = HDRPAtmosphereController.Instance;
+            string weatherKey = atmos != null ? atmos.currentWeatherKey : "clear";
+            float temp = atmos != null ? atmos.CurrentTemperatureCelsius : 24f;
+
+            TerraIcon icon = TerraIcon.Info;
+            Color iconColor = new Color(1f, 0.85f, 0.25f);
+
+            if (weatherKey == "storm")
+            {
+                icon = TerraIcon.WaterDrop;
+                iconColor = new Color(0.35f, 0.75f, 1f);
+            }
+            else if (weatherKey == "fog" || weatherKey == "densefog")
+            {
+                icon = TerraIcon.Satellite;
+                iconColor = new Color(0.75f, 0.85f, 0.95f);
+            }
+            else if (weatherKey == "overcast")
+            {
+                icon = TerraIcon.Park;
+                iconColor = new Color(0.8f, 0.85f, 0.9f);
+            }
+            else
+            {
+                // Ensolarado / Céu Limpo
+                icon = TerraIcon.ReputationStar;
+                iconColor = new Color(1f, 0.85f, 0.25f);
+            }
+
+            HudLayoutIcon(icon, 15f, iconColor);
+            GUILayout.Space(3);
+            GUILayout.Label($"{temp:F0}°C", subtitleStyle);
+        }
+
+        private void DrawVerticalDivider()
+        {
+            Rect r = GUILayoutUtility.GetRect(1f, 18f, GUILayout.Width(1f), GUILayout.Height(18f));
+            if (Event.current.type == EventType.Repaint)
+            {
+                GUI.color = new Color(0.3f, 0.5f, 0.75f, 0.35f);
+                GUI.DrawTexture(r, whiteTex);
+                GUI.color = Color.white;
+            }
+        }
+
+        #endregion
+
+        #region 4. Rastreador de Missão (Discreto abaixo do status no topo direito)
 
         private void DrawTopRightMissionCard()
         {
@@ -147,235 +287,337 @@ namespace ProjectTerra.Sandbox
             var contract = MissionManager.Instance.currentContract;
             if (contract.isCompleted) return;
 
-            float w = 310f;
-            float h = 76f;
-            Rect rect = new Rect(Screen.width - w - 20f, 15f, w, h);
+            bool hasDeadline = contract.deadlineGameHours > 0f;
 
-            GUI.color = new Color(0.05f, 0.08f, 0.14f, 0.90f);
-            GUI.DrawTexture(rect, whiteTex);
-            GUI.color = new Color(1f, 0.82f, 0.25f, 0.85f);
-            GUI.DrawTexture(new Rect(rect.x, rect.y, w, 2), whiteTex);
-            GUI.color = Color.white;
+            float w = 380f;
+            float h = hasDeadline ? 82f : 68f;
+            float x = Screen.width - w - 20f;
+            float y = 70f; // Posicionado exatamente abaixo da caixa de status
+            Rect rect = new Rect(x, y, w, h);
+
+            UIThemeHelper.DrawRoundedBox(rect, HudBoxBg, new Color(1f, 0.82f, 0.25f, 0.75f), radius: 8f, borderThickness: 1.5f);
 
             GUILayout.BeginArea(new Rect(rect.x + 12f, rect.y + 6f, w - 24f, h - 10f));
 
             GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Contract, 15f, new Color(1f, 0.82f, 0.25f));
+            GUILayout.Space(3);
             GUILayout.Label(contract.title, missionTitleStyle);
             GUILayout.FlexibleSpace();
+            HudLayoutIcon(TerraIcon.Wallet, 13f, new Color(0.35f, 0.95f, 0.5f));
+            GUILayout.Space(2);
             GUILayout.Label($"+${contract.rewardMoney:N0}", moneyStyle);
             GUILayout.EndHorizontal();
 
             float dist = MissionManager.Instance.GetDistanceToDestination();
             string distText = dist > 1000f ? $"{(dist / 1000f):F1} km" : $"{dist:F0} m";
 
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.LocationPin, 13f, new Color(0.45f, 0.85f, 1f));
+            GUILayout.Space(3);
             GUILayout.Label($" {contract.destinationName} ({distText}) • {contract.cargoType}", subtitleStyle);
-            GUILayout.Label(contract.description, missionDescStyle);
+            GUILayout.EndHorizontal();
+
+            if (hasDeadline)
+            {
+                float hrs = MissionManager.Instance.GetHoursRemaining();
+                string tl = hrs <= 0f ? "ATRASADO" : (hrs < 1f ? $"{hrs * 60f:F0} min" : $"{hrs:F1} h");
+                string urg = contract.urgent ? "[URGENTE] " : "";
+                string frag = contract.fragile ? $" • Carga {contract.cargoIntegrity:F0}%" : "";
+                GUI.color = hrs <= 0f ? new Color(1f, 0.4f, 0.4f) : (contract.urgent ? new Color(1f, 0.6f, 0.3f) : Color.white);
+                GUILayout.Label($"{urg}Prazo: {tl}{frag}", subtitleStyle);
+                GUI.color = Color.white;
+            }
 
             GUILayout.EndArea();
         }
 
         #endregion
 
-        #region Componente 4: Telemetria de Veículo Redesenhada (Canto Inferior Direito)
+        #region 5. HUD A Pé (Print 2): Canto Inferior Direito -> Estamina + Fome + Sono (Barras Verticais)
 
-        private void DrawVehicleTelemetry()
+        private void DrawOnFootHUDCluster(PlayerCharacterController player)
         {
-            var player = PlayerCharacterController.Instance;
-            if (player == null || !player.isDriving || player.currentVehicle == null) return;
-
-            var vehicle = player.currentVehicle;
-
-            float w = 260f;
-            float h = vehicle.category == VehicleCategory.Plane || vehicle.category == VehicleCategory.Tractor ? 122f : 105f;
-            Rect rect = new Rect(Screen.width - w - 20f, Screen.height - h - 20f, w, h);
-
-            GUI.color = new Color(0.04f, 0.07f, 0.12f, 0.92f);
-            GUI.DrawTexture(rect, whiteTex);
-            GUI.color = new Color(0.2f, 0.7f, 1f, 0.85f);
-            GUI.DrawTexture(new Rect(rect.x, rect.y, w, 2), whiteTex);
-            GUI.color = Color.white;
-
-            GUILayout.BeginArea(new Rect(rect.x + 12f, rect.y + 8f, w - 24f, h - 14f));
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(vehicle.vehicleName, subtitleStyle);
-            GUILayout.FlexibleSpace();
-            string unit = vehicle.category == VehicleCategory.Boat ? "NÓS" : "KM/H";
-            float speedDisplay = vehicle.category == VehicleCategory.Boat ? vehicle.currentSpeedKmh * 0.54f : vehicle.currentSpeedKmh;
-            GUILayout.Label($"{speedDisplay:F0}", speedValueStyle, GUILayout.Width(60));
-            GUILayout.Label(unit, speedUnitStyle, GUILayout.Height(24));
-            GUILayout.EndHorizontal();
-
-            // Telemetria especializada de Aeronave
-            if (vehicle.category == VehicleCategory.Plane)
-            {
-                GUILayout.BeginHorizontal();
-                GUILayout.Label($"Alt: {vehicle.currentAltitudeMeters:F0}m", subtitleStyle);
-                GUILayout.FlexibleSpace();
-                GUILayout.Label($"Potência: {(vehicle.aircraftThrottle * 100f):F0}%", subtitleStyle);
-                GUILayout.EndHorizontal();
-            }
-            // Telemetria especializada de Trator com Arado
-            else if (vehicle.category == VehicleCategory.Tractor)
-            {
-                var plow = PlowImplement.GetHitchedPlow(vehicle);
-                if (plow != null)
-                {
-                    string plowStatus = plow.isLowered ? "[ATIVO] ARANDO" : "[STANDBY] TRANSPORTE";
-                    GUILayout.Label($"Arado: {plowStatus} ({plow.totalAreaPlowedM2:F0} m²)", subtitleStyle);
-                }
-            }
-
-            // Barra de Combustível com cor dinâmica
-            Color fuelCol = vehicle.fuelPercent > 45f ? new Color(0.3f, 0.85f, 0.4f) :
-                           (vehicle.fuelPercent > 20f ? new Color(1f, 0.8f, 0.2f) : new Color(1f, 0.3f, 0.3f));
-            DrawMiniBar("Tanque:", vehicle.fuelPercent, 100f, fuelCol);
-
-            // Barra de Carga (se não for avião com altitude)
-            if (vehicle.category != VehicleCategory.Plane)
-            {
-                DrawMiniBar($"Carga:", vehicle.cargoFillPercent, 100f, new Color(0.3f, 0.7f, 1.0f));
-            }
-
-            GUILayout.EndArea();
-        }
-
-        private void DrawMiniBar(string label, float current, float max, Color barColor)
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(label, subtitleStyle, GUILayout.Width(80));
-            GUILayout.FlexibleSpace();
-            GUILayout.Label($"{current:F0}%", subtitleStyle);
-            GUILayout.EndHorizontal();
-
-            Rect barBg = GUILayoutUtility.GetRect(160, 4);
-            GUI.color = new Color(0.18f, 0.22f, 0.28f, 0.9f);
-            GUI.DrawTexture(barBg, whiteTex);
-
-            float fillWidth = Mathf.Clamp01(current / max) * barBg.width;
-            GUI.color = barColor;
-            GUI.DrawTexture(new Rect(barBg.x, barBg.y, fillWidth, barBg.height), whiteTex);
-            GUI.color = Color.white;
-            GUILayout.Space(2);
-        }
-
-        #endregion
-
-        #region Componente 5: Dicas Contextuais & Teclas de Atalho
-
-        private void DrawContextualHints()
-        {
-            var player = PlayerCharacterController.Instance;
             if (player == null) return;
 
-            string hintText = "";
-            Color borderColor = new Color(0.2f, 0.7f, 1f, 0.8f);
-            float customWidth = 550f;
+            float w = 142f;
+            float h = 170f;
+            float x = Screen.width - w - 20f;
+            float y = Screen.height - h - 20f;
+            Rect rect = new Rect(x, y, w, h);
 
-            if (player.isDriving)
+            // Caixa vertical com fundo azul suave e quase transparente
+            UIThemeHelper.DrawRoundedBox(rect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
+
+            // 3 Colunas verticais lado a lado
+            float padX = 8f;
+            float padY = 8f;
+            float colGap = 4f;
+            float totalColsW = w - (padX * 2f);
+            float colW = (totalColsW - (colGap * 2f)) / 3f;
+            float contentH = h - (padY * 2f);
+
+            float col1X = rect.x + padX;
+            float col2X = col1X + colW + colGap;
+            float col3X = col2X + colW + colGap;
+            float colY = rect.y + padY;
+
+            // 1. Estamina
+            DrawVerticalNeedColumn(new Rect(col1X, colY, colW, contentH), "ESTAMINA", player.stamina, player.maxStamina, new Color(0.1f, 0.9f, 0.75f), TerraIcon.TrendingUp);
+
+            // 2. Fome
+            DrawVerticalNeedColumn(new Rect(col2X, colY, colW, contentH), "FOME", player.hunger, player.maxHunger, new Color(1f, 0.65f, 0.2f), TerraIcon.Crops);
+
+            // 3. Sono
+            DrawVerticalNeedColumn(new Rect(col3X, colY, colW, contentH), "SONO", player.sleep, player.maxSleep, new Color(0.55f, 0.65f, 1f), TerraIcon.Clock);
+        }
+
+        private void DrawVerticalNeedColumn(Rect colRect, string label, float current, float max, Color barColor, TerraIcon icon)
+        {
+            float valH = 16f;
+            float iconSize = 16f;
+            float labelH = 13f;
+            float spacing = 3f;
+
+            // 1. Porcentagem no topo (ex: "100%")
+            Rect valRect = new Rect(colRect.x, colRect.y + 2f, colRect.width, valH);
+            GUI.Label(valRect, $"{current:F0}%", hudNeedValStyle);
+
+            // 2. Barra Vertical com preenchimento de baixo para cima
+            float barW = 14f;
+            float barX = colRect.x + (colRect.width - barW) * 0.5f;
+            float barY = valRect.y + valH + spacing;
+            float barH = Mathf.Max(25f, colRect.height - (valH + spacing + spacing + iconSize + 2f + labelH + 2f));
+            Rect barRect = new Rect(barX, barY, barW, barH);
+            DrawVerticalProgressBar(barRect, (current / max) * 100f, barColor, new Color(0.06f, 0.14f, 0.24f, 0.40f));
+
+            // 3. Ícone correspondente (colorido com a cor do módulo)
+            float iconX = colRect.x + (colRect.width - iconSize) * 0.5f;
+            float iconY = barY + barH + spacing;
+            Rect iconRect = new Rect(iconX, iconY, iconSize, iconSize);
+            if (Event.current.type == EventType.Repaint)
             {
-                if (player.currentVehicle.category == VehicleCategory.Plane)
-                {
-                    hintText = "[W/S] Picar/Cabrar (Descer/Subir) • [A/D] Rolar • [Shift/Ctrl] Potência • [Q/E] Leme • [C] Câmera • [E] Sair";
-                    borderColor = new Color(0.25f, 0.85f, 1.0f, 0.95f);
-                    customWidth = 690f;
-                }
-                else if (player.currentVehicle.category == VehicleCategory.Tractor)
-                {
-                    var hitchedPlow = PlowImplement.GetHitchedPlow(player.currentVehicle);
-                    if (hitchedPlow != null)
-                    {
-                        string modeStr = hitchedPlow.isLowered ? "ARANDO: ATIVO" : "TRANSPORTE";
-                        hintText = $"[G] Desengatar Arado • [X] Baixar/Levantar ({modeStr}) • [WASD] Conduzir • [C] Câmera • [E] Sair";
-                        borderColor = hitchedPlow.isLowered ? new Color(0.3f, 1f, 0.4f, 0.95f) : new Color(1f, 0.8f, 0.2f, 0.95f);
-                        customWidth = 670f;
-                    }
-                    else
-                    {
-                        var nearPlow = PlowImplement.FindNearestPlow(player.currentVehicle.transform.position, 4.5f);
-                        if (nearPlow != null && !nearPlow.isHitched)
-                        {
-                            hintText = "[G] Engatar Arado Agrícola • [WASD] Conduzir • [C] Câmera • [E] Sair";
-                            borderColor = new Color(1f, 0.85f, 0.2f, 0.95f);
-                            customWidth = 580f;
-                        }
-                        else
-                        {
-                            hintText = "[WASD] Conduzir • [C] Câmera • [L] Faróis • [Tab] Trocar Veículo • [E] Desembarcar";
-                            borderColor = new Color(0.2f, 0.7f, 1f, 0.8f);
-                        }
-                    }
-                }
-                else if (MissionManager.Instance != null && MissionManager.Instance.GetDistanceToDestination() <= MissionManager.Instance.deliveryRadius)
-                {
-                    hintText = "[OK] [F/ENTER] Descarregar Entrega • [C] Câmera • [L] Faróis • [Tab] Trocar • [E] Sair";
-                    borderColor = new Color(0.3f, 1f, 0.4f);
-                }
-                else
-                {
-                    hintText = "[WASD] Conduzir • [C] Câmera • [L] Faróis • [Tab] Trocar Veículo • [E] Desembarcar";
-                    borderColor = new Color(0.2f, 0.7f, 1f, 0.8f);
-                }
-            }
-            else if (player.nearbyVehicle != null)
-            {
-                if (player.nearbyVehicle.category == VehicleCategory.Plane)
-                {
-                    hintText = "[E] Embarcar e Pilotar Aeronave Skylark 180 • [Tab] Alternar";
-                    borderColor = new Color(0.3f, 0.85f, 1f, 0.95f);
-                    customWidth = 560f;
-                }
-                else
-                {
-                    hintText = $"[E] Embarcar no {player.nearbyVehicle.vehicleName} • [L] Lanterna • [Tab] Alternar";
-                    borderColor = new Color(1f, 0.85f, 0.2f);
-                }
-            }
-            else
-            {
-                var nearPlow = PlowImplement.FindNearestPlow(player.transform.position, 3.8f);
-                if (nearPlow != null && !nearPlow.isHitched)
-                {
-                    var nearTractor = PlowImplement.FindNearbyTractor(nearPlow.transform.position, 4.5f);
-                    if (nearTractor != null)
-                    {
-                        hintText = "[G] Engatar Arado ao Trator Próximo";
-                        borderColor = new Color(1f, 0.85f, 0.2f, 0.95f);
-                    }
-                    else
-                    {
-                        hintText = "Arado Agrícola • Aproxime o Trator de marcha à ré e pressione [G] para engatar";
-                        borderColor = new Color(0.75f, 0.8f, 0.9f, 0.85f);
-                        customWidth = 610f;
-                    }
-                }
+                TerraIcons.Draw(iconRect, icon, barColor);
             }
 
-            if (!string.IsNullOrEmpty(hintText))
+            // 4. Rótulo inferior (ESTAMINA, FOME, SONO, TANQUE, DANO)
+            float labelY = iconY + iconSize + 2f;
+            Rect labelRect = new Rect(colRect.x, labelY, colRect.width, labelH);
+            GUI.Label(labelRect, label, hudNeedColLabelStyle);
+        }
+
+        #endregion
+
+        #region 6. HUD Dentro do Veículo (Print 1): Canto Inferior Direito
+
+        private void DrawVehicleHUDCluster(VehicleController vehicle)
+        {
+            if (vehicle == null) return;
+
+            var player = PlayerCharacterController.Instance;
+
+            float hGroup = 170f;
+            float yGroup = Screen.height - hGroup - 20f;
+
+            // 1. Caixa Vertical da Extrema Direita: Tanque + Dano + Estamina + Sono (4 Colunas Verticais)
+            float wVert = 175f;
+            float xVert = Screen.width - wVert - 20f;
+            Rect vertRect = new Rect(xVert, yGroup, wVert, hGroup);
+            UIThemeHelper.DrawRoundedBox(vertRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
+
+            float padX = 8f;
+            float padY = 8f;
+            float colGap = 4f;
+            float totalColsW = wVert - (padX * 2f);
+            float colW = (totalColsW - (colGap * 3f)) / 4f;
+            float contentH = hGroup - (padY * 2f);
+
+            float col1X = vertRect.x + padX;
+            float col2X = col1X + colW + colGap;
+            float col3X = col2X + colW + colGap;
+            float col4X = col3X + colW + colGap;
+            float colY = vertRect.y + padY;
+
+            // 1. Combustível do Veículo
+            Color fuelColor = vehicle.fuelPercent > 45f ? new Color(0.2f, 0.85f, 0.4f) :
+                             (vehicle.fuelPercent > 20f ? new Color(1f, 0.8f, 0.2f) : new Color(1f, 0.3f, 0.3f));
+            DrawVerticalNeedColumn(new Rect(col1X, colY, colW, contentH), "TANQUE", vehicle.fuelPercent, 100f, fuelColor, TerraIcon.Fuel);
+
+            // 2. Dano / Integridade do Veículo
+            Color condColor = vehicle.conditionPercent > 60f ? new Color(0.2f, 0.85f, 0.4f) :
+                             (vehicle.conditionPercent > 30f ? new Color(1f, 0.8f, 0.2f) : new Color(1f, 0.3f, 0.3f));
+            DrawVerticalNeedColumn(new Rect(col2X, colY, colW, contentH), "DANO", vehicle.conditionPercent, 100f, condColor, TerraIcon.Wrench);
+
+            // 3. Estamina do Jogador (recuperação durante a condução)
+            float stamVal = player != null ? player.stamina : 100f;
+            float maxStam = player != null ? player.maxStamina : 100f;
+            DrawVerticalNeedColumn(new Rect(col3X, colY, colW, contentH), "ESTAMINA", stamVal, maxStam, new Color(0.1f, 0.9f, 0.75f), TerraIcon.TrendingUp);
+
+            // 4. Sono do Motorista
+            float sleepVal = player != null ? player.sleep : 100f;
+            DrawVerticalNeedColumn(new Rect(col4X, colY, colW, contentH), "SONO", sleepVal, 100f, new Color(0.55f, 0.65f, 1f), TerraIcon.Clock);
+
+            // 2. Caixa Central: Velocímetro + Marcha + Aceleração Vertical
+            float wSpeed = 150f;
+            float xSpeed = xVert - wSpeed - 10f;
+            Rect speedRect = new Rect(xSpeed, yGroup, wSpeed, hGroup);
+            UIThemeHelper.DrawRoundedBox(speedRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
+
+            float mainSpeedW = wSpeed - 30f;
+            GUILayout.BeginArea(new Rect(speedRect.x + 8f, speedRect.y + 6f, mainSpeedW, hGroup - 12f));
+
+            // Topo do Velocímetro: Categoria / Nome
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(VehicleCategoryIcon(vehicle.category), 14f, new Color(0.45f, 0.85f, 1f));
+            GUILayout.Space(2);
+            GUILayout.Label(vehicle.category.ToString().ToUpper(), hudBoxTitleStyle);
+            GUILayout.EndHorizontal();
+
+            // Velocidade em dígitos grandes
+            float speedVal = vehicle.category == VehicleCategory.Boat ? vehicle.currentSpeedKmh * 0.54f : vehicle.currentSpeedKmh;
+            GUILayout.Label($"{speedVal:F0}", hudSpeedBigStyle, GUILayout.Height(46));
+
+            // Unidade (KM/H ou NÓS)
+            string unit = vehicle.category == VehicleCategory.Boat ? "NÓS" : "KM/H";
+            GUILayout.Label(unit, speedUnitStyle, GUILayout.Height(16));
+
+            GUILayout.Space(4);
+
+            // Marcha em destaque
+            string gear = vehicle.CurrentGearString;
+            string transMode = vehicle.TransmissionModeString;
+
+            Rect gearPill = GUILayoutUtility.GetRect(mainSpeedW, 26f);
+            UIThemeHelper.DrawRoundedBox(gearPill, new Color(0.10f, 0.20f, 0.35f, 0.45f), new Color(0.4f, 0.75f, 1f, 0.50f), radius: 6f, borderThickness: 1f);
+            GUI.Label(gearPill, $"[{gear}] • {transMode}", hudGearTextStyle);
+
+            GUILayout.EndArea();
+
+            // Medidor vertical de aceleração/potência na lateral da caixa do velocímetro
+            float throttleFill = Mathf.Abs(vehicle.currentThrottle) * 100f;
+            float throtW = 10f;
+            float throtH = hGroup - 28f;
+            float throtX = speedRect.x + wSpeed - throtW - 8f;
+            float throtY = speedRect.y + 14f;
+            DrawVerticalProgressBar(new Rect(throtX, throtY, throtW, throtH), throttleFill, new Color(0.35f, 0.9f, 0.45f), new Color(0.06f, 0.14f, 0.24f, 0.40f));
+
+            // 3. Duas Caixas Empilhadas à Esquerda do Velocímetro
+            float wLeft = 160f;
+            float hSub = (hGroup - 10f) * 0.5f; // 80px cada
+            float xLeft = xSpeed - wLeft - 10f;
+
+            // Caixa Superior: % Produto Carregado (com medidor vertical à direita)
+            Rect cargoBoxRect = new Rect(xLeft, yGroup, wLeft, hSub);
+            UIThemeHelper.DrawRoundedBox(cargoBoxRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
+
+            float cargoInfoW = wLeft - 30f;
+            GUILayout.BeginArea(new Rect(cargoBoxRect.x + 8f, cargoBoxRect.y + 6f, cargoInfoW, hSub - 12f));
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.CargoBox, 14f, new Color(0.35f, 0.85f, 1f));
+            GUILayout.Space(2);
+            GUILayout.Label("% CARGA", hudBoxTitleStyle);
+            GUILayout.EndHorizontal();
+
+            string cargoName = string.IsNullOrEmpty(vehicle.cargoItemName) || vehicle.cargoItemName == "Vazio" ? "Vazio" : vehicle.cargoItemName;
+            GUILayout.Label(cargoName, hudBoxSubStyle);
+
+            GUILayout.Label($"Capacidade: {vehicle.cargoFillPercent:F0}%", subtitleStyle);
+            GUILayout.EndArea();
+
+            // Medidor vertical de carga
+            float cargoBarW = 10f;
+            float cargoBarH = hSub - 20f;
+            float cargoBarX = cargoBoxRect.x + wLeft - cargoBarW - 8f;
+            float cargoBarY = cargoBoxRect.y + 10f;
+            DrawVerticalProgressBar(new Rect(cargoBarX, cargoBarY, cargoBarW, cargoBarH), vehicle.cargoFillPercent, new Color(0.25f, 0.8f, 1f), new Color(0.06f, 0.14f, 0.24f, 0.40f));
+
+            // Caixa Inferior: Conexões do Veículo
+            Rect connBoxRect = new Rect(xLeft, yGroup + hSub + 10f, wLeft, hSub);
+            UIThemeHelper.DrawRoundedBox(connBoxRect, HudBoxBg, HudBoxBorder, radius: 8f, borderThickness: 1.2f);
+
+            GUILayout.BeginArea(new Rect(connBoxRect.x + 8f, connBoxRect.y + 6f, wLeft - 16f, hSub - 12f));
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Tools, 14f, new Color(0.95f, 0.85f, 0.35f));
+            GUILayout.Space(2);
+            GUILayout.Label("CONEXÕES DO VEÍCULO", hudBoxTitleStyle);
+            GUILayout.EndHorizontal();
+
+            string connSummary = vehicle.GetConnectionStatusSummary();
+            GUILayout.Label(connSummary, hudBoxSubStyle);
+
+            GUILayout.BeginHorizontal();
+            HudLayoutIcon(TerraIcon.Headlights, 12f, vehicle.headLightsOn ? new Color(1f, 0.9f, 0.4f) : new Color(0.5f, 0.6f, 0.7f));
+            GUILayout.Space(2);
+            GUILayout.Label(vehicle.headLightsOn ? "Faróis: Ligados" : "Faróis: Desligados", subtitleStyle);
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndArea();
+        }
+
+        #endregion
+
+        #region Utilitários de Barra de Progresso e Ícones
+
+        private void DrawProgressBar(Rect rect, float fillPercent, Color fillColor, Color bgColor)
+        {
+            UIThemeHelper.DrawRoundedBox(rect, bgColor, Color.clear, 3f, 0f);
+
+            float fillW = Mathf.Clamp01(fillPercent / 100f) * rect.width;
+            if (fillW > 1f)
             {
-                float w = customWidth;
-                float h = 32f;
-                Rect rect = new Rect((Screen.width - w) * 0.5f, Screen.height - h - 45f, w, h);
-
-                GUI.color = new Color(0.04f, 0.08f, 0.14f, 0.94f);
-                GUI.DrawTexture(rect, whiteTex);
-                GUI.color = borderColor;
-                GUI.DrawTexture(new Rect(rect.x, rect.y, w, 2), whiteTex);
-                GUI.color = Color.white;
-
-                GUI.Label(rect, hintText, hintBoxStyle);
+                UIThemeHelper.DrawRoundedBox(new Rect(rect.x, rect.y, fillW, rect.height), fillColor, Color.clear, 3f, 0f);
             }
         }
 
-        private void DrawSubtleKeyShortcuts()
+        private void DrawVerticalProgressBar(Rect rect, float fillPercent, Color fillColor, Color bgColor)
         {
-            // Barra discreta no rodapé esquerdo com atalhos principais
-            float w = 640f;
-            float h = 20f;
-            Rect rect = new Rect(20f, Screen.height - h - 12f, w, h);
-            GUI.color = new Color(0.6f, 0.75f, 0.9f, 0.85f);
-            GUI.Label(rect, "[M] Mapa • [P] Pintar Chão • [/] Console • [L] Faróis • [Tab] Veículos • [C] Câmera • [Alt] Celular", subtitleStyle);
-            GUI.color = Color.white;
+            UIThemeHelper.DrawRoundedBox(rect, bgColor, Color.clear, 3f, 0f);
+
+            float clamped = Mathf.Clamp01(fillPercent / 100f);
+            float fillH = clamped * rect.height;
+            if (fillH > 1f)
+            {
+                Rect fillRect = new Rect(rect.x, rect.y + rect.height - fillH, rect.width, fillH);
+                UIThemeHelper.DrawRoundedBox(fillRect, fillColor, Color.clear, 3f, 0f);
+            }
+        }
+
+        private void HudLayoutIcon(TerraIcon icon, float size, Color tint)
+        {
+            Rect r = GUILayoutUtility.GetRect(size, size, GUILayout.Width(size), GUILayout.Height(size));
+            if (Event.current.type == EventType.Repaint)
+                ProjectTerra.UI.TerraIcons.Draw(r, icon, tint);
+        }
+
+        private void HudIconRect(Rect r, TerraIcon icon, Color tint)
+        {
+            if (Event.current.type == EventType.Repaint)
+                ProjectTerra.UI.TerraIcons.Draw(r, icon, tint);
+        }
+
+        private bool HudIconButton(TerraIcon icon, GUIStyle style, float iconSize, params GUILayoutOption[] options)
+        {
+            Rect r = GUILayoutUtility.GetRect(iconSize + 14f, iconSize + 14f, style, options);
+            bool clicked = GUI.Button(r, GUIContent.none, style);
+            if (Event.current.type == EventType.Repaint)
+            {
+                float x = r.x + (r.width - iconSize) * 0.5f;
+                float y = r.y + (r.height - iconSize) * 0.5f;
+                ProjectTerra.UI.TerraIcons.Draw(new Rect(x, y, iconSize, iconSize), icon, Color.white);
+            }
+            return clicked;
+        }
+
+        private static TerraIcon VehicleCategoryIcon(VehicleCategory cat)
+        {
+            switch (cat)
+            {
+                case VehicleCategory.Tractor: return TerraIcon.Tractor;
+                case VehicleCategory.Truck: return TerraIcon.HeavyTruck;
+                case VehicleCategory.Plane: return TerraIcon.Airplane;
+                case VehicleCategory.Boat: return TerraIcon.FishingBoat;
+                default: return TerraIcon.Pickup;
+            }
         }
 
         #endregion

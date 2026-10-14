@@ -16,32 +16,62 @@ namespace ProjectTerra.Planet.TerrainStreaming
         public string description;
         public Color swatchColor;
         public bool isPaved; // Se for pavimento (concreto, asfalto, etc.) ou terra batida, suprime a grama alta
+        public string category; // Categoria para agrupamento e filtros da UI
     }
 
     /// <summary>
     /// Gerenciador e executor de pintura dinâmica de texturas no terreno (Splatmap) em tempo real.
-    /// Permite pintar qualquer área com Concreto, Terra Simples, Asfalto, Brita, Grama, Paralelepípedo, etc.
+    /// Permite pintar qualquer área com Sementes, Solos, Gramas, Vegetação, Concreto, Asfalto, etc.
     /// </summary>
     public static class TerrainGroundPainter
     {
         public static readonly GroundTextureInfo[] AvailableTextures = new GroundTextureInfo[]
         {
-            new GroundTextureInfo { layerIndex = 0, displayName = "Grama Lush", technicalName = "Grama_Lush", description = "Pradaria verde viçosa natural", swatchColor = new Color(0.28f, 0.55f, 0.22f), isPaved = false },
-            new GroundTextureInfo { layerIndex = 1, displayName = "Selva / Folhagem", technicalName = "Selva_Foliage", description = "Mata densa tropical úmida", swatchColor = new Color(0.18f, 0.44f, 0.16f), isPaved = false },
-            new GroundTextureInfo { layerIndex = 2, displayName = "Savana Dourada", technicalName = "Savana_Seca", description = "Pasto seco e estepe semiárido", swatchColor = new Color(0.68f, 0.62f, 0.28f), isPaved = false },
-            new GroundTextureInfo { layerIndex = 3, displayName = "Solo Arado", technicalName = "Solo_Arado", description = "Terra fértil preparada para lavoura", swatchColor = new Color(0.38f, 0.27f, 0.18f), isPaved = false },
-            new GroundTextureInfo { layerIndex = 4, displayName = "Areia de Dunas", technicalName = "Areia_Dunas", description = "Areia dourada de praia e deserto", swatchColor = new Color(0.78f, 0.70f, 0.52f), isPaved = false },
-            new GroundTextureInfo { layerIndex = 5, displayName = "Cascalho de Rio", technicalName = "Cascalho_Rio", description = "Seixos e britas arredondadas", swatchColor = new Color(0.48f, 0.47f, 0.45f), isPaved = true },
-            new GroundTextureInfo { layerIndex = 6, displayName = "Rocha de Encosta", technicalName = "Rocha_Penhasco", description = "Pedra maciça de penhasco", swatchColor = new Color(0.50f, 0.48f, 0.46f), isPaved = true },
-            new GroundTextureInfo { layerIndex = 7, displayName = "Neve Alpina", technicalName = "Neve_Alpina", description = "Gelo e neve compacta de altitude", swatchColor = new Color(0.92f, 0.94f, 0.98f), isPaved = false },
-            new GroundTextureInfo { layerIndex = 8, displayName = "Terra Simples / Chão Batido", technicalName = "Terra_Simples", description = "Solo compactado não-cultivado (pátios, estradas vicinais)", swatchColor = new Color(0.50f, 0.36f, 0.22f), isPaved = true },
-            new GroundTextureInfo { layerIndex = 9, displayName = "Concreto Urbano", technicalName = "Concreto_Urbano", description = "Cimento armado e piso industrial liso", swatchColor = new Color(0.72f, 0.73f, 0.75f), isPaved = true },
-            new GroundTextureInfo { layerIndex = 10, displayName = "Asfalto Pavimentado", technicalName = "Asfalto_Pavimento", description = "Massa asfáltica escura de rodovia", swatchColor = new Color(0.24f, 0.24f, 0.26f), isPaved = true },
-            new GroundTextureInfo { layerIndex = 11, displayName = "Paralelepípedo / Calçada", technicalName = "Paralelepipedo_Pedra", description = "Pedra calçada histórica e pavimentação rústica", swatchColor = new Color(0.55f, 0.54f, 0.52f), isPaved = true },
-            new GroundTextureInfo { layerIndex = 12, displayName = "Pedrisco Fino / Brita Branca", technicalName = "Pedrisco_Fino", description = "Brita de paisagismo e cascalho claro", swatchColor = new Color(0.74f, 0.73f, 0.70f), isPaved = true },
-            new GroundTextureInfo { layerIndex = 13, displayName = "Lama Úmida / Barro", technicalName = "Lama_Umida", description = "Solo encharcado, lamaçal e atoleiros", swatchColor = new Color(0.26f, 0.18f, 0.12f), isPaved = false },
-            new GroundTextureInfo { layerIndex = 14, displayName = "Argila Vermelha / Terra Roxa", technicalName = "Argila_Vermelha", description = "Solo argiloso rico brasileiro (terra roxa)", swatchColor = new Color(0.65f, 0.28f, 0.16f), isPaved = false },
-            new GroundTextureInfo { layerIndex = 15, displayName = "Grama Seca / Feno", technicalName = "Grama_Seca_Palha", description = "Palha dourada e vegetação seca", swatchColor = new Color(0.70f, 0.60f, 0.30f), isPaved = false }
+            // Gramas
+            new GroundTextureInfo { layerIndex = 0, displayName = "Grama Lush", technicalName = "Grama_Lush", description = "Pradaria verde viçosa natural", swatchColor = new Color(0.28f, 0.55f, 0.22f), isPaved = false, category = "Gramas" },
+            new GroundTextureInfo { layerIndex = 2, displayName = "Savana Dourada", technicalName = "Savana_Seca", description = "Pasto seco e estepe semiárido", swatchColor = new Color(0.68f, 0.62f, 0.28f), isPaved = false, category = "Gramas" },
+            new GroundTextureInfo { layerIndex = 15, displayName = "Grama Seca / Feno", technicalName = "Grama_Seca_Palha", description = "Palha dourada e vegetação seca de colheita", swatchColor = new Color(0.70f, 0.60f, 0.30f), isPaved = false, category = "Gramas" },
+            new GroundTextureInfo { layerIndex = 21, displayName = "Grama de Prado Florido", technicalName = "Grama_Prado_Flores", description = "Prado com trevos e florezinhas silvestres", swatchColor = new Color(0.26f, 0.52f, 0.20f), isPaved = false, category = "Gramas" },
+            new GroundTextureInfo { layerIndex = 22, displayName = "Grama Silvestre Alta", technicalName = "Grama_Silvestre_Alta", description = "Grama alta e espessa de campo aberto", swatchColor = new Color(0.22f, 0.42f, 0.18f), isPaved = false, category = "Gramas" },
+            new GroundTextureInfo { layerIndex = 23, displayName = "Grama de Jardim", technicalName = "Grama_Jardim_Aparada", description = "Gramado aparado, uniforme e cuidado", swatchColor = new Color(0.26f, 0.54f, 0.18f), isPaved = false, category = "Gramas" },
+
+            // Sementes & Lavouras
+            new GroundTextureInfo { layerIndex = 16, displayName = "Solo Semeado", technicalName = "Solo_Semeado", description = "Terra preta com sementes e grãos em sulcos", swatchColor = new Color(0.42f, 0.32f, 0.18f), isPaved = false, category = "Sementes" },
+            new GroundTextureInfo { layerIndex = 17, displayName = "Canteiro Germinado", technicalName = "Canteiro_Brotos", description = "Leito com brotos verdes jovens e sementes", swatchColor = new Color(0.32f, 0.44f, 0.18f), isPaved = false, category = "Sementes" },
+            new GroundTextureInfo { layerIndex = 18, displayName = "Grãos de Cereais", technicalName = "Graos_Cereais", description = "Monte e silo de grãos e sementes douradas", swatchColor = new Color(0.82f, 0.65f, 0.28f), isPaved = true, category = "Sementes" },
+
+            // Solos & Terra
+            new GroundTextureInfo { layerIndex = 3, displayName = "Solo Arado", technicalName = "Solo_Arado", description = "Terra fértil preparada para plantio", swatchColor = new Color(0.38f, 0.27f, 0.18f), isPaved = false, category = "Solos" },
+            new GroundTextureInfo { layerIndex = 19, displayName = "Terra Preta Fértil", technicalName = "Terra_Preta_Humus", description = "Húmus riquíssimo com micro-matéria orgânica", swatchColor = new Color(0.18f, 0.14f, 0.10f), isPaved = false, category = "Solos" },
+            new GroundTextureInfo { layerIndex = 8, displayName = "Terra Simples / Chão Batido", technicalName = "Terra_Simples", description = "Solo compactado não-cultivado (pátios, estradas vicinais)", swatchColor = new Color(0.50f, 0.36f, 0.22f), isPaved = true, category = "Solos" },
+            new GroundTextureInfo { layerIndex = 20, displayName = "Solo Seco Rachado", technicalName = "Solo_Seco_Rachado", description = "Barro fendido pelo calor do sol com gretas", swatchColor = new Color(0.62f, 0.52f, 0.38f), isPaved = false, category = "Solos" },
+            new GroundTextureInfo { layerIndex = 13, displayName = "Lama Úmida / Barro", technicalName = "Lama_Umida", description = "Solo encharcado, lamaçal e atoleiros com poças", swatchColor = new Color(0.26f, 0.18f, 0.12f), isPaved = false, category = "Solos" },
+            new GroundTextureInfo { layerIndex = 14, displayName = "Argila Vermelha / Terra Roxa", technicalName = "Argila_Vermelha", description = "Solo argiloso rico brasileiro (terra roxa)", swatchColor = new Color(0.65f, 0.28f, 0.16f), isPaved = false, category = "Solos" },
+
+            // Vegetação & Floresta
+            new GroundTextureInfo { layerIndex = 1, displayName = "Selva Tropical", technicalName = "Selva_Foliage", description = "Mata densa tropical úmida e folhas largas", swatchColor = new Color(0.18f, 0.44f, 0.16f), isPaved = false, category = "Vegetação" },
+            new GroundTextureInfo { layerIndex = 24, displayName = "Chão de Floresta", technicalName = "Chao_Floresta_Folhas", description = "Serapilheira com folhas secas caídas e gravetos", swatchColor = new Color(0.38f, 0.28f, 0.18f), isPaved = false, category = "Vegetação" },
+            new GroundTextureInfo { layerIndex = 25, displayName = "Solo de Musgo Verde", technicalName = "Solo_Musgo_Verde", description = "Tapete de musgo verde aveludado e líquens", swatchColor = new Color(0.24f, 0.50f, 0.20f), isPaved = false, category = "Vegetação" },
+            new GroundTextureInfo { layerIndex = 26, displayName = "Vegetação Rasteira", technicalName = "Vegetacao_Rasteira", description = "Moitas baixas e arbustos densos rasteiros", swatchColor = new Color(0.20f, 0.44f, 0.18f), isPaved = false, category = "Vegetação" },
+            new GroundTextureInfo { layerIndex = 27, displayName = "Lavouras em Broto", technicalName = "Lavouras_Brotos", description = "Campos agrícolas com linhas jovens de plantio", swatchColor = new Color(0.28f, 0.48f, 0.20f), isPaved = false, category = "Vegetação" },
+
+            // Concretos
+            new GroundTextureInfo { layerIndex = 9, displayName = "Concreto Urbano", technicalName = "Concreto_Urbano", description = "Cimento armado e piso industrial liso", swatchColor = new Color(0.72f, 0.73f, 0.75f), isPaved = true, category = "Concretos" },
+            new GroundTextureInfo { layerIndex = 28, displayName = "Concreto Áspero", technicalName = "Concreto_Aspero", description = "Concreto com agregado britado e textura antiderrapante", swatchColor = new Color(0.68f, 0.68f, 0.70f), isPaved = true, category = "Concretos" },
+            new GroundTextureInfo { layerIndex = 29, displayName = "Concreto Rachado", technicalName = "Concreto_Rachado", description = "Pavimento antigo de cimento com trincas e fissuras", swatchColor = new Color(0.64f, 0.64f, 0.65f), isPaved = true, category = "Concretos" },
+            new GroundTextureInfo { layerIndex = 30, displayName = "Blocos Pavers de Concreto", technicalName = "Blocos_Pavers_Concreto", description = "Piso intertravado de concreto com juntas regulares", swatchColor = new Color(0.66f, 0.64f, 0.62f), isPaved = true, category = "Concretos" },
+            new GroundTextureInfo { layerIndex = 31, displayName = "Concreto Polido Industrial", technicalName = "Concreto_Polido", description = "Piso espelhado com juntas de dilatação e alto brilho", swatchColor = new Color(0.76f, 0.76f, 0.78f), isPaved = true, category = "Concretos" },
+
+            // Pavimentos & Minerais
+            new GroundTextureInfo { layerIndex = 10, displayName = "Asfalto Pavimentado", technicalName = "Asfalto_Pavimento", description = "Massa asfáltica escura de rodovia", swatchColor = new Color(0.24f, 0.24f, 0.26f), isPaved = true, category = "Pavimentos" },
+            new GroundTextureInfo { layerIndex = 32, displayName = "Asfalto Desgastado", technicalName = "Asfalto_Desgastado", description = "Asfalto com trincas finas e brita aparente", swatchColor = new Color(0.32f, 0.32f, 0.34f), isPaved = true, category = "Pavimentos" },
+            new GroundTextureInfo { layerIndex = 11, displayName = "Paralelepípedo / Calçada", technicalName = "Paralelepipedo_Pedra", description = "Pedra calçada histórica e pavimentação clássica", swatchColor = new Color(0.55f, 0.54f, 0.52f), isPaved = true, category = "Pavimentos" },
+            new GroundTextureInfo { layerIndex = 33, displayName = "Calçada de Pedra Rústica", technicalName = "Calcada_Pedra_Rustica", description = "Pedras rústicas irregulares assentadas", swatchColor = new Color(0.56f, 0.54f, 0.50f), isPaved = true, category = "Pavimentos" },
+            new GroundTextureInfo { layerIndex = 12, displayName = "Pedrisco / Brita Branca", technicalName = "Pedrisco_Fino", description = "Brita clara calcária de paisagismo e garagens", swatchColor = new Color(0.78f, 0.77f, 0.75f), isPaved = true, category = "Pavimentos" },
+            new GroundTextureInfo { layerIndex = 5, displayName = "Cascalho de Rio", technicalName = "Cascalho_Rio", description = "Seixos e pedregulhos arredondados de água", swatchColor = new Color(0.48f, 0.47f, 0.45f), isPaved = true, category = "Pavimentos" },
+            new GroundTextureInfo { layerIndex = 4, displayName = "Areia de Dunas", technicalName = "Areia_Dunas", description = "Areia dourada de praia e deserto", swatchColor = new Color(0.78f, 0.70f, 0.52f), isPaved = false, category = "Pavimentos" },
+            new GroundTextureInfo { layerIndex = 6, displayName = "Rocha de Encosta", technicalName = "Rocha_Penhasco", description = "Pedra maciça de penhasco e montanha", swatchColor = new Color(0.50f, 0.48f, 0.46f), isPaved = true, category = "Pavimentos" },
+            new GroundTextureInfo { layerIndex = 7, displayName = "Neve Alpina", technicalName = "Neve_Alpina", description = "Gelo e neve compacta de altitude", swatchColor = new Color(0.92f, 0.94f, 0.98f), isPaved = false, category = "Pavimentos" }
         };
 
         /// <summary>

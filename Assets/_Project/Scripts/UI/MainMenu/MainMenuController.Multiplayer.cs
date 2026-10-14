@@ -27,16 +27,16 @@ namespace ProjectTerra.UI
         private Vector2 serverScrollPos = Vector2.zero;
 
         // Formulário de Host
-        private string hostServerName = "Servidor Oficial de Território";
-        private string hostRegionName = "São Paulo, Brasil";
+        private string hostServerName = "";
+        private string hostRegionName = "";
         private int hostMaxPlayers = 16;
-        private string hostGameMode = "Co-op Agrícola & Conexões Comerciais";
+        private string hostGameMode = "";
         private string hostPassword = "";
         private int hostPort = 7777;
 
         // Formulário Conexão Direta
-        private string directConnectIP = "127.0.0.1:7777";
-        private string sessionCode = "TERRA-BR84";
+        private string directConnectIP = "";
+        private string sessionCode = "";
 
         // Estado de conexão
         private bool isConnecting = false;
@@ -46,53 +46,6 @@ namespace ProjectTerra.UI
         private void InitMultiplayer()
         {
             serverList.Clear();
-            serverList.Add(new MultiplayerServerInfo
-            {
-                serverName = "[BR] Fazenda Co-op Brasil #1 (Oficial)",
-                region = "São Paulo, Brasil",
-                gameMode = "Co-op Agrícola & Fretes",
-                currentPlayers = 8,
-                maxPlayers = 16,
-                pingMs = 18,
-                hasPassword = false,
-                hostName = "TerraBrasil_Dedicated"
-            });
-
-            serverList.Add(new MultiplayerServerInfo
-            {
-                serverName = "[US] Great Plains Grain & Air Cargo #3",
-                region = "Kansas, Estados Unidos",
-                gameMode = "Aviação & Logística",
-                currentPlayers = 12,
-                maxPlayers = 24,
-                pingMs = 112,
-                hasPassword = false,
-                hostName = "MidwestFlightHost"
-            });
-
-            serverList.Add(new MultiplayerServerInfo
-            {
-                serverName = "[EU] Bavarian Forestry & Heavy Transport",
-                region = "Baviera, Alemanha",
-                gameMode = "Economia Regional Aberta",
-                currentPlayers = 6,
-                maxPlayers = 16,
-                pingMs = 158,
-                hasPassword = true,
-                hostName = "EuroLogisticsNode"
-            });
-
-            serverList.Add(new MultiplayerServerInfo
-            {
-                serverName = "[GLOBAL] Sandbox Livre Sem Restrições",
-                region = "Global (Multi-Região)",
-                gameMode = "Sandbox Livre",
-                currentPlayers = 14,
-                maxPlayers = 32,
-                pingMs = 74,
-                hasPassword = false,
-                hostName = "TerraCloud_Hub"
-            });
         }
 
         private void UpdateMultiplayerTimers()
@@ -208,6 +161,12 @@ namespace ProjectTerra.UI
                 GUILayout.Space(6);
             }
 
+            if (serverList.Count == 0)
+            {
+                GUILayout.Space(40);
+                GUILayout.Label("Nenhum servidor encontrado.", labelBoldStyle);
+            }
+
             GUILayout.EndScrollView();
         }
 
@@ -247,6 +206,11 @@ namespace ProjectTerra.UI
 
             GUILayout.Label("Senha da Sala (Opcional para amigos):", labelRegularStyle);
             hostPassword = GUILayout.PasswordField(hostPassword, '*', 20, modernTextFieldStyle, GUILayout.Height(26));
+            GUILayout.Space(6);
+
+            GUILayout.Label("Porta de Rede (Padrão 7777):", labelRegularStyle);
+            string portStr = GUILayout.TextField(hostPort.ToString(), 6, modernTextFieldStyle, GUILayout.Height(26));
+            if (int.TryParse(portStr, out int parsedPort)) hostPort = parsedPort;
             GUILayout.Space(16);
 
             GUI.color = new Color(0.2f, 0.85f, 0.45f);

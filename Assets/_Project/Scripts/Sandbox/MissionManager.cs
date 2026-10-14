@@ -24,6 +24,17 @@ namespace ProjectTerra.Sandbox
         public bool isStoryContract;              // true = marco da campanha (não gera frete aleatório ao concluir)
         public string storyId;                    // id do beat de origem (ver CampaignLibrary)
         public DriverLicense requiredLicense = DriverLicense.None;
+
+        // --- Prazo e risco (Fase 2) ---
+        // Horas de jogo acumuladas (GameClock) em que o frete expira. 0 = sem prazo.
+        public float deadlineGameHours = 0f;
+        // Reputação perdida se a entrega atrasar.
+        public int penaltyReputation = 0;
+        // Carga delicada: colisões/trancos abatem a integridade e, por consequência, o pagamento.
+        public bool fragile = false;
+        public float cargoIntegrity = 100f;
+        // Frete urgente (prazo apertado, recompensa maior).
+        public bool urgent = false;
     }
 
     /// <summary>
@@ -55,6 +66,79 @@ namespace ProjectTerra.Sandbox
         {
             Instance = this;
         }
+
+        #region Prazos, destinos e risco (Fase 2/3)
+
+        private RegionSaveData ActiveSave => SaveManager.Instance != null ? SaveManager.Instance.ActiveSave : null;
+        private bool AdvancedEconomy => ActiveSave != null && ActiveSave.advancedEconomy;
+
+        private int lastHubIndex = -1;
+
+        /// <summary>Escolhe um destino entre os hubs do mundo, evitando repetir o último.</summary>
+        private bool TryPickDestinationHub(out Vector3 pos, out string name)
+        {
+            pos = Vector3.zero; name = null;
+            var rsm = RegionalSandboxManager.Instance;
+            if (rsm == null || rsm.deliveryHubs == null || rsm.deliveryHubs.Count == 0) return false;
+
+            int count = rsm.deliveryHubs.Count;
+            int idx = UnityEngine.Random.Range(0, count);
+            if (count > 1 && idx == lastHubIndex) idx = (idx + 1) % count;
+            lastHubIndex = idx;
+
+            pos = rsm.deliveryHubs[idx].position;
+            name = rsm.deliveryHubs[idx].name;
+            return true;
+        }
+
+        /// <summary>Define o prazo de entrega e a penalidade, conforme distância, carreira e dificuldade.</summary>
+        private void ApplyDeadline(CommercialContract c)
+        {
+            if (!AdvancedEconomy)
+            {
+                c.deadlineGameHours = 0f; // sem prazo em partidas antigas
+                return;
+            }
+
+            var save = ActiveSave;
+            float tightness = save.DifficultyConfig.deadlineTightness;
+
+            float distKm = Vector3.Distance(c.pickupLocation, c.deliveryLocation) / 1000f;
+            float avgKmh = save.starterCareer == StarterCareer.Aviator ? 140f :
+                           save.starterCareer == StarterCareer.Fisherman ? 28f : 42f;
+            float travelH = distKm / Mathf.Max(5f, avgKmh);
+
+            float slack = Mathf.Lerp(3.0f, 1.3f, tightness);
+            float buffer = Mathf.Lerp(8f, 2f, tightness);
+            float allow = travelH * slack + buffer;
+            if (c.urgent) allow *= 0.55f;
+
+            c.deadlineGameHours = GameClock.TotalGameHoursNow + allow;
+            c.penaltyReputation = Mathf.CeilToInt(Mathf.Lerp(5f, 22f, tightness)) + (c.urgent ? 8 : 0);
+        }
+
+        public float GetHoursRemaining()
+        {
+            if (currentContract == null || currentContract.deadlineGameHours <= 0f) return float.PositiveInfinity;
+            return currentContract.deadlineGameHours - GameClock.TotalGameHoursNow;
+        }
+
+        public bool IsLate()
+        {
+            if (currentContract == null || currentContract.deadlineGameHours <= 0f) return false;
+            return GameClock.TotalGameHoursNow > currentContract.deadlineGameHours;
+        }
+
+        /// <summary>Chamado pelo veículo em colisões: abate a integridade da carga frágil em transporte.</summary>
+        public void ReportCargoShock(float vehicleDamage)
+        {
+            if (!hasActiveContract || currentContract == null || currentContract.isCompleted) return;
+            if (!currentContract.fragile) return;
+            // O tranco na carga é proporcional ao dano sofrido pelo veículo.
+            currentContract.cargoIntegrity = Mathf.Max(0f, currentContract.cargoIntegrity - vehicleDamage * 1.6f);
+        }
+
+        #endregion
 
         public void SetupInitialContract(StarterCareer career, Vector3 starterBasePos, Vector3 townCenterPos)
         {
@@ -112,6 +196,7 @@ namespace ProjectTerra.Sandbox
                     break;
             }
 
+            ApplyDeadline(currentContract);
             Debug.Log($"[MissionManager] Contrato inicial gerado: '{currentContract.title}'. Recompensa: ${currentContract.rewardMoney:N0}");
         }
 
@@ -161,20 +246,58 @@ namespace ProjectTerra.Sandbox
                 PlayerCharacterController.Instance.currentVehicle.UnloadCargo();
             }
 
-            // Creditar recompensa no save ativo
+            // Creditar recompensa no save ativo (com prazo e integridade na economia avançada)
             if (SaveManager.Instance != null && SaveManager.Instance.ActiveSave != null)
             {
                 var save = SaveManager.Instance.ActiveSave;
-                save.currentMoney += currentContract.rewardMoney;
-                save.reputation += currentContract.rewardReputation;
-                save.completedDeliveries++;
-                save.lastSavedDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                long basePay = currentContract.rewardMoney;
 
-                SaveManager.Instance.SaveToFile(save);
-                Debug.Log($"[MissionManager] Contrato concluído! Saldo atual: {save.GetFormattedMoney()}. Entregas: {save.completedDeliveries}");
+                if (save.advancedEconomy)
+                {
+                    bool late = IsLate();
+
+                    // Carga frágil paga proporcional à integridade (mínimo 40%).
+                    float integrityFactor = currentContract.fragile
+                        ? Mathf.Lerp(0.4f, 1f, currentContract.cargoIntegrity / 100f) : 1f;
+                    long pay = (long)(basePay * integrityFactor);
+
+                    string bonusLine;
+                    if (!late)
+                    {
+                        long bonus = (long)(basePay * 0.15f);
+                        pay += bonus;
+                        save.reputation += currentContract.rewardReputation;
+                        bonusLine = $"No prazo: +${bonus:N0} bônus • +{currentContract.rewardReputation} Reputação";
+                    }
+                    else
+                    {
+                        int penalty = currentContract.penaltyReputation;
+                        save.reputation = Mathf.Max(0, save.reputation - penalty);
+                        save.lateDeliveries++;
+                        bonusLine = $"[Atrasado] -{penalty} Reputação";
+                    }
+
+                    save.currentMoney += pay;
+                    save.completedDeliveries++;
+                    save.lastSavedDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                    SaveManager.Instance.SaveToFile(save);
+
+                    string fragLine = currentContract.fragile ? $"\nIntegridade da carga: {currentContract.cargoIntegrity:F0}%" : "";
+                    completionBannerMessage = $"CONTRATO CONCLUÍDO!\n+${pay:N0} creditados\n{bonusLine}{fragLine}";
+                    Debug.Log($"[MissionManager] Concluído ({(late ? "ATRASADO" : "no prazo")}). Pago ${pay:N0}. Saldo: {save.GetFormattedMoney()}.");
+                }
+                else
+                {
+                    // Comportamento clássico (partidas antigas sem economia avançada).
+                    save.currentMoney += basePay;
+                    save.reputation += currentContract.rewardReputation;
+                    save.completedDeliveries++;
+                    save.lastSavedDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                    SaveManager.Instance.SaveToFile(save);
+                    completionBannerMessage = $"CONTRATO CONCLUÍDO!\n+${basePay:N0} creditados • +{currentContract.rewardReputation} Reputação";
+                }
             }
 
-            completionBannerMessage = $"CONTRATO CONCLUÍDO!\n+{currentContract.rewardMoney:C0} creditados • +{currentContract.rewardReputation} Reputação";
             completionBannerTimer = 5.0f;
 
             if (currentContract.isStoryContract)
@@ -241,24 +364,39 @@ namespace ProjectTerra.Sandbox
         private void GenerateNextContract()
         {
             if (SaveManager.Instance == null || SaveManager.Instance.ActiveSave == null) return;
-            var career = SaveManager.Instance.ActiveSave.starterCareer;
+            var save = SaveManager.Instance.ActiveSave;
+
+            // Ponto de coleta: onde o jogador está agora (ou o último ponto de coleta).
+            Vector3 pickup = PlayerCharacterController.Instance != null
+                ? PlayerCharacterController.Instance.transform.position
+                : currentContract.pickupLocation;
+
+            // Destino: um hub variado do mundo (fallback para o destino anterior).
+            Vector3 delivery = currentContract.deliveryLocation;
+            string dest = currentContract.destinationName;
+            if (TryPickDestinationHub(out var hubPos, out var hubName))
+            {
+                delivery = hubPos;
+                dest = hubName;
+            }
 
             currentContract = new CommercialContract
             {
                 isCompleted = false,
-                title = $"Contrato Comercial #{SaveManager.Instance.ActiveSave.completedDeliveries + 1}",
-                description = "Transporte de remessa regional de alta prioridade.",
+                title = $"Contrato Comercial #{save.completedDeliveries + 1}",
+                description = $"Transporte de remessa regional até {dest}.",
                 cargoType = "Carga Comercial",
                 cargoWeightKg = UnityEngine.Random.Range(800f, 3000f),
                 rewardMoney = UnityEngine.Random.Range(20000, 45000),
                 rewardReputation = UnityEngine.Random.Range(10, 25),
-                pickupLocation = currentContract.pickupLocation,
-                deliveryLocation = currentContract.deliveryLocation,
-                destinationName = currentContract.destinationName
+                pickupLocation = pickup,
+                deliveryLocation = delivery,
+                destinationName = dest
             };
 
+            ApplyDeadline(currentContract);
             hasActiveContract = true;
-            Debug.Log($"[MissionManager] Novo contrato gerado: {currentContract.title}");
+            Debug.Log($"[MissionManager] Novo contrato gerado: {currentContract.title} → {dest}");
         }
 
         /// <summary>
@@ -266,19 +404,26 @@ namespace ProjectTerra.Sandbox
         /// pontos de coleta/entrega do contrato atual para continuar compatível com a
         /// lógica de gatilho por raio já existente.
         /// </summary>
-        public void AcceptMarketContract(string title, string description, string cargo, float weightKg, long reward, int reputation)
+        public void AcceptMarketContract(string title, string description, string cargo, float weightKg, long reward, int reputation, bool fragile = false, bool urgent = false)
         {
             Vector3 playerPos = PlayerCharacterController.Instance != null ? PlayerCharacterController.Instance.transform.position : Vector3.zero;
-            Vector3 pickup = currentContract != null ? currentContract.pickupLocation : playerPos;
+            Vector3 pickup = playerPos;
+
+            // Destino: um hub variado do mundo; fallback para o destino atual.
             Vector3 delivery = currentContract != null ? currentContract.deliveryLocation : playerPos;
             string dest = currentContract != null && !string.IsNullOrEmpty(currentContract.destinationName)
                 ? currentContract.destinationName
                 : "Centro de Distribuição Municipal";
+            if (TryPickDestinationHub(out var hubPos, out var hubName))
+            {
+                delivery = hubPos;
+                dest = hubName;
+            }
 
             currentContract = new CommercialContract
             {
                 title = title,
-                description = description,
+                description = $"Transportar {cargo} até {dest}.",
                 cargoType = cargo,
                 cargoWeightKg = weightKg,
                 rewardMoney = reward,
@@ -286,12 +431,16 @@ namespace ProjectTerra.Sandbox
                 pickupLocation = pickup,
                 deliveryLocation = delivery,
                 destinationName = dest,
-                isCompleted = false
+                isCompleted = false,
+                fragile = fragile,
+                urgent = urgent,
+                cargoIntegrity = 100f
             };
+            ApplyDeadline(currentContract);
             hasActiveContract = true;
             isCompletingContract = false;
 
-            Debug.Log($"[MissionManager] Frete aceito via celular: '{title}' (${reward:N0}).");
+            Debug.Log($"[MissionManager] Frete aceito via celular: '{title}' (${reward:N0}){(urgent ? " [URGENTE]" : "")}.");
         }
 
         public float GetDistanceToDestination()
