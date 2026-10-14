@@ -57,6 +57,17 @@ namespace ProjectTerra.Sandbox
             }
         }
 
+        /// <summary>
+        /// Licença efetiva do jogador (perícia global do perfil ∪ carreira local do save).
+        /// Passa pelo SaveManager quando disponível; senão cai no save atual.
+        /// </summary>
+        private bool PlayerHasLicense(ProjectTerra.Gameplay.DriverLicense lic)
+        {
+            if (SaveManager.Instance != null) return SaveManager.Instance.HasLicense(lic);
+            var s = CurrentSave;
+            return s == null || s.HasLicense(lic);
+        }
+
         #endregion
 
         #region Gestão do Celular / Menu (API pública preservada)

@@ -149,7 +149,7 @@ namespace ProjectTerra.Sandbox
             EnsureJobMarket(save);
             foreach (var j in jobMarket)
             {
-                bool licensed = save == null || save.HasLicense(j.required);
+                bool licensed = PlayerHasLicense(j.required);
                 var info = DriverLicenseCatalog.Get(j.required);
 
                 GUILayout.BeginVertical(phoneCardStyle);
@@ -456,7 +456,7 @@ namespace ProjectTerra.Sandbox
             foreach (var li in DriverLicenseCatalog.All)
             {
                 GUILayout.BeginVertical(phoneCardStyle);
-                bool owned = save.HasLicense(li.id);
+                bool owned = PlayerHasLicense(li.id);
                 GUILayout.Label($"{li.icon} {li.name}", phoneBodyStyle);
                 GUILayout.Label(li.description, phoneSmallStyle);
 
@@ -481,7 +481,9 @@ namespace ProjectTerra.Sandbox
                     else if (GUILayout.Button("Adquirir licença", phoneListButtonStyle, GUILayout.Height(26)))
                     {
                         save.currentMoney -= li.cost;
-                        save.GrantLicense(li.id);
+                        // Adquirir = aprender para sempre (perfil global) + registrar no save.
+                        if (SaveManager.Instance != null) SaveManager.Instance.BuyLicense(li.id);
+                        else save.GrantLicense(li.id);
                         PersistSave();
                         ShowToast($"Licença obtida: {li.name}");
                     }
@@ -629,7 +631,7 @@ namespace ProjectTerra.Sandbox
             foreach (var offer in DealerOffers)
             {
                 var info = DriverLicenseCatalog.Get(offer.required);
-                bool licensed = save == null || save.HasLicense(offer.required);
+                bool licensed = PlayerHasLicense(offer.required);
                 bool canMoney = save != null && save.currentMoney >= offer.price;
 
                 GUILayout.BeginVertical(phoneCardStyle);
@@ -892,7 +894,7 @@ namespace ProjectTerra.Sandbox
 
             int ownedLic = 0;
             foreach (var li in DriverLicenseCatalog.All)
-                if (save.HasLicense(li.id)) ownedLic++;
+                if (PlayerHasLicense(li.id)) ownedLic++;
             GUILayout.Label($"Licenças: {ownedLic}/{DriverLicenseCatalog.All.Length}", phoneSmallStyle);
 
             var vm = VehicleManager.Instance;
