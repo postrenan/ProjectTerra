@@ -19,6 +19,11 @@ namespace ProjectTerra.Sandbox
         public Vector3 deliveryLocation;
         public string destinationName;
         public bool isCompleted;
+
+        // --- Campanha do modo carreira ---
+        public bool isStoryContract;              // true = marco da campanha (não gera frete aleatório ao concluir)
+        public string storyId;                    // id do beat de origem (ver CampaignLibrary)
+        public DriverLicense requiredLicense = DriverLicense.None;
     }
 
     /// <summary>
@@ -172,10 +177,65 @@ namespace ProjectTerra.Sandbox
             completionBannerMessage = $"CONTRATO CONCLUÍDO!\n+{currentContract.rewardMoney:C0} creditados • +{currentContract.rewardReputation} Reputação";
             completionBannerTimer = 5.0f;
 
-            // Gerar próximo contrato após 3 segundos
+            if (currentContract.isStoryContract)
+            {
+                // Marco da campanha: o CareerStoryManager decide o próximo beat.
+                string sid = currentContract.storyId;
+                hasActiveContract = false;
+                isCompletingContract = false;
+                if (CareerStoryManager.Instance != null)
+                    CareerStoryManager.Instance.OnStoryContractCompleted(sid);
+                return;
+            }
+
+            // Frete livre do mercado: gera próximo contrato aleatório após 3 segundos.
             Invoke(nameof(GenerateNextContract), 3.0f);
 
             isCompletingContract = false;
+        }
+
+        /// <summary>
+        /// Aceita um marco scriptado da campanha (CareerStoryManager). Usa as posições
+        /// resolvidas pelas âncoras e marca o contrato como de estória para que a conclusão
+        /// avance a campanha em vez de gerar um frete aleatório.
+        /// </summary>
+        public void AcceptStoryContract(ProjectTerra.Gameplay.ContractData data, Vector3 pickup, Vector3 delivery, string storyId)
+        {
+            if (data == null) return;
+
+            currentContract = new CommercialContract
+            {
+                title = data.title,
+                description = data.description,
+                cargoType = data.cargoType,
+                cargoWeightKg = data.cargoWeightKg,
+                rewardMoney = data.rewardMoney,
+                rewardReputation = data.rewardReputation,
+                pickupLocation = pickup,
+                deliveryLocation = delivery,
+                destinationName = string.IsNullOrEmpty(data.deliveryAnchor) ? "Destino" : AnchorLabel(data.deliveryAnchor),
+                isCompleted = false,
+                isStoryContract = true,
+                storyId = storyId,
+                requiredLicense = data.requiredLicense
+            };
+            hasActiveContract = true;
+            isCompletingContract = false;
+
+            Debug.Log($"[MissionManager] Marco da campanha ativo: '{data.title}' ({storyId}).");
+        }
+
+        private static string AnchorLabel(string anchor)
+        {
+            switch (anchor)
+            {
+                case "base":    return "Base da Empresa";
+                case "docks":   return "Cais / Entreposto";
+                case "airport": return "Aeroporto / Pista";
+                case "market":
+                case "town":    return "Mercado Municipal";
+                default:         return "Destino";
+            }
         }
 
         private void GenerateNextContract()

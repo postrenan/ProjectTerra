@@ -43,6 +43,17 @@ namespace ProjectTerra.Gameplay
         public long amount;     // valor movimentado (sempre positivo)
     }
 
+    /// <summary>Uma mensagem recebida no app Mensagens do celular (campanha do modo carreira).</summary>
+    [Serializable]
+    public class SmsRecord
+    {
+        public string contactName;
+        public string portrait;  // emoji/ícone de retrato
+        public string body;      // texto da mensagem
+        public long day;         // gameDay em que chegou
+        public bool read;
+    }
+
     [Serializable]
     public class RegionSaveData
     {
@@ -84,6 +95,36 @@ namespace ProjectTerra.Gameplay
         public List<LoanTransaction> loanHistory = new List<LoanTransaction>();
 
         public const int MaxHistoryEntries = 40;
+
+        // --- Campanha do modo carreira (save v4) ---
+        // Próximo beat a resolver na campanha da carreira (ver CampaignLibrary).
+        public int storyBeatIndex = 0;
+        // Ids de beats já resolvidos (idempotência ao recarregar).
+        public List<string> resolvedBeats = new List<string>();
+        // Caixa de entrada do app Mensagens (SMS da estória).
+        public List<SmsRecord> inbox = new List<SmsRecord>();
+
+        public const int MaxInboxEntries = 60;
+
+        /// <summary>Adiciona uma mensagem à caixa de entrada, mantendo só as mais recentes.</summary>
+        public void AddSms(string contactName, string portrait, string body)
+        {
+            if (inbox == null) inbox = new List<SmsRecord>();
+            inbox.Add(new SmsRecord { contactName = contactName, portrait = portrait, body = body, day = gameDay, read = false });
+            int overflow = inbox.Count - MaxInboxEntries;
+            if (overflow > 0) inbox.RemoveRange(0, overflow);
+        }
+
+        public int UnreadSmsCount
+        {
+            get
+            {
+                if (inbox == null) return 0;
+                int n = 0;
+                foreach (var s in inbox) if (s != null && !s.read) n++;
+                return n;
+            }
+        }
 
         /// <summary>Adiciona um registro ao histórico, mantendo apenas os mais recentes.</summary>
         public void AddLoanHistory(string bankName, string type, long amount)
@@ -272,9 +313,28 @@ namespace ProjectTerra.Gameplay
                 writer.Write(h.type ?? "");
                 writer.Write(h.amount);
             }
+
+            // v4: progresso da campanha do modo carreira.
+            writer.Write(storyBeatIndex);
+            int resolvedCount = resolvedBeats != null ? resolvedBeats.Count : 0;
+            writer.Write(resolvedCount);
+            for (int i = 0; i < resolvedCount; i++)
+                writer.Write(resolvedBeats[i] ?? "");
+
+            int inboxCount = inbox != null ? inbox.Count : 0;
+            writer.Write(inboxCount);
+            for (int i = 0; i < inboxCount; i++)
+            {
+                var s = inbox[i];
+                writer.Write(s.contactName ?? "");
+                writer.Write(s.portrait ?? "");
+                writer.Write(s.body ?? "");
+                writer.Write(s.day);
+                writer.Write(s.read);
+            }
         }
 
-        public const byte CurrentVersion = 3;
+        public const byte CurrentVersion = 4;
 
         /// <summary>
         /// Deserializa um save. O byte de versão decide o layout: cada layout tem o seu
@@ -290,6 +350,8 @@ namespace ProjectTerra.Gameplay
                     return ReadBinaryV2(reader);
                 case 3:
                     return ReadBinaryV3(reader);
+                case 4:
+                    return ReadBinaryV4(reader);
                 default:
                     // Antes o byte de versão era lido e descartado, sempre usando o layout v1.
                     // Um save de versão futura (com um campo extra) seria lido fora de fase
@@ -349,10 +411,9 @@ namespace ProjectTerra.Gameplay
             return save;
         }
 
-        private static RegionSaveData ReadBinaryV3(System.IO.BinaryReader reader)
+        /// <summary>Lê o bloco de licenças + empréstimos + calendário + histórico (comum a v3 e v4).</summary>
+        private static void ReadLoansAndHistory(System.IO.BinaryReader reader, RegionSaveData save)
         {
-            var save = new RegionSaveData();
-            ReadCore(reader, save);
             save.licenses = reader.ReadInt32();
 
             int loanCount = reader.ReadInt32();
@@ -384,6 +445,43 @@ namespace ProjectTerra.Gameplay
                     bankName = reader.ReadString(),
                     type = reader.ReadString(),
                     amount = reader.ReadInt64(),
+                });
+            }
+        }
+
+        private static RegionSaveData ReadBinaryV3(System.IO.BinaryReader reader)
+        {
+            var save = new RegionSaveData();
+            ReadCore(reader, save);
+            ReadLoansAndHistory(reader, save);
+            // Campos v4 ausentes: campanha começa do zero (storyBeatIndex=0, inbox vazia).
+            return save;
+        }
+
+        private static RegionSaveData ReadBinaryV4(System.IO.BinaryReader reader)
+        {
+            var save = new RegionSaveData();
+            ReadCore(reader, save);
+            ReadLoansAndHistory(reader, save);
+
+            save.storyBeatIndex = reader.ReadInt32();
+
+            int resolvedCount = reader.ReadInt32();
+            save.resolvedBeats = new List<string>(Mathf.Max(0, resolvedCount));
+            for (int i = 0; i < resolvedCount; i++)
+                save.resolvedBeats.Add(reader.ReadString());
+
+            int inboxCount = reader.ReadInt32();
+            save.inbox = new List<SmsRecord>(Mathf.Max(0, inboxCount));
+            for (int i = 0; i < inboxCount; i++)
+            {
+                save.inbox.Add(new SmsRecord
+                {
+                    contactName = reader.ReadString(),
+                    portrait = reader.ReadString(),
+                    body = reader.ReadString(),
+                    day = reader.ReadInt64(),
+                    read = reader.ReadBoolean(),
                 });
             }
             return save;

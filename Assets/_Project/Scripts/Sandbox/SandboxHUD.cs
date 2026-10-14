@@ -28,7 +28,7 @@ namespace ProjectTerra.Sandbox
         /// <summary>Menu de configurações aberto ([Esc]).</summary>
         public bool IsSettingsOpen { get; private set; } = false;
         /// <summary>True se o celular ou as configurações estiverem abertos (bloqueia o input de gameplay).</summary>
-        public bool IsOptionsMenuOpen => IsPhoneOpen || IsSettingsOpen;
+        public bool IsOptionsMenuOpen => IsPhoneOpen || IsSettingsOpen || IsConversationActive;
         public bool IsHudVisible { get; private set; } = true;
         public bool ShowCompass { get; private set; } = true;
         public bool ShowMissionTracker { get; private set; } = true;
@@ -318,6 +318,7 @@ namespace ProjectTerra.Sandbox
             {
                 DrawBrowser();
                 DrawToastNotification();
+                DrawConversationOverlay();
                 return;
             }
 
@@ -326,6 +327,7 @@ namespace ProjectTerra.Sandbox
             {
                 DrawInteractiveRegionalMap();
                 DrawToastNotification();
+                DrawConversationOverlay();
                 return;
             }
 
@@ -360,6 +362,9 @@ namespace ProjectTerra.Sandbox
             {
                 DrawSettingsMenu();
             }
+
+            // 5. Overlay de ligação / conversa da campanha (sempre no topo).
+            DrawConversationOverlay();
         }
     }
 }

@@ -321,8 +321,44 @@ namespace ProjectTerra.Sandbox
         private void SetupInitialMission()
         {
             var missionObj = new GameObject("MissionManager");
-            var mm = missionObj.AddComponent<MissionManager>();
-            mm.SetupInitialContract(activeSave.starterCareer, starterBasePosition, deliveryMarketPosition);
+            missionObj.AddComponent<MissionManager>();
+
+            // A campanha do modo carreira assume o controle dos contratos: o primeiro
+            // marco ("As Chaves") substitui o contrato inicial fixo. O MissionManager segue
+            // atendendo fretes livres do mercado em paralelo aos marcos da estória.
+            var storyObj = new GameObject("CareerStoryManager");
+            var story = storyObj.AddComponent<CareerStoryManager>();
+            story.BeginCampaign(activeSave);
+        }
+
+        /// <summary>
+        /// Resolve uma âncora lógica da campanha ("base", "town"/"market", "docks", "airport")
+        /// para uma posição real na cena. Sempre retorna um ponto válido (nunca trava a estória).
+        /// </summary>
+        public Vector3 ResolveAnchor(string anchor)
+        {
+            Vector3 town = deliveryMarketPosition != Vector3.zero ? deliveryMarketPosition : townCenterPosition;
+            switch (anchor)
+            {
+                case "base":    return starterBasePosition;
+                case "docks":   return starterBasePosition; // a base inicial do pescador fica no cais
+                case "airport": return ResolveAirportAnchor();
+                case "market":
+                case "town":    return town;
+                default:         return town;
+            }
+        }
+
+        private Vector3 ResolveAirportAnchor()
+        {
+            // Usa a posição de um avião possuído, se houver; senão, a pista próxima à base.
+            if (VehicleManager.Instance != null && VehicleManager.Instance.possessedVehicles != null)
+            {
+                foreach (var v in VehicleManager.Instance.possessedVehicles)
+                    if (v != null && v.category == VehicleCategory.Plane)
+                        return v.transform.position;
+            }
+            return starterBasePosition + new Vector3(70f, 0f, 150f);
         }
 
         private void EnsureAmbientAudio()

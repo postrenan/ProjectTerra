@@ -20,6 +20,7 @@ namespace ProjectTerra.Sandbox
             Stats, // Estatísticas
             Internet,
             Contacts,
+            Messages, // Mensagens / SMS da campanha
             Settings,
             GameSystem
         }
@@ -226,6 +227,7 @@ namespace ProjectTerra.Sandbox
                 case PhoneApp.Stats: DrawPhoneStats(content); break;
                 case PhoneApp.Internet: DrawPhoneInternet(content); break;
                 case PhoneApp.Contacts: DrawPhoneContacts(content); break;
+                case PhoneApp.Messages: DrawPhoneMessages(content); break;
                 case PhoneApp.Settings: DrawPhoneSettings(content); break;
                 case PhoneApp.GameSystem: DrawPhoneGameSystem(content); break;
             }
@@ -258,12 +260,12 @@ namespace ProjectTerra.Sandbox
         }
 
         // ---- Tela inicial: grade de apps ----
-        private static readonly string[] HomeEmojis = { "️", "", "", "", "", "", "", "", "", "", "" };
-        private static readonly string[] HomeLabels = { "Mapa", "Frete", "Finanças", "Licenças", "Garagem", "Loja", "Estatíst.", "Internet", "Contatos", "Ajustes", "Jogo" };
+        private static readonly string[] HomeEmojis = { "️", "", "", "", "", "", "", "", "", "✉", "", "" };
+        private static readonly string[] HomeLabels = { "Mapa", "Frete", "Finanças", "Licenças", "Garagem", "Loja", "Estatíst.", "Internet", "Contatos", "Mensagens", "Ajustes", "Jogo" };
         private static readonly PhoneApp[] HomeTargets =
         {
             PhoneApp.Home, PhoneApp.Jobs, PhoneApp.Finances, PhoneApp.Licenses, PhoneApp.Garage,
-            PhoneApp.Dealer, PhoneApp.Stats, PhoneApp.Internet, PhoneApp.Contacts, PhoneApp.Settings, PhoneApp.GameSystem
+            PhoneApp.Dealer, PhoneApp.Stats, PhoneApp.Internet, PhoneApp.Contacts, PhoneApp.Messages, PhoneApp.Settings, PhoneApp.GameSystem
         };
 
         private void DrawPhoneHome(Rect content)
@@ -308,6 +310,7 @@ namespace ProjectTerra.Sandbox
                 new Color(0.25f, 0.55f, 0.60f), // Estatísticas
                 new Color(0.18f, 0.42f, 0.75f), // Internet
                 new Color(0.60f, 0.42f, 0.18f), // Contatos
+                new Color(0.22f, 0.55f, 0.72f), // Mensagens
                 new Color(0.40f, 0.42f, 0.50f), // Ajustes
                 new Color(0.55f, 0.25f, 0.55f) // Jogo
             };
