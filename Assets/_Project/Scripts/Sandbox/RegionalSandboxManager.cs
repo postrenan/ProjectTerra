@@ -66,6 +66,8 @@ namespace ProjectTerra.Sandbox
             BuildStarterCareerInfrastructure();
             SceneObjectSpawner.PopulateNatureAndFauna(activeTerrain, activeSave, starterBasePosition, townCenterPosition);
             GrassFoliageSpawner.PopulateGrassAndFoliage(activeTerrain, activeSave, starterBasePosition, townCenterPosition);
+            // Povoamento com NPCs civis e pedestres (Populate Models + Styloo)
+            SceneObjectSpawner.PopulatePedestrians(starterBasePosition, count: 18, radius: 45f);
             ApplyWorldCulling();
             SpawnPlayerAndVehicle();
             EnsureVehicleManager();

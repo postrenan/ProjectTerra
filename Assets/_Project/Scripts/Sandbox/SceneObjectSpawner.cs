@@ -23,12 +23,20 @@ namespace ProjectTerra.Sandbox
                 return cached;
             }
 
-            var loaded = Resources.Load<GameObject>(path);
-            if (loaded != null)
+            try
             {
-                cachedPrefabs[path] = loaded;
+                var loaded = Resources.Load<GameObject>(path);
+                if (loaded != null)
+                {
+                    cachedPrefabs[path] = loaded;
+                }
+                return loaded;
             }
-            return loaded;
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[SceneObjectSpawner] Falha ao carregar modelo '{path}': {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>
@@ -720,8 +728,20 @@ namespace ProjectTerra.Sandbox
                         }
                     }
                 }
-                rend.sharedMaterials = newMats;
             }
+        }
+
+        /// <summary>
+        /// Popula a área urbana/cidade com pedestres e NPCs dinâmicos da cultura correspondente.
+        /// </summary>
+        public static void PopulatePedestrians(Vector3 townCenter, int count = 25, float radius = 75f)
+        {
+            var crowdRoot = new GameObject("City_Pedestrians_Crowd");
+            crowdRoot.transform.position = townCenter;
+            var spawner = crowdRoot.AddComponent<NpcPedestrianSpawner>();
+            spawner.npcCount = count;
+            spawner.spawnRadius = radius;
+            spawner.cultureRegion = NpcCultureRegion.GlobalMixed;
         }
     }
 }

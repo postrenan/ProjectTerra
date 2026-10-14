@@ -92,6 +92,11 @@ namespace ProjectTerra.Gameplay
                             if (save != null && !string.IsNullOrEmpty(save.saveId))
                             {
                                 loadedSaves[save.saveId] = save;
+                                if (ver < SaveVersion)
+                                {
+                                    SaveToFile(save);
+                                    Debug.Log($"[SaveManager] Save binário '{Path.GetFileName(file)}' (v{ver}) atualizado para a versão atual (v{SaveVersion}).");
+                                }
                             }
                         }
                         else

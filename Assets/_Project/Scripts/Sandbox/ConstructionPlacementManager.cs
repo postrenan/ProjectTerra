@@ -117,10 +117,11 @@ namespace ProjectTerra.Sandbox
             GameObject spawned = null;
             string payload = item.actionPayload;
 
-            GameObject prefab = SceneObjectSpawner.LoadModel($"Models/Structures/{payload}");
+            GameObject prefab = LoadStructurePrefab(payload);
             if (prefab != null)
             {
                 spawned = Instantiate(prefab, buildPos, rotation, constructionParent);
+                EnsureColliders(spawned);
             }
             else
             {
@@ -147,7 +148,7 @@ namespace ProjectTerra.Sandbox
             GameObject ghostObj = null;
             string payload = item.actionPayload;
 
-            GameObject prefab = SceneObjectSpawner.LoadModel($"Models/Structures/{payload}");
+            GameObject prefab = LoadStructurePrefab(payload);
             if (prefab != null)
             {
                 ghostObj = Instantiate(prefab, buildPos, rotation, constructionParent);
@@ -523,6 +524,70 @@ namespace ProjectTerra.Sandbox
 
             feedback = "Vegetação plantada com sucesso!";
             return true;
+        }
+
+        #endregion
+
+        #region Utilitários de Carregamento e Colisão
+
+        private GameObject LoadStructurePrefab(string payload)
+        {
+            if (string.IsNullOrEmpty(payload)) return null;
+
+            // Se for caminho direto com Models/
+            if (payload.StartsWith("Models/"))
+            {
+                var direct = SceneObjectSpawner.LoadModel(payload);
+                if (direct != null) return direct;
+            }
+
+            // Busca nas pastas modulares de Fazenda e Cidade
+            var farm = SceneObjectSpawner.LoadModel($"Models/ModularBuildings/Farm/{payload}");
+            if (farm != null) return farm;
+
+            var city = SceneObjectSpawner.LoadModel($"Models/ModularBuildings/City/{payload}");
+            if (city != null) return city;
+
+            // Busca em Structures geral
+            var struc = SceneObjectSpawner.LoadModel($"Models/Structures/{payload}");
+            if (struc != null) return struc;
+
+            // Busca nas ferramentas agrícolas e adereços
+            var tools = SceneObjectSpawner.LoadModel($"Models/Props/FarmTools/{payload}");
+            if (tools != null) return tools;
+
+            // Busca nos personagens e mobiliário Populate
+            var pop = SceneObjectSpawner.LoadModel($"Models/Characters/Populate/{payload}");
+            if (pop != null) return pop;
+
+            // Busca na raiz de Models
+            return SceneObjectSpawner.LoadModel($"Models/{payload}");
+        }
+
+        private void EnsureColliders(GameObject root)
+        {
+            if (root == null) return;
+            var colliders = root.GetComponentsInChildren<Collider>(true);
+            if (colliders != null && colliders.Length > 0) return;
+
+            // Se o modelo importado não tiver colisor, adiciona BoxCollider baseado nos renderers
+            var renderers = root.GetComponentsInChildren<Renderer>(true);
+            if (renderers != null && renderers.Length > 0)
+            {
+                Bounds b = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++)
+                {
+                    b.Encapsulate(renderers[i].bounds);
+                }
+
+                var box = root.AddComponent<BoxCollider>();
+                box.center = root.transform.InverseTransformPoint(b.center);
+                Vector3 ls = root.transform.lossyScale;
+                box.size = new Vector3(
+                    Mathf.Abs(ls.x) > 1e-4f ? b.size.x / Mathf.Abs(ls.x) : b.size.x,
+                    Mathf.Abs(ls.y) > 1e-4f ? b.size.y / Mathf.Abs(ls.y) : b.size.y,
+                    Mathf.Abs(ls.z) > 1e-4f ? b.size.z / Mathf.Abs(ls.z) : b.size.z);
+            }
         }
 
         #endregion

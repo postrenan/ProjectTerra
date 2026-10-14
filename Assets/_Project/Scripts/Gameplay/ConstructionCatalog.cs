@@ -265,6 +265,110 @@ namespace ProjectTerra.Sandbox
                 StarterCareer.Aviator, DriverLicense.Aviation,
                 240000, BuildActionType.StructureObject, "Hangar_Large", "[Hangar G]"));
 
+            // =========================================================================
+            // FAZENDA MODULAR REALISTA (Modelos 3D Blender com Texturas PBR 2K)
+            // =========================================================================
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_wall_wood", "Parede de Celeiro em Madeira Rústica (4m)",
+                "Módulo de parede 4x3.5m com tábuas verticais rústicas, vigas chanfradas e rodapé de pedra.",
+                BuildCategory.Estruturas, "Fazenda Modular (Realista)",
+                StarterCareer.Farmer, DriverLicense.Agriculture,
+                2400, BuildActionType.StructureObject, "Farm_Wall_Wood_Planks", "[Parede Madeira]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_wall_door", "Portão Duplo de Correr de Celeiro (4m)",
+                "Módulo com portão duplo rústico, travessas em X, roldanas e trilho superior em ferro forjado.",
+                BuildCategory.Estruturas, "Fazenda Modular (Realista)",
+                StarterCareer.Farmer, DriverLicense.Agriculture,
+                3800, BuildActionType.StructureObject, "Farm_Wall_Door_Double", "[Portão Celeiro]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_wall_window", "Parede com Janela Colonial & Peitoril (4m)",
+                "Módulo de parede com janela envidraçada de fazenda, esquadria em cruz e peitoril reforçado.",
+                BuildCategory.Estruturas, "Fazenda Modular (Realista)",
+                StarterCareer.Farmer, DriverLicense.Agriculture,
+                2900, BuildActionType.StructureObject, "Farm_Wall_Window", "[Janela Rural]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_roof_straight", "Telhado de Duas Águas em Chapa de Zinco (4m)",
+                "Seção de telhado com chapa ondulada galvanizada, cumeeira e vigamento estrutural aparente.",
+                BuildCategory.Estruturas, "Fazenda Modular (Realista)",
+                StarterCareer.Farmer, DriverLicense.Agriculture,
+                3200, BuildActionType.StructureObject, "Farm_Roof_Straight", "[Telhado Zinco]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_roof_gable", "Frontão / Oitão com Respiro de Sótão (4m)",
+                "Fechamento triangular superior do celeiro com aletas de ventilação para o sótão.",
+                BuildCategory.Estruturas, "Fazenda Modular (Realista)",
+                StarterCareer.Farmer, DriverLicense.Agriculture,
+                2100, BuildActionType.StructureObject, "Farm_Roof_Gable_End", "[Frontão Sótão]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_silo_modular", "Silo Industrial de Grãos com Escada (9m)",
+                "Torre cilíndrica de chapa corrugada com anéis de reforço, cúpula, exaustor e escada de inspeção.",
+                BuildCategory.Estruturas, "Fazenda Modular (Realista)",
+                StarterCareer.Farmer, DriverLicense.Agriculture,
+                28000, BuildActionType.StructureObject, "Farm_Silo_Modular", "[Silo Grãos]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_fence_wood", "Cerca Rústica de Eucalipto (3m)",
+                "Módulo de cerca rural com mourões roliços tratados e três réguas horizontais chanfradas.",
+                BuildCategory.Estruturas, "Fazenda Modular (Realista)",
+                StarterCareer.Farmer, DriverLicense.None,
+                450, BuildActionType.StructureObject, "Farm_Fence_Wood", "[Cerca Madeira]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_fence_gate", "Porteira Articulável de Fazenda (3m)",
+                "Porteira de madeira maciça com reforço diagonal em Z, ferragens de ferro e tranca de segurança.",
+                BuildCategory.Estruturas, "Fazenda Modular (Realista)",
+                StarterCareer.Farmer, DriverLicense.None,
+                1100, BuildActionType.StructureObject, "Farm_Fence_Gate", "[Porteira]"));
+
+            // =========================================================================
+            // CIDADE MODULAR REALISTA (Modelos 3D Blender com Texturas PBR 2K)
+            // =========================================================================
+            Items.Add(new BuildItemDefinition(
+                "mod_city_wall_shop", "Fachada de Vitrine Comercial & Marquise (4m)",
+                "Fachada térrea de loja comercial com vitrine dupla de alta reflexão, porta com puxador inox e marquise moderna.",
+                BuildCategory.Estruturas, "Cidade Modular (Realista)",
+                StarterCareer.Trucker, DriverLicense.Standard,
+                14500, BuildActionType.StructureObject, "City_Wall_Concrete_ShopFront", "[Loja Vitrine]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_wall_brick", "Fachada Residencial de Tijolo Aparente (4m)",
+                "Módulo urbano clássico em alvenaria com junta de argamassa e duas janelas guilhotina emolduradas.",
+                BuildCategory.Estruturas, "Cidade Modular (Realista)",
+                StarterCareer.Trucker, DriverLicense.Standard,
+                11200, BuildActionType.StructureObject, "City_Wall_Brick_Residential", "[Prédio Tijolo]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_wall_glass", "Painel Cortina de Vidro Contemporâneo (4m)",
+                "Fachada corporativa moderna em vidro reflexivo com perfis estruturais de alumínio escovado.",
+                BuildCategory.Estruturas, "Cidade Modular (Realista)",
+                StarterCareer.Trucker, DriverLicense.Standard,
+                18500, BuildActionType.StructureObject, "City_Wall_Modern_Glass", "[Cortina Vidro]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_roof_parapet", "Laje de Cobertura com Platibanda & Zinco (4x4m)",
+                "Módulo de laje impermeabilizada com mureta platibanda e pingadeira de chapa galvanizada.",
+                BuildCategory.Estruturas, "Cidade Modular (Realista)",
+                StarterCareer.Trucker, DriverLicense.Standard,
+                7800, BuildActionType.StructureObject, "City_Roof_Parapet_4m", "[Laje Platibanda]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_sidewalk_straight", "Calçada de Concreto com Meio-Fio & Sarjeta (4m)",
+                "Placas de concreto polido com juntas de dilatação, guia de granito chanfrado e sarjeta asfáltica.",
+                BuildCategory.Estruturas, "Cidade Modular (Realista)",
+                StarterCareer.Trucker, DriverLicense.None,
+                1600, BuildActionType.StructureObject, "City_Sidewalk_Straight_4m", "[Calçada 4m]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_sidewalk_corner", "Esquina de Calçada com Rampa Acessível (4x4m)",
+                "Módulo de esquina urbana com curvatura de guia e piso rebaixado para travessia de pedestres.",
+                BuildCategory.Estruturas, "Cidade Modular (Realista)",
+                StarterCareer.Trucker, DriverLicense.None,
+                2400, BuildActionType.StructureObject, "City_Sidewalk_Corner_4m", "[Esquina Calçada]"));
+
             // Docas e Atracadouros
             Items.Add(new BuildItemDefinition(
                 "str_doc_pier_wood", "Píer de Madeira Rústico",
@@ -682,6 +786,134 @@ namespace ProjectTerra.Sandbox
                 BuildCategory.Decoracao, "Adereços Temáticos (Props)",
                 StarterCareer.Trucker, DriverLicense.Standard,
                 300, BuildActionType.StructureObject, "Prop_EmptyPallets", "[Paletes]"));
+
+            // =========================================================================
+            // MOBILIÁRIO URBANO REALISTA (Modelos 3D Blender com Texturas PBR 2K)
+            // =========================================================================
+            Items.Add(new BuildItemDefinition(
+                "mod_city_prop_light", "Poste de Iluminação LED Moderno (6.5m)",
+                "Poste de aço tubular com fuste cônico, braço aerodinâmico e luminária viária LED.",
+                BuildCategory.Decoracao, "Mobiliário Urbano PBR",
+                StarterCareer.Trucker, DriverLicense.None,
+                1800, BuildActionType.StructureObject, "City_Prop_StreetLight_Modern", "[Poste LED]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_prop_shelter", "Ponto de Ônibus Moderno com Totem",
+                "Abrigo urbano em vidro temperado, pilares de aço, cobertura protetora e totem publicitário.",
+                BuildCategory.Decoracao, "Mobiliário Urbano PBR",
+                StarterCareer.Trucker, DriverLicense.None,
+                5600, BuildActionType.StructureObject, "City_Prop_Bus_Shelter", "[Ponto Ônibus]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_prop_trash", "Lixeira Urbana Dupla Coleta Seletiva",
+                "Conjunto duplo em aço inoxidável escovado para descarte separado de recicláveis e orgânicos.",
+                BuildCategory.Decoracao, "Mobiliário Urbano PBR",
+                StarterCareer.Trucker, DriverLicense.None,
+                850, BuildActionType.StructureObject, "City_Prop_TrashBin_Duo", "[Lixeira Inox]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_prop_bench", "Banco de Praça em Madeira & Ferro",
+                "Banco contemporâneo com ripas de madeira nobre tratada e pés curvos de ferro fundido.",
+                BuildCategory.Decoracao, "Mobiliário Urbano PBR",
+                StarterCareer.Trucker, DriverLicense.None,
+                750, BuildActionType.StructureObject, "City_Prop_Park_Bench", "[Banco Parque]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_prop_hydrant", "Hidrante Industrial de Alta Pressão",
+                "Hidrante de rua em ferro fundido vermelho de segurança, conexões em latão polido e tampas de proteção.",
+                BuildCategory.Decoracao, "Mobiliário Urbano PBR",
+                StarterCareer.Trucker, DriverLicense.None,
+                1200, BuildActionType.StructureObject, "City_Prop_Fire_Hydrant", "[Hidrante]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_city_prop_bollard", "Balizador de Proteção em Concreto",
+                "Pilar balizador de pedestres em concreto polido com topo semi-esférico e faixa de segurança.",
+                BuildCategory.Decoracao, "Mobiliário Urbano PBR",
+                StarterCareer.Trucker, DriverLicense.None,
+                320, BuildActionType.StructureObject, "City_Prop_Bollard_Concrete", "[Balizador]"));
+
+            // =========================================================================
+            // OBJETOS E PROPS DE FAZENDA (Modelos 3D Blender com Texturas PBR 2K)
+            // =========================================================================
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_prop_hay", "Fardo de Feno Dourado Prensado",
+                "Fardo retangular de feno compacto com amarrações de corda para alimentação e ambientação do pasto.",
+                BuildCategory.Decoracao, "Objetos de Fazenda PBR",
+                StarterCareer.Farmer, DriverLicense.None,
+                120, BuildActionType.StructureObject, "Farm_Prop_Hay_Bale", "[Fardo Feno]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_prop_barrel", "Barril de Carvalho Rústico com Aros de Ferro",
+                "Barril tradicional de carvalho com ripas curvas, aros de ferro forjado e acabamento envelhecido.",
+                BuildCategory.Decoracao, "Objetos de Fazenda PBR",
+                StarterCareer.Farmer, DriverLicense.None,
+                250, BuildActionType.StructureObject, "Farm_Prop_Wooden_Barrel", "[Barril Carvalho]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_prop_trough", "Cocho / Comedouro Rústico de Madeira",
+                "Comedouro e bebedouro reforçado para gado e cavalos em madeira maciça com suporte elevado.",
+                BuildCategory.Decoracao, "Objetos de Fazenda PBR",
+                StarterCareer.Farmer, DriverLicense.None,
+                480, BuildActionType.StructureObject, "Farm_Prop_Trough", "[Cocho Madeira]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_farm_prop_pallet", "Pilha de Paletes Industriais de Madeira",
+                "Pilha com dois estrados de madeira padronizados de alta resistência para armazenamento e logística.",
+                BuildCategory.Decoracao, "Objetos de Fazenda PBR",
+                StarterCareer.Farmer, DriverLicense.None,
+                180, BuildActionType.StructureObject, "Farm_Prop_Pallet_Stack", "[Paletes Madeira]"));
+
+            // -------------------------------------------------------------------------
+            // FERRAMENTAS AGRÍCOLAS RÚSTICAS (Rusted Farm Tools)
+            // -------------------------------------------------------------------------
+            Items.Add(new BuildItemDefinition(
+                "tool_farm_shovel_sq", "Pá Reta de Corte (Aço Rústico)",
+                "Pá reta clássica em aço forjado oxidado com cabo longo de freixo tratado.",
+                BuildCategory.Decoracao, "Ferramentas Agrícolas",
+                StarterCareer.Farmer, DriverLicense.None,
+                65, BuildActionType.StructureObject, "Tool_Farm_ShovelSquare", "[Pá Reta]"));
+
+            Items.Add(new BuildItemDefinition(
+                "tool_farm_spade", "Pá de Bico (Aço Forjado)",
+                "Pá de ponta ogival para escavação, plantio e movimentação de terra vegetal.",
+                BuildCategory.Decoracao, "Ferramentas Agrícolas",
+                StarterCareer.Farmer, DriverLicense.None,
+                65, BuildActionType.StructureObject, "Tool_Farm_Spade", "[Pá Bico]"));
+
+            Items.Add(new BuildItemDefinition(
+                "tool_farm_pitchfork", "Forcado / Garfo de Feno",
+                "Garfo agrícola de 4 dentes afiados para manipulação de palha, silagem e feno seco.",
+                BuildCategory.Decoracao, "Ferramentas Agrícolas",
+                StarterCareer.Farmer, DriverLicense.None,
+                85, BuildActionType.StructureObject, "Tool_Farm_Pitchfork", "[Garfo Feno]"));
+
+            Items.Add(new BuildItemDefinition(
+                "tool_farm_hoe", "Enxada Agrícola Tradicional",
+                "Enxada de capina com lâmina de corte transversal e fixação reforçada.",
+                BuildCategory.Decoracao, "Ferramentas Agrícolas",
+                StarterCareer.Farmer, DriverLicense.None,
+                55, BuildActionType.StructureObject, "Tool_Farm_Hoe", "[Enxada]"));
+
+            Items.Add(new BuildItemDefinition(
+                "tool_farm_rake", "Ancinho / Rastelo Agrícola",
+                "Rastelo de aço multi-dentes para nivelamento de canteiros e coleta de folhas secas.",
+                BuildCategory.Decoracao, "Ferramentas Agrícolas",
+                StarterCareer.Farmer, DriverLicense.None,
+                60, BuildActionType.StructureObject, "Tool_Farm_Rake", "[Rastelo]"));
+
+            Items.Add(new BuildItemDefinition(
+                "tool_farm_collection", "Conjunto de Ferramentas de Fazenda",
+                "Bancada completa com as 5 ferramentas agrícolas prontas para uso rural.",
+                BuildCategory.Decoracao, "Ferramentas Agrícolas",
+                StarterCareer.Farmer, DriverLicense.None,
+                290, BuildActionType.StructureObject, "FarmEquipment_Collection", "[Kit Ferramentas]"));
+
+            Items.Add(new BuildItemDefinition(
+                "mod_pop_seats_col", "Conjunto de Assentos e Bancos Urbanos",
+                "Fileira de bancos e assentos públicos de praça da coleção Populate.",
+                BuildCategory.Decoracao, "Mobiliário Urbano PBR",
+                StarterCareer.Trucker, DriverLicense.None,
+                450, BuildActionType.StructureObject, "Populate_Seats_Collection", "[Bancos Praça]"));
 
             // =========================================================================
             // 5. PAISAGISMO (Ferramentas de Modificação do Mundo)

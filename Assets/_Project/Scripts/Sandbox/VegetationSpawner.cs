@@ -137,6 +137,7 @@ namespace ProjectTerra.Sandbox
             // 4) Aplicar (snapToHeightmap assenta o Y de cada árvore no relevo).
             data.SetTreeInstances(instances.ToArray(), true);
             terrain.drawTreesAndFoliage = true;
+            terrain.preserveTreePrototypeLayers = true;
             terrain.Flush();
 
             Debug.Log($"[VegetationSpawner] Região {regionId}: {instances.Count} árvores plantadas a partir do " +
@@ -307,6 +308,17 @@ namespace ProjectTerra.Sandbox
             if (m1 != null) mats.Add(mat1);
             mr.sharedMaterials = mats.ToArray();
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+
+            // LODGroup informa ao Terrain do Unity que a malha gerencia seu próprio LOD,
+            // evitando que o Terrain exija shaders legados Built-in (Nature/Soft Occlusion).
+            var lodGroup = go.AddComponent<LODGroup>();
+            var lods = new LOD[]
+            {
+                new LOD(0.01f, new Renderer[] { mr })
+            };
+            lodGroup.SetLODs(lods);
+            lodGroup.RecalculateBounds();
+
             return go;
         }
 

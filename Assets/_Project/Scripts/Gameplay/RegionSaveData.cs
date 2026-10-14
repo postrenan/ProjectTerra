@@ -450,11 +450,13 @@ namespace ProjectTerra.Gameplay
         /// <summary>Lê o bloco de licenças + empréstimos + calendário + histórico (comum a v3 e v4).</summary>
         private static void ReadLoansAndHistory(System.IO.BinaryReader reader, RegionSaveData save)
         {
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             save.licenses = reader.ReadInt32();
 
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             int loanCount = reader.ReadInt32();
             save.loans = new List<BankLoan>(Mathf.Max(0, loanCount));
-            for (int i = 0; i < loanCount; i++)
+            for (int i = 0; i < loanCount && reader.BaseStream.Position < reader.BaseStream.Length; i++)
             {
                 var l = new BankLoan
                 {
@@ -470,10 +472,12 @@ namespace ProjectTerra.Gameplay
                 save.loans.Add(l);
             }
 
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             save.gameDay = reader.ReadInt64();
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             int histCount = reader.ReadInt32();
             save.loanHistory = new List<LoanTransaction>(Mathf.Max(0, histCount));
-            for (int i = 0; i < histCount; i++)
+            for (int i = 0; i < histCount && reader.BaseStream.Position < reader.BaseStream.Length; i++)
             {
                 save.loanHistory.Add(new LoanTransaction
                 {
@@ -488,11 +492,17 @@ namespace ProjectTerra.Gameplay
         /// <summary>Lê o bloco de economia avançada (comum a v3 e v4).</summary>
         private static void ReadAdvancedEconomy(System.IO.BinaryReader reader, RegionSaveData save)
         {
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             save.advancedEconomy = reader.ReadBoolean();
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             save.difficulty = reader.ReadInt32();
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             save.fuelPricePerLiter = reader.ReadSingle();
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             save.totalExpenses = reader.ReadInt64();
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             save.milestonesClaimed = reader.ReadInt64();
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return;
             save.lateDeliveries = reader.ReadInt32();
         }
 
@@ -501,7 +511,10 @@ namespace ProjectTerra.Gameplay
             var save = new RegionSaveData();
             ReadCore(reader, save);
             ReadLoansAndHistory(reader, save);
-            ReadAdvancedEconomy(reader, save);
+            if (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                ReadAdvancedEconomy(reader, save);
+            }
             // Campos v4 ausentes: campanha começa do zero (storyBeatIndex=0, inbox vazia).
             return save;
         }
@@ -514,16 +527,19 @@ namespace ProjectTerra.Gameplay
             ReadAdvancedEconomy(reader, save);
 
             // v4: progresso da campanha do modo carreira.
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return save;
             save.storyBeatIndex = reader.ReadInt32();
 
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return save;
             int resolvedCount = reader.ReadInt32();
             save.resolvedBeats = new List<string>(Mathf.Max(0, resolvedCount));
-            for (int i = 0; i < resolvedCount; i++)
+            for (int i = 0; i < resolvedCount && reader.BaseStream.Position < reader.BaseStream.Length; i++)
                 save.resolvedBeats.Add(reader.ReadString());
 
+            if (reader.BaseStream.Position >= reader.BaseStream.Length) return save;
             int inboxCount = reader.ReadInt32();
             save.inbox = new List<SmsRecord>(Mathf.Max(0, inboxCount));
-            for (int i = 0; i < inboxCount; i++)
+            for (int i = 0; i < inboxCount && reader.BaseStream.Position < reader.BaseStream.Length; i++)
             {
                 save.inbox.Add(new SmsRecord
                 {

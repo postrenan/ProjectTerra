@@ -90,7 +90,30 @@ Todos os ativos incluídos nesta biblioteca foram disponibilizados sob a licenç
 - **Animações Humanoides Padrão (CC0 Quaternius)**:
   - `UAL1_Standard.fbx`: Conjunto completo de animações (Idle, Walk, Run, Sprint, Jump, Swim, Drive, Crouch, Turn, etc.) sem Root Motion.
   - `UAL1_Standard_RM.fbx`: Conjunto com Root Motion pré-calculado.
-  - Controlador gerado via menu `Tools/Animations/Setup Humanoid Animations` (`PlayerHumanoidController.controller`).
+  - **Controlador gerado via menu `Tools/Animations/Setup Humanoid Animations` (`PlayerHumanoidController.controller`).
+
+---
+
+### 7. 🌾 Ferramentas Agrícolas Rústicas (`Assets/_Project/Models/Props/FarmTools/`)
+- **Conjunto de Ferramentas Manuais Tradicionais**:
+  - `Tool_Farm_ShovelSquare.fbx`: Pá reta de corte em aço oxidado (1.55m).
+  - `Tool_Farm_Spade.fbx`: Pá de bico / concha arredondada (1.55m).
+  - `Tool_Farm_Pitchfork.fbx`: Forcado / garfo de feno de 4 dentes (1.55m).
+  - `Tool_Farm_Hoe.fbx`: Enxada agrícola de capina (1.35m).
+  - `Tool_Farm_Rake.fbx`: Ancinho / rastelo de aço (1.45m).
+  - `FarmEquipment_Collection.fbx` & `.blend`: Coleção completa com bancada.
+- **Texturas PBR**: Albedo, Normal Map, AO e Height Map (`Assets/_Project/Textures/Props/FarmTools/`).
+- **Showroom**: [`farm_tools_showcase.png`](file:///E:/Backup-C/Projetos/testejogo/Assets/_Project/Models/Props/FarmTools/farm_tools_showcase.png).
+
+---
+
+### 8. 👥 Biblioteca de Pedestres e Civis Populate (`Assets/_Project/Models/Characters/Populate/`)
+- **61 Modelos Humanoides Civis & 105 Variações de Texturas**:
+  - População urbana e rural com vestimentas contemporâneas civis (calças jeans, polos, camisetas, jaquetas, camisas de linho).
+  - Escala métrica 1:1 rigorosa (1.70m a 1.88m) com pivots no solo e centralizados na origem.
+  - Variações femininas (`Populate_Female000Skin_001` a `Populate_Female030Skin_001`) e masculinas (`Populate_Male000Skin_001` a `Populate_Male030Skin_001`).
+  - Mobiliário urbano: 12 bancos e assentos públicos (`Populate_Seat001.fbx` a `Populate_Seat012.fbx` e `Populate_Seats_Collection.fbx`).
+- **Showroom**: [`populate_characters_showcase.png`](file:///E:/Backup-C/Projetos/testejogo/Assets/_Project/Models/Characters/Populate/populate_characters_showcase.png).
 
 ---
 

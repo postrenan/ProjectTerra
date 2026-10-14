@@ -104,6 +104,19 @@ namespace ProjectTerra.Sandbox
             aradoPos.y = GetTerrainHeight(aradoPos) + 0.35f;
             PlowBuilder.CreatePlow(aradoPos, Quaternion.identity);
 
+            // 1b. Ferramentas Agrícolas Rústicas (Rusted Farm Tools) apoiadas próximas ao maquinário
+            Vector3 toolsBasePos = tratorPos + new Vector3(4.5f, 0f, 1.5f);
+            toolsBasePos.y = GetTerrainHeight(toolsBasePos);
+            var toolsGroup = new GameObject("Grupo_FerramentasAgricolas");
+            toolsGroup.transform.SetParent(farmRoot.transform, true);
+            toolsGroup.transform.position = toolsBasePos;
+
+            FarmToolProp.SpawnTool(FarmToolType.ShovelSquare, toolsBasePos + new Vector3(0f, 0f, 0f), Quaternion.Euler(12f, 15f, 0f), toolsGroup.transform);
+            FarmToolProp.SpawnTool(FarmToolType.Spade, toolsBasePos + new Vector3(0.45f, 0f, 0f), Quaternion.Euler(14f, 20f, 0f), toolsGroup.transform);
+            FarmToolProp.SpawnTool(FarmToolType.Pitchfork, toolsBasePos + new Vector3(0.9f, 0f, 0f), Quaternion.Euler(10f, 10f, 0f), toolsGroup.transform);
+            FarmToolProp.SpawnTool(FarmToolType.Hoe, toolsBasePos + new Vector3(1.35f, 0f, 0f), Quaternion.Euler(15f, 25f, 0f), toolsGroup.transform);
+            FarmToolProp.SpawnTool(FarmToolType.Rake, toolsBasePos + new Vector3(1.8f, 0f, 0f), Quaternion.Euler(11f, 18f, 0f), toolsGroup.transform);
+
             // 2. Pista de Pouso Rural da Fazenda e Aeronave Utilitária
             var airstripRoot = new GameObject("Pista_Pouso_Rural_Fazenda");
             airstripRoot.transform.SetParent(farmRoot.transform, true);
