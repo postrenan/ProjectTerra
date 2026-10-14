@@ -155,7 +155,11 @@ namespace ProjectTerra.Core
 
         // Cache de conversões (material-fonte -> material URP) para evitar recriar
         // materiais idênticos ao converter centenas de instâncias (arbustos, rochas).
+#if UNITY_6000_4_OR_NEWER
+        private static readonly Dictionary<EntityId, Material> _urpConversionCache = new Dictionary<EntityId, Material>();
+#else
         private static readonly Dictionary<int, Material> _urpConversionCache = new Dictionary<int, Material>();
+#endif
 
         /// <summary>
         /// Percorre os renderers de um modelo instanciado e converte qualquer material cujo
@@ -205,7 +209,11 @@ namespace ProjectTerra.Core
         {
             if (src == null) return null;
 
+#if UNITY_6000_4_OR_NEWER
+            EntityId key = src.GetEntityId();
+#else
             int key = src.GetInstanceID();
+#endif
             if (_urpConversionCache.TryGetValue(key, out var cached) && cached != null)
                 return cached;
 
