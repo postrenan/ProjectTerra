@@ -165,9 +165,9 @@ namespace ProjectTerra.UI
             GUILayout.BeginHorizontal();
 
             DrawCareerButton("Agricultor", StarterCareer.Farmer, "Cultivo, plantio, colheita e operação de maquinário pesado agrícola.");
-            DrawCareerButton("Logística", StarterCareer.Trucker, "Fretes rodoviários, transporte pesado de insumos e rotas intermunicipais.");
-            DrawCareerButton("Aviador", StarterCareer.Aviator, "Pulverização aérea, aviação regional e voos executivos.");
-            DrawCareerButton("Náutica", StarterCareer.Fisherman, "Operações portuárias, pesca costeira e logística de carga naval.");
+            DrawCareerButton("Logística", StarterCareer.Trucker, "Fretes rodoviários, transporte pesado de insumos e rotas intermunicipais.", locked: true);
+            DrawCareerButton("Aviador", StarterCareer.Aviator, "Pulverização aérea, aviação regional e voos executivos.", locked: true);
+            DrawCareerButton("Náutica", StarterCareer.Fisherman, "Operações portuárias, pesca costeira e logística de carga naval.", locked: true);
 
             GUILayout.EndHorizontal();
 
@@ -228,8 +228,20 @@ namespace ProjectTerra.UI
             GUI.color = Color.white;
         }
 
-        private void DrawCareerButton(string label, StarterCareer career, string tooltip)
+        private void DrawCareerButton(string label, StarterCareer career, string tooltip, bool locked = false)
         {
+            if (locked)
+            {
+                // Carreira ainda não disponível: exibida travada, com pop-up de futuras adições.
+                GUI.color = new Color(0.55f, 0.58f, 0.65f, 0.8f);
+                if (IconBtn(CareerIcon(career), label + " [Em breve]", tabButtonStyle, GUILayout.Height(30)))
+                {
+                    ShowNotification($"[Em breve] Carreira '{label}' em desenvolvimento. Por enquanto, apenas Agricultor está disponível. Novas carreiras em futuras atualizações!", 5f);
+                }
+                GUI.color = Color.white;
+                return;
+            }
+
             bool isCurrent = initialCareer == career;
             GUI.color = isCurrent ? new Color(0.25f, 0.65f, 1.0f) : Color.white;
             if (IconBtn(CareerIcon(career), label, isCurrent ? activeTabButtonStyle : tabButtonStyle, GUILayout.Height(30)))
@@ -292,6 +304,9 @@ namespace ProjectTerra.UI
             {
                 campaignName = $"Partida {region.name}";
             }
+
+            // Trava: somente a carreira de Agricultor está liberada nesta versão.
+            initialCareer = StarterCareer.Farmer;
 
             RegionSaveData save = null;
             if (SaveManager.Instance != null)
