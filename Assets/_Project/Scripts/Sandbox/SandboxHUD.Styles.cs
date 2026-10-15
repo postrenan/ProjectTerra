@@ -439,13 +439,27 @@ namespace ProjectTerra.Sandbox
         {
             if (string.IsNullOrEmpty(saveToastMessage) || saveToastTimer <= 0f) return;
 
-            float w = 320f;
-            float h = 34f;
+            // Margem interna e dimensionamento automático: mensagens longas estavam sendo
+            // cortadas na caixa de altura fixa (ex.: "Canteiro de Obras iniciado...").
+            const float padX = 18f;
+            const float padY = 10f;
+
+            var content = new GUIContent(saveToastMessage);
+            toastStyle.wordWrap = true;
+
+            float maxW = Mathf.Min(460f, Screen.width - 40f);
+            float innerMaxW = maxW - padX * 2f;
+            float innerW = Mathf.Min(innerMaxW, toastStyle.CalcSize(content).x);
+            float innerH = toastStyle.CalcHeight(content, innerW);
+
+            float w = innerW + padX * 2f;
+            float h = Mathf.Max(34f, innerH + padY * 2f);
             Rect rect = new Rect((Screen.width - w) * 0.5f, Screen.height * 0.2f, w, h);
 
             UIThemeHelper.DrawRoundedBox(rect, new Color(0.04f, 0.15f, 0.08f, 0.95f), new Color(0.3f, 1f, 0.5f, 0.90f), 8f, 1.5f);
 
-            GUI.Label(rect, saveToastMessage, toastStyle);
+            Rect textRect = new Rect(rect.x + padX, rect.y + padY, rect.width - padX * 2f, rect.height - padY * 2f);
+            GUI.Label(textRect, content, toastStyle);
         }
 
         #endregion

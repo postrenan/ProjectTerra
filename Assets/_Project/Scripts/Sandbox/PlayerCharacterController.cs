@@ -187,12 +187,11 @@ namespace ProjectTerra.Sandbox
 
         private void LateUpdate()
         {
-            // Não rotaciona a câmera se menus, mapa ou console estiverem com foco
-            if (IsInputBlocked())
-            {
-                return;
-            }
-
+            // A câmera SEMPRE acompanha o alvo (jogador/veículo). Mesmo com um menu, mapa,
+            // celular ou console aberto a física continua rodando — se o veículo escorrega
+            // numa ladeira, por exemplo, a câmera precisa segui-lo em vez de ficar parada.
+            // A rotação por input do mouse já é bloqueada em Update() via IsInputBlocked(),
+            // então aqui só ocorre o acompanhamento de posição, nunca giro indesejado.
             UpdateCamera();
         }
 
