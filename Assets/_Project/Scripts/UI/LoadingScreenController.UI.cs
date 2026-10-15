@@ -103,9 +103,17 @@ namespace ProjectTerra.UI
             // 1. Imagem de Fundo Panorâmica com Efeito Ken Burns (Zoom e Pan suave)
             if (backgroundTexture != null)
             {
-                float zoom = 1.05f + 0.05f * Mathf.Sin(animationTimer * 0.15f);
-                float panX = Mathf.Sin(animationTimer * 0.08f) * 20.0f;
-                float panY = Mathf.Cos(animationTimer * 0.06f) * 10.0f;
+                // Ken Burns suave. O pan é relativo à resolução e o zoom mínimo garante que a
+                // imagem sempre cubra o deslocamento — caso contrário as bordas da tela ficavam
+                // expostas quando o zoom chegava perto de 1.0, causando os "espasmos" nas beiradas.
+                float panFracX = Mathf.Sin(animationTimer * 0.08f) * 0.012f; // ±1,2% da largura
+                float panFracY = Mathf.Cos(animationTimer * 0.06f) * 0.012f; // ±1,2% da altura
+                float panX = panFracX * sw;
+                float panY = panFracY * sh;
+
+                // Margem de zoom necessária para cobrir o pan (2x porque desloca para os dois lados).
+                float coverZoom = 1f + 2f * Mathf.Max(Mathf.Abs(panFracX), Mathf.Abs(panFracY)) + 0.02f;
+                float zoom = Mathf.Max(1.06f + 0.04f * Mathf.Sin(animationTimer * 0.15f), coverZoom);
 
                 float bw = sw * zoom;
                 float bh = sh * zoom;

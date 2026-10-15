@@ -14,7 +14,7 @@ namespace ProjectTerra.UI
         private int selectedResolutionIndex = 0;
 #pragma warning restore CS0414
         private int windowModeIndex = 0; // 0=Fullscreen, 1=Borderless, 2=Windowed
-        private int vsyncIndex = 1; // 0=Off, 1=60Hz, 2=120Hz
+        private int vsyncIndex = 1; // 0=Desligado, 1=Ligado (QualitySettings.vSyncCount)
         private int targetFPS = 120;
         private bool rotateGlobeSetting = true;
 
@@ -36,7 +36,7 @@ namespace ProjectTerra.UI
         {
             qualityLevel = PlayerPrefs.GetInt("Terra_QualityLevel", QualitySettings.GetQualityLevel());
             windowModeIndex = PlayerPrefs.GetInt("Terra_WindowMode", 0);
-            vsyncIndex = PlayerPrefs.GetInt("Terra_VSync", 1);
+            vsyncIndex = Mathf.Clamp(PlayerPrefs.GetInt("Terra_VSync", 1), 0, 1);
             targetFPS = PlayerPrefs.GetInt("Terra_TargetFPS", 120);
             rotateGlobeSetting = PlayerPrefs.GetInt("Terra_RotateGlobe", 1) == 1;
             autoRotateGlobe = rotateGlobeSetting;
@@ -214,10 +214,12 @@ namespace ProjectTerra.UI
 
             GUILayout.Space(10);
 
-            // V-Sync
+            // V-Sync (QualitySettings.vSyncCount só suporta ligar/desligar de forma útil:
+            // 0 = desligado, 1 = sincroniza a cada VBlank. O valor 2 apenas reduz pela metade
+            // a taxa de atualização, então expomos apenas Desligado/Ligado.)
             GUILayout.Label("Sincronização Vertical (V-Sync):", labelRegularStyle);
             GUILayout.BeginHorizontal();
-            string[] vsyncModes = { "Desligado", "Ligado (60 Hz)", "Adaptativo (120 Hz)" };
+            string[] vsyncModes = { "Desligado", "Ligado" };
             for (int v = 0; v < vsyncModes.Length; v++)
             {
                 bool isCur = vsyncIndex == v;

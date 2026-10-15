@@ -16,6 +16,10 @@ namespace ProjectTerra.Cameras
 
         [Header("Orbit Controls")]
         [SerializeField] private float baseRotationSpeed = 120.0f;
+        [Tooltip("Velocidade mínima de rotação perto do solo (quanto menor, mais preciso o arrasto com zoom máximo)")]
+        [SerializeField] private float minRotationSpeed = 8.0f;
+        [Tooltip("Altitude (em metros) a partir da qual a rotação atinge a velocidade máxima. Abaixo disso a sensibilidade cai de forma contínua.")]
+        [SerializeField] private float rotationFullSpeedAltitude = 2000000.0f; // 2.000 km
         [SerializeField] private float smoothTime = 0.08f;
 
         [Header("Distance & Zoom (Escala 50m)")]
@@ -67,9 +71,13 @@ namespace ProjectTerra.Cameras
 
             double altitude = Mathf.Max((float)(currentDistance - planetRadius), 1.0f);
 
-            // Adapta a velocidade de rotação à altitude: rápida no espaço, precisa e suave a 50m
-            float altitudeFactor = Mathf.Clamp01((float)(altitude / 500000.0)); // 500 km
-            float activeRotationSpeed = Mathf.Lerp(15.0f, baseRotationSpeed, altitudeFactor);
+            // Adapta a velocidade de rotação à altitude (estilo Google Earth): rápida no espaço,
+            // precisa e suave perto do solo. Quanto mais zoom (menor altitude), menor a sensibilidade.
+            // A curva é quadrática para reduzir a sensibilidade de forma mais acentuada nas
+            // altitudes baixas/médias, evitando a câmera "escorregar" ao inspecionar uma região.
+            float altitudeFactor = Mathf.Clamp01((float)(altitude / rotationFullSpeedAltitude));
+            float eased = altitudeFactor * altitudeFactor;
+            float activeRotationSpeed = Mathf.Lerp(minRotationSpeed, baseRotationSpeed, eased);
 
             bool isOverUI = ProjectTerra.Planet.PlanetInteractionController.Instance != null && 
                             ProjectTerra.Planet.PlanetInteractionController.Instance.IsPointerOverUI();

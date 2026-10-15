@@ -350,15 +350,34 @@ namespace ProjectTerra.UI
                 return;
             }
 
-            float badgeW = 420f;
-            float badgeH = 40f;
+            // Margem interna para o texto não encostar na borda do balão.
+            const float padX = 20f;
+            const float padY = 12f;
+
+            var content = new GUIContent(notificationMessage);
+            var msgStyle = new GUIStyle(labelBoldStyle)
+            {
+                wordWrap = true,
+                alignment = TextAnchor.MiddleCenter
+            };
+
+            float maxBadgeW = Mathf.Min(560f, Screen.width - 40f);
+            float innerMaxW = maxBadgeW - padX * 2f;
+            // CalcSize ignora wordWrap (largura de uma linha); limita à largura máxima
+            // e deixa o CalcHeight quebrar o texto em mais linhas quando necessário.
+            float innerW = Mathf.Min(innerMaxW, msgStyle.CalcSize(content).x);
+            float innerH = msgStyle.CalcHeight(content, innerW);
+
+            float badgeW = innerW + padX * 2f;
+            float badgeH = Mathf.Max(40f, innerH + padY * 2f);
             float badgeX = (Screen.width - badgeW) * 0.5f;
             float badgeY = 24f;
             Rect badgeRect = new Rect(badgeX, badgeY, badgeW, badgeH);
 
             UIThemeHelper.DrawRoundedBox(badgeRect, new Color(0.04f, 0.18f, 0.32f, 0.95f), new Color(0.40f, 0.90f, 1.0f, 0.90f), 8f, 1.5f);
 
-            GUI.Label(badgeRect, notificationMessage, labelBoldStyle);
+            Rect textRect = new Rect(badgeRect.x + padX, badgeRect.y + padY, badgeRect.width - padX * 2f, badgeRect.height - padY * 2f);
+            GUI.Label(textRect, content, msgStyle);
         }
 
         public void ShowNotification(string message, float duration = 3.5f)

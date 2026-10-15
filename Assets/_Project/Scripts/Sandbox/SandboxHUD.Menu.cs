@@ -618,12 +618,34 @@ namespace ProjectTerra.Sandbox
 
             // Caixa 3: Qualidade Gráfica
             GUILayout.BeginVertical(menuCardSectionStyle);
-            GUILayout.Label($"Gráficos • Qualidade: {QualitySettings.names[QualitySettings.GetQualityLevel()]}", phoneSectionStyle);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Médio", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(1, true);
-            if (GUILayout.Button("Alto", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(2, true);
-            if (GUILayout.Button("Ultra", phoneListButtonStyle, GUILayout.Height(26))) QualitySettings.SetQualityLevel(3, true);
-            GUILayout.EndHorizontal();
+            {
+                string[] qualityNames = QualitySettings.names;
+                // Nomes em PT-BR alinhados com os níveis do projeto (ver ProjectSettings/QualitySettings.asset).
+                // Usa o nome bruto da Unity como fallback caso a quantidade de níveis mude.
+                string[] qualityNamesPt = { "Muito Baixo", "Baixo", "Médio", "Alto", "Muito Alto", "Ultra" };
+                int currentQuality = QualitySettings.GetQualityLevel();
+
+                string QualityLabel(int i)
+                {
+                    if (i < 0 || i >= qualityNames.Length) return "?";
+                    return qualityNames.Length == qualityNamesPt.Length ? qualityNamesPt[i] : qualityNames[i];
+                }
+
+                GUILayout.Label($"Gráficos • Qualidade: {QualityLabel(currentQuality)}", phoneSectionStyle);
+
+                Color prevColor = GUI.color;
+                for (int qi = 0; qi < qualityNames.Length; qi++)
+                {
+                    bool isActive = qi == currentQuality;
+                    GUI.color = isActive ? new Color(0.45f, 0.85f, 1f) : prevColor;
+                    string label = isActive ? $"► {QualityLabel(qi)}" : QualityLabel(qi);
+                    if (GUILayout.Button(label, phoneListButtonStyle, GUILayout.Height(26)) && !isActive)
+                    {
+                        QualitySettings.SetQualityLevel(qi, true);
+                    }
+                }
+                GUI.color = prevColor;
+            }
             GUILayout.EndVertical();
 
             GUILayout.Space(8);
