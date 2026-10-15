@@ -13,6 +13,7 @@
 *.csproj
 *.unityproj
 *.sln
+*.slnx
 *.suo
 *.user
 *.userprefs
@@ -29,4 +30,11 @@ Thumbs.db
 
 # Unity crash recovery (criado automaticamente apos crash do Editor)
 /Assets/_Recovery/
+
+# Blender auto-backup files (gerados automaticamente ao salvar .blend)
+*.blend1
+
+# Graphify tool cache (nao faz parte do jogo)
+/graphify-out/
+/Assets/graphify-out/
 
