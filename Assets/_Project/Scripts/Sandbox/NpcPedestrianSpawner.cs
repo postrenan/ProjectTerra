@@ -27,25 +27,8 @@ namespace ProjectTerra.Sandbox
         [Header("Controlador de Animação")]
         public RuntimeAnimatorController npcAnimatorController;
 
-        // Catálogo de prefabs e modelos dos NPCs baseados no estilo Styloo
-        private static readonly string[] STYLOO_NPC_MODELS = new string[]
-        {
-            "Models/Characters/NPC_Asian_Female_Silk",
-            "Models/Characters/NPC_Asian_Male_Scholar",
-            "Models/Characters/NPC_Egyptian_Male_Elder",
-            "Models/Characters/NPC_Egyptian_Female_Dignitary",
-            "Models/Characters/NPC_European_Male_Knight",
-            "Models/Characters/NPC_European_Female_Noble",
-            "Models/Characters/NPC_Nordic_Male_Blacksmith",
-            "Models/Characters/NPC_American_Male_Explorer",
-            "Models/Characters/NPC_American_Female_Adventurer",
-            "Models/Characters/NPC_African_Male_Champion",
-            "Models/Characters/NPC_African_Female_Merchant",
-            "Models/Characters/NPC_MiddleEastern_Magistrate"
-        };
-
-        // Catálogo dos novos NPCs Civis e Pedestres do Populate Models
-        public static readonly string[] POPULATE_NPC_MODELS = new string[]
+        // Catálogo dos NPCs Civis e Pedestres do Populate Models
+        public static readonly string[] ALL_NPC_MODELS = new string[]
         {
             "Models/Characters/Populate/Populate_Female000Skin_001",
             "Models/Characters/Populate/Populate_Female000Skin_002",
@@ -79,45 +62,6 @@ namespace ProjectTerra.Sandbox
             "Models/Characters/Populate/Populate_Male020Skin_001",
             "Models/Characters/Populate/Populate_Male025Skin_001",
             "Models/Characters/Populate/Populate_Male030Skin_001"
-        };
-
-        private static readonly string[] ALL_NPC_MODELS;
-
-        static NpcPedestrianSpawner()
-        {
-            var combined = new List<string>(STYLOO_NPC_MODELS);
-            combined.AddRange(POPULATE_NPC_MODELS);
-            ALL_NPC_MODELS = combined.ToArray();
-        }
-
-        private static readonly string[] ASIAN_MODELS = new string[]
-        {
-            "Models/Characters/NPC_Asian_Female_Silk",
-            "Models/Characters/NPC_Asian_Male_Scholar",
-            "Models/Characters/NPC_American_Female_Adventurer"
-        };
-
-        private static readonly string[] EGYPTIAN_MODELS = new string[]
-        {
-            "Models/Characters/NPC_Egyptian_Male_Elder",
-            "Models/Characters/NPC_Egyptian_Female_Dignitary",
-            "Models/Characters/NPC_MiddleEastern_Magistrate"
-        };
-
-        private static readonly string[] AMERICAN_MODELS = new string[]
-        {
-            "Models/Characters/NPC_American_Male_Explorer",
-            "Models/Characters/NPC_American_Female_Adventurer",
-            "Models/Characters/NPC_African_Male_Champion",
-            "Models/Characters/NPC_African_Female_Merchant"
-        };
-
-        private static readonly string[] EUROPEAN_MODELS = new string[]
-        {
-            "Models/Characters/NPC_European_Male_Knight",
-            "Models/Characters/NPC_European_Female_Noble",
-            "Models/Characters/NPC_Nordic_Male_Blacksmith",
-            "Models/Characters/NPC_MiddleEastern_Magistrate"
         };
 
         private readonly List<GameObject> activeNpcs = new List<GameObject>();
@@ -189,26 +133,8 @@ namespace ProjectTerra.Sandbox
 
         private string PickModelForRegion(NpcCultureRegion region)
         {
-            string[] pool;
-            switch (region)
-            {
-                case NpcCultureRegion.EastAsia:
-                    pool = (Random.value < 0.75f) ? ASIAN_MODELS : ALL_NPC_MODELS;
-                    break;
-                case NpcCultureRegion.EgyptAndMiddleEast:
-                    pool = (Random.value < 0.75f) ? EGYPTIAN_MODELS : ALL_NPC_MODELS;
-                    break;
-                case NpcCultureRegion.Americas:
-                    pool = (Random.value < 0.75f) ? AMERICAN_MODELS : ALL_NPC_MODELS;
-                    break;
-                case NpcCultureRegion.EuropeAndNordic:
-                    pool = (Random.value < 0.75f) ? EUROPEAN_MODELS : ALL_NPC_MODELS;
-                    break;
-                default:
-                    pool = ALL_NPC_MODELS;
-                    break;
-            }
-            return pool[Random.Range(0, pool.Length)];
+            if (ALL_NPC_MODELS == null || ALL_NPC_MODELS.Length == 0) return null;
+            return ALL_NPC_MODELS[Random.Range(0, ALL_NPC_MODELS.Length)];
         }
 
         private void ConfigureNpcVisuals(GameObject npcInstance, string prefabName)
