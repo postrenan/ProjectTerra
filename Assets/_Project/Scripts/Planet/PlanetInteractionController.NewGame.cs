@@ -21,30 +21,21 @@ namespace ProjectTerra.Planet
             GUI.color = Color.white;
             GUILayout.Space(4);
 
-            // Validação de viabilidade de cada carreira
+            // Validação de viabilidade da carreira de Agricultor (única liberada nesta versão)
             bool canFarm = infra.IsCareerViable(StarterCareer.Farmer, out string farmReason);
-            bool canTruck = infra.IsCareerViable(StarterCareer.Trucker, out string truckReason);
-            bool canFly = infra.IsCareerViable(StarterCareer.Aviator, out string flyReason);
-            bool canFish = infra.IsCareerViable(StarterCareer.Fisherman, out string fishReason);
 
-            // Auto-fallback: Se a carreira selecionada atualmente for inviável nesta região, troca automaticamente
-            if (!infra.IsCareerViable(selectedCareer, out _))
-            {
-                if (canFarm) selectedCareer = StarterCareer.Farmer;
-                else if (canTruck) selectedCareer = StarterCareer.Trucker;
-                else if (canFly) selectedCareer = StarterCareer.Aviator;
-                else if (canFish) selectedCareer = StarterCareer.Fisherman;
-            }
+            // Trava de versão: somente Agricultor pode ser jogada. Motorista, Aviador e Pescador
+            // permanecem bloqueados (futuras adições), então a seleção é sempre forçada para Agricultor.
+            selectedCareer = StarterCareer.Farmer;
 
             // 1. Escolha da Carreira Inicial com Verificação de Infraestrutura
             GUILayout.Label("Escolha sua Primeira Jornada (Ofício Inicial):", labelStyle);
             GUILayout.BeginHorizontal();
 
-            // Botão Agricultor
+            // Botão Agricultor (único disponível)
             if (canFarm)
             {
-                bool isFarmer = selectedCareer == StarterCareer.Farmer;
-                GUI.color = isFarmer ? new Color(0.3f, 1f, 0.4f) : Color.white;
+                GUI.color = new Color(0.3f, 1f, 0.4f);
                 if (GUILayout.Button("Agricultor", buttonStyle, GUILayout.Height(26)))
                 {
                     selectedCareer = StarterCareer.Farmer;
@@ -60,102 +51,30 @@ namespace ProjectTerra.Planet
                 }
             }
 
-            // Botão Motorista
-            if (canTruck)
-            {
-                bool isTrucker = selectedCareer == StarterCareer.Trucker;
-                GUI.color = isTrucker ? new Color(1f, 0.85f, 0.3f) : Color.white;
-                if (GUILayout.Button("Motorista", buttonStyle, GUILayout.Height(26)))
-                {
-                    selectedCareer = StarterCareer.Trucker;
-                }
-            }
-            else
-            {
-                GUI.color = new Color(0.6f, 0.4f, 0.4f, 0.7f);
-                if (GUILayout.Button("Motorista [Indisponível]", buttonStyle, GUILayout.Height(26)))
-                {
-                    notificationMessage = $"[Indisponível] {truckReason}";
-                    notificationTimer = 5.0f;
-                }
-            }
+            // Botões bloqueados: Motorista, Aviador e Pescador (futuras adições)
+            DrawLockedCareerButton("Motorista");
+            DrawLockedCareerButton("Aviador");
+            DrawLockedCareerButton("Pescador");
 
-            // Botão Aviador
-            if (canFly)
-            {
-                bool isAviator = selectedCareer == StarterCareer.Aviator;
-                GUI.color = isAviator ? new Color(0.4f, 0.85f, 1f) : Color.white;
-                if (GUILayout.Button("Aviador", buttonStyle, GUILayout.Height(26)))
-                {
-                    selectedCareer = StarterCareer.Aviator;
-                }
-            }
-            else
-            {
-                GUI.color = new Color(0.6f, 0.4f, 0.4f, 0.7f);
-                if (GUILayout.Button("Aviador [Indisponível]", buttonStyle, GUILayout.Height(26)))
-                {
-                    notificationMessage = $"[Indisponível] {flyReason}";
-                    notificationTimer = 5.0f;
-                }
-            }
-
-            // Botão Pescador
-            if (canFish)
-            {
-                bool isFisherman = selectedCareer == StarterCareer.Fisherman;
-                GUI.color = isFisherman ? new Color(0.3f, 0.95f, 0.95f) : Color.white;
-                if (GUILayout.Button("Pescador", buttonStyle, GUILayout.Height(26)))
-                {
-                    selectedCareer = StarterCareer.Fisherman;
-                }
-            }
-            else
-            {
-                GUI.color = new Color(0.6f, 0.4f, 0.4f, 0.7f);
-                if (GUILayout.Button("Pescador [Indisponível]", buttonStyle, GUILayout.Height(26)))
-                {
-                    notificationMessage = $"[Indisponível] {fishReason}";
-                    notificationTimer = 5.0f;
-                }
-            }
             GUI.color = Color.white;
             GUILayout.EndHorizontal();
 
             // Descrição da Carreira Selecionada e Infraestrutura Atendida
             GUI.color = new Color(0.85f, 0.92f, 1f, 0.9f);
-            string careerDesc = "";
-            switch (selectedCareer)
-            {
-                case StarterCareer.Farmer:
-                    careerDesc = $"Fazenda rural com trator e lavoura cultivável. ({farmReason})";
-                    break;
-                case StarterCareer.Trucker:
-                    careerDesc = $"Pátio logístico e fretes rodoviários intermunicipais. ({truckReason})";
-                    break;
-                case StarterCareer.Aviator:
-                    careerDesc = $"Base aérea em '{infra.airportName}' com monomotor de carga. ({flyReason})";
-                    break;
-                case StarterCareer.Fisherman:
-                    careerDesc = $"Cais em '{infra.portName}' para pesca comercial em {infra.waterBodyName}. ({fishReason})";
-                    break;
-            }
-            GUILayout.Label(careerDesc, headerSubtitleStyle);
+            GUILayout.Label($"Fazenda rural com trator e lavoura cultivável. ({farmReason})", headerSubtitleStyle);
             GUI.color = Color.white;
 
-            // Alerta Geográfico caso haja opções restritas
-            if (!canFish || !canFarm)
+            // Aviso sobre carreiras ainda não liberadas
+            GUI.color = new Color(1f, 0.85f, 0.45f, 0.95f);
+            GUILayout.Label("Motorista, Aviador e Pescador chegam em futuras atualizações.", headerSubtitleStyle);
+            GUI.color = Color.white;
+
+            // Alerta Geográfico caso Agricultor esteja restrito nesta região
+            if (!canFarm)
             {
                 GUILayout.Space(2);
                 GUI.color = new Color(1f, 0.75f, 0.35f, 0.95f);
-                if (!canFish)
-                {
-                    GUILayout.Label($"[Aviso] Restrição Hídrica: {fishReason}", headerSubtitleStyle);
-                }
-                if (!canFarm)
-                {
-                    GUILayout.Label($"[Aviso] Restrição Agrícola: {farmReason}", headerSubtitleStyle);
-                }
+                GUILayout.Label($"[Aviso] Restrição Agrícola: {farmReason}", headerSubtitleStyle);
                 GUI.color = Color.white;
             }
 
@@ -262,6 +181,18 @@ namespace ProjectTerra.Planet
             {
                 currentCardMode = CardMode.RegionDetails;
             }
+        }
+
+        // Carreira ainda não disponível: botão travado que exibe pop-up de futuras adições.
+        private void DrawLockedCareerButton(string label)
+        {
+            GUI.color = new Color(0.55f, 0.58f, 0.65f, 0.75f);
+            if (GUILayout.Button(label + " [Em breve]", buttonStyle, GUILayout.Height(26)))
+            {
+                notificationMessage = $"[Em breve] Carreira '{label}' em desenvolvimento. Apenas Agricultor está disponível. Novas carreiras em futuras atualizações!";
+                notificationTimer = 5.0f;
+            }
+            GUI.color = Color.white;
         }
     }
 }

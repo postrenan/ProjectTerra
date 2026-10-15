@@ -91,22 +91,23 @@ namespace ProjectTerra.Sandbox
                 buildCareerFilter = StarterCareer.Farmer;
             }
 
-            GUI.color = (buildCareerFilter == StarterCareer.Trucker) ? new Color(0.25f, 0.75f, 1f) : Color.white;
-            if (GUILayout.Button("Carga", phoneListButtonStyle, GUILayout.Height(24)))
+            // Profissões ainda não liberadas: filtros travados com pop-up de futuras adições.
+            GUI.color = new Color(0.55f, 0.58f, 0.65f, 0.75f);
+            if (GUILayout.Button("Carga [Em breve]", phoneListButtonStyle, GUILayout.Height(24)))
             {
-                buildCareerFilter = StarterCareer.Trucker;
+                ShowToast("[Em breve] Profissão 'Carga' em desenvolvimento. Novas carreiras em futuras atualizações!", 4f);
             }
 
-            GUI.color = (buildCareerFilter == StarterCareer.Aviator) ? new Color(0.25f, 0.75f, 1f) : Color.white;
-            if (GUILayout.Button("Aéreo", phoneListButtonStyle, GUILayout.Height(24)))
+            GUI.color = new Color(0.55f, 0.58f, 0.65f, 0.75f);
+            if (GUILayout.Button("Aéreo [Em breve]", phoneListButtonStyle, GUILayout.Height(24)))
             {
-                buildCareerFilter = StarterCareer.Aviator;
+                ShowToast("[Em breve] Profissão 'Aéreo' em desenvolvimento. Novas carreiras em futuras atualizações!", 4f);
             }
 
-            GUI.color = (buildCareerFilter == StarterCareer.Fisherman) ? new Color(0.25f, 0.75f, 1f) : Color.white;
-            if (GUILayout.Button("Pesca", phoneListButtonStyle, GUILayout.Height(24)))
+            GUI.color = new Color(0.55f, 0.58f, 0.65f, 0.75f);
+            if (GUILayout.Button("Pesca [Em breve]", phoneListButtonStyle, GUILayout.Height(24)))
             {
-                buildCareerFilter = StarterCareer.Fisherman;
+                ShowToast("[Em breve] Profissão 'Pesca' em desenvolvimento. Novas carreiras em futuras atualizações!", 4f);
             }
 
             GUI.color = Color.white;
