@@ -67,8 +67,12 @@ namespace ProjectTerra.Editor
                 var importer = AssetImporter.GetAtPath(assetPath) as ModelImporter;
                 if (importer == null) continue;
 
-                importer.animationType = ModelImporterAnimationType.Generic; // Modelos de pedestres civis
-                importer.importAnimation = false;
+                // Humanoid + Avatar gerado do próprio rig: permite que as animações
+                // humanoides da UAL façam retargeting nos pedestres. Sem isso (Generic),
+                // os NPCs ficavam na pose de bind do FBX — deitados no chão.
+                importer.animationType = ModelImporterAnimationType.Human;
+                importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                importer.importAnimation = false; // Clips vêm da UAL, não do modelo
                 importer.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
 
                 importer.SaveAndReimport();

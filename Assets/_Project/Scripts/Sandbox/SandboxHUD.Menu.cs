@@ -323,10 +323,12 @@ namespace ProjectTerra.Sandbox
             GUILayout.EndArea();
 
             // Finanças e Loja ficam dentro do app Internet: fora da grade inicial.
+            // Frete (Jobs) temporariamente desabilitado: oculto da grade até o sistema de fretes ser liberado.
             var visible = new System.Collections.Generic.List<int>();
             for (int k = 0; k < HomeTargets.Length; k++)
             {
                 if (HomeTargets[k] == PhoneApp.Finances || HomeTargets[k] == PhoneApp.Dealer) continue;
+                if (HomeTargets[k] == PhoneApp.Jobs) continue; // Frete desabilitado por enquanto
                 visible.Add(k);
             }
 
