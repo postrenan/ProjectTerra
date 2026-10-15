@@ -33,10 +33,13 @@ namespace ProjectTerra.Sandbox
         private const float DensGrass    = 6f;   // 30 Grassland (árvore ocasional)
 
         // Teto de instâncias por região (acima disso a densidade é escalada p/ caber).
-        private const int MaxInstances = 18000;
+        // O Terrain instancia árvores na GPU e aguenta centenas de milhares; manter
+        // isto alto é essencial para que regiões grandes (dezenas de km) tenham
+        // floresta VISÍVEL, e não ~5 árvores/km².
+        private const int MaxInstances = 150000;
 
         // Declives acima disto raramente recebem árvores (evita árvores em paredões).
-        private const float MaxSteepnessDeg = 38f;
+        private const float MaxSteepnessDeg = 42f;
 
         private static GameObject prototypeHolder;
 
@@ -111,9 +114,9 @@ namespace ProjectTerra.Sandbox
                         nx = Mathf.Clamp01(nx);
                         nz = Mathf.Clamp01(nz);
 
-                        // Rejeição em declives acentuados.
+                        // Rejeição em declives acentuados (parcial, para não zerar encostas).
                         float steep = data.GetSteepness(nx, nz);
-                        if (steep > MaxSteepnessDeg && random.NextDouble() < 0.85) continue;
+                        if (steep > MaxSteepnessDeg && random.NextDouble() < 0.6) continue;
 
                         int proto = ChoosePrototype(cls, boreal, temperate, tropical, random);
                         float w = 0.7f + (float)random.NextDouble() * 0.7f;  // 0.7 .. 1.4
@@ -136,7 +139,14 @@ namespace ProjectTerra.Sandbox
 
             // 4) Aplicar (snapToHeightmap assenta o Y de cada árvore no relevo).
             data.SetTreeInstances(instances.ToArray(), true);
+
+            // Distâncias de render: o padrão (treeDistance 5000m) sumia com a floresta
+            // em terrenos de dezenas de km. Cobrir todo o setor ativo.
             terrain.drawTreesAndFoliage = true;
+            terrain.treeDistance = Mathf.Max(10000f, size.x);
+            terrain.treeBillboardDistance = 200f;
+            terrain.treeCrossFadeLength = 40f;
+            terrain.treeMaximumFullLODCount = 400;
             terrain.Flush();
 
             Debug.Log($"[VegetationSpawner] Região {regionId}: {instances.Count} árvores plantadas a partir do " +
