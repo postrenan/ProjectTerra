@@ -18,6 +18,10 @@ namespace ProjectTerra.Editor
         private const string UAL_FBX_PATH = "Assets/_Project/Animations/UniversalAnimationLibrary/UAL1_Standard.fbx";
         private const string UAL_RM_FBX_PATH = "Assets/_Project/Animations/UniversalAnimationLibrary/UAL1_Standard_RM.fbx";
         private const string CONTROLLER_PATH = "Assets/_Project/Animations/PlayerHumanoidController.controller";
+        // Cópia em Resources para carregamento em runtime pelos NPCs gerados por código
+        // (NpcPedestrianSpawner), que não têm o controller atribuído no inspector.
+        private const string NPC_RES_DIR = "Assets/_Project/Resources/Animations";
+        private const string NPC_CONTROLLER_PATH = "Assets/_Project/Resources/Animations/HumanoidLocomotion.controller";
 
         [MenuItem("Tools/Animations/Setup Humanoid Animations")]
         public static void ExecuteSetup()
@@ -41,8 +45,16 @@ namespace ProjectTerra.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            // 2. Criar ou atualizar AnimatorController
-            CreatePlayerAnimatorController(UAL_FBX_PATH);
+            // 2. Criar ou atualizar AnimatorController do jogador
+            CreateHumanoidAnimatorController(UAL_FBX_PATH, CONTROLLER_PATH);
+
+            // 3. Gerar cópia em Resources para os NPCs (carregada em runtime)
+            if (!Directory.Exists(NPC_RES_DIR))
+            {
+                Directory.CreateDirectory(NPC_RES_DIR);
+                AssetDatabase.Refresh();
+            }
+            CreateHumanoidAnimatorController(UAL_FBX_PATH, NPC_CONTROLLER_PATH);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -117,7 +129,7 @@ namespace ProjectTerra.Editor
             importer.SaveAndReimport();
         }
 
-        private static void CreatePlayerAnimatorController(string fbxPath)
+        private static void CreateHumanoidAnimatorController(string fbxPath, string controllerPath)
         {
             var allAssets = AssetDatabase.LoadAllAssetsAtPath(fbxPath);
             var clips = new Dictionary<string, AnimationClip>(System.StringComparer.OrdinalIgnoreCase);
@@ -130,7 +142,7 @@ namespace ProjectTerra.Editor
                 }
             }
 
-            var controller = AnimatorController.CreateAnimatorControllerAtPath(CONTROLLER_PATH);
+            var controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
             var rootStateMachine = controller.layers[0].stateMachine;
 
             // Parâmetros de locomoção e estado
@@ -222,7 +234,7 @@ namespace ProjectTerra.Editor
 
             rootStateMachine.defaultState = idleState;
             EditorUtility.SetDirty(controller);
-            Debug.Log($"[HumanoidAnimationSetup] AnimatorController gerado em {CONTROLLER_PATH} com {clips.Count} animações mapeadas.");
+            Debug.Log($"[HumanoidAnimationSetup] AnimatorController gerado em {controllerPath} com {clips.Count} animações mapeadas.");
         }
 
         private static AnimationClip FindClip(Dictionary<string, AnimationClip> clips, params string[] patterns)

@@ -27,6 +27,12 @@ namespace ProjectTerra.Sandbox
         [Header("Controlador de Animação")]
         public RuntimeAnimatorController npcAnimatorController;
 
+        // Controller humanoide carregado de Resources quando nenhum é atribuído no inspector.
+        // Gerado por Tools/Animations/Setup Humanoid Animations em Resources/Animations/.
+        private const string NPC_CONTROLLER_RESOURCE = "Animations/HumanoidLocomotion";
+        private static RuntimeAnimatorController cachedNpcController;
+        private static bool triedLoadController;
+
         // Catálogo dos NPCs Civis e Pedestres do Populate Models
         public static readonly string[] ALL_NPC_MODELS = new string[]
         {
@@ -118,17 +124,41 @@ namespace ProjectTerra.Sandbox
                 wanderer.homePosition = spawnPos;
                 wanderer.patrolRadius = Random.Range(15f, 40f);
 
-                // Configurar Animator se disponível
-                var anim = npcInstance.GetComponent<Animator>();
-                if (anim != null && npcAnimatorController != null)
+                // Configurar Animator: usa o controller atribuído no inspector ou,
+                // na ausência dele (NPCs criados por código), o controller humanoide de Resources.
+                var anim = npcInstance.GetComponentInChildren<Animator>(true);
+                var controller = ResolveNpcController();
+                if (anim != null && controller != null)
                 {
-                    anim.runtimeAnimatorController = npcAnimatorController;
+                    anim.runtimeAnimatorController = controller;
+                    anim.applyRootMotion = false; // Locomoção feita via transform no NpcWandererAI
                 }
 
                 activeNpcs.Add(npcInstance);
             }
 
             Debug.Log($"[NpcPedestrianSpawner] {activeNpcs.Count} pedestres gerados na região '{cultureRegion}' ao redor de {center}.");
+        }
+
+        /// <summary>
+        /// Retorna o controller humanoide a usar: o atribuído no inspector tem prioridade;
+        /// caso contrário carrega (uma única vez) o gerado em Resources/Animations/.
+        /// </summary>
+        private RuntimeAnimatorController ResolveNpcController()
+        {
+            if (npcAnimatorController != null) return npcAnimatorController;
+
+            if (!triedLoadController)
+            {
+                triedLoadController = true;
+                cachedNpcController = Resources.Load<RuntimeAnimatorController>(NPC_CONTROLLER_RESOURCE);
+                if (cachedNpcController == null)
+                {
+                    Debug.LogWarning($"[NpcPedestrianSpawner] Controller '{NPC_CONTROLLER_RESOURCE}' não encontrado em Resources. " +
+                                     "Rode Tools/Animations/Setup Humanoid Animations para gerá-lo; sem ele os NPCs ficam sem animação de caminhada.");
+                }
+            }
+            return cachedNpcController;
         }
 
         private string PickModelForRegion(NpcCultureRegion region)
@@ -181,8 +211,17 @@ namespace ProjectTerra.Sandbox
 
         void Start()
         {
-            anim = GetComponent<Animator>();
+            anim = GetComponentInChildren<Animator>(true);
             PickNewTarget();
+            SetMoving(true);
+        }
+
+        // Atualiza os parâmetros do controller humanoide (Idle<->Walk via "IsMoving"/"Speed").
+        private void SetMoving(bool moving)
+        {
+            if (anim == null || anim.runtimeAnimatorController == null) return;
+            anim.SetBool("IsMoving", moving);
+            anim.SetFloat("Speed", moving ? 1.0f : 0.0f);
         }
 
         void Update()
@@ -194,7 +233,7 @@ namespace ProjectTerra.Sandbox
                 {
                     isWaiting = false;
                     PickNewTarget();
-                    if (anim != null) anim.SetFloat("Speed", 1.0f);
+                    SetMoving(true);
                 }
                 return;
             }
@@ -207,7 +246,7 @@ namespace ProjectTerra.Sandbox
                 // Chegou ao destino, repousar por alguns segundos
                 isWaiting = true;
                 waitTimer = Random.Range(3f, 8f);
-                if (anim != null) anim.SetFloat("Speed", 0.0f);
+                SetMoving(false);
                 return;
             }
 
