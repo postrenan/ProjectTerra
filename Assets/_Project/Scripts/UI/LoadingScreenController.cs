@@ -33,6 +33,18 @@ namespace ProjectTerra.UI
         private float screenAlpha = 1f;
         private bool isFadingOut = false;
 
+        // Transição para a cena de destino. A cena é carregada com a tela ainda 100%
+        // opaca e mantida coberta por um tempo, para que o terreno gere suas texturas
+        // por trás da cobertura — sem isso o jogador via o terreno com material
+        // placeholder (padrão quadriculado) antes de tudo carregar.
+        private bool isTransitioning = false;
+        private bool destinationSceneLoaded = false;
+        private float postLoadHoldTimer = 0f;
+        // Tempo que a tela permanece opaca após carregar a cena, cobrindo a geração do terreno.
+        // Heurística: idealmente seria substituído por um sinal de "terreno pronto" vindo do
+        // RegionalSandboxManager; por ora cobre a maior parte da geração de texturas do terreno.
+        private const float PostLoadHoldSeconds = 3.0f;
+
         private RegionData currentRegion;
         private RegionSaveData currentSave;
         private Action onCompleteCallback;
@@ -138,6 +150,9 @@ namespace ProjectTerra.UI
             isVisible = true;
             isFinishedLoading = false;
             isFadingOut = false;
+            isTransitioning = false;
+            destinationSceneLoaded = false;
+            postLoadHoldTimer = 0f;
             loadProgress = 0f;
             screenAlpha = 1f;
             animationTimer = 0f;
@@ -224,12 +239,36 @@ namespace ProjectTerra.UI
 
             animationTimer += Time.deltaTime;
 
-            if (isFinishedLoading && !isFadingOut)
+            if (isFinishedLoading && !isTransitioning)
             {
                 // Tecla Enter ou Espaço para entrar imediatamente
                 if (TerraInput.GetKeyDown(Key.Enter) || TerraInput.GetKeyDown(Key.NumpadEnter) || TerraInput.GetKeyDown(Key.Space))
                 {
                     StartFadeOut();
+                }
+            }
+
+            if (isTransitioning)
+            {
+                if (!destinationSceneLoaded)
+                {
+                    // Carrega a cena de destino AQUI, com a tela ainda 100% opaca, para
+                    // que a geração do terreno aconteça atrás da cobertura. Feito no
+                    // Update (não no handler da GUI) para evitar trocar de cena durante o OnGUI.
+                    destinationSceneLoaded = true;
+                    postLoadHoldTimer = PostLoadHoldSeconds;
+                    var cb = onCompleteCallback;
+                    onCompleteCallback = null;
+                    cb?.Invoke();
+                }
+                else if (!isFadingOut)
+                {
+                    // Mantém a tela cobrindo enquanto o terreno gera suas texturas.
+                    postLoadHoldTimer -= Time.deltaTime;
+                    if (postLoadHoldTimer <= 0f)
+                    {
+                        isFadingOut = true;
+                    }
                 }
             }
 
@@ -241,16 +280,19 @@ namespace ProjectTerra.UI
                     screenAlpha = 0f;
                     isVisible = false;
                     isFadingOut = false;
-                    onCompleteCallback?.Invoke();
+                    isTransitioning = false;
                 }
             }
         }
 
+        // Inicia a transição: a cena de destino é carregada no próximo Update com a tela
+        // ainda opaca e só então, após um tempo de cobertura, a tela faz o fade-out.
         public void StartFadeOut()
         {
-            if (!isFadingOut)
+            if (!isTransitioning)
             {
-                isFadingOut = true;
+                isTransitioning = true;
+                destinationSceneLoaded = false;
             }
         }
     }

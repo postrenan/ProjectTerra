@@ -248,7 +248,14 @@ namespace ProjectTerra.UI
             GUILayout.Space(14);
 
             // 6. Botão de Entrada Interativa / Conclusão
-            if (isFinishedLoading)
+            if (isFinishedLoading && isTransitioning)
+            {
+                // Já entrando: mantém a tela cobrindo enquanto o território termina de carregar.
+                GUI.color = new Color(0.6f, 0.85f, 1f, screenAlpha);
+                GUILayout.Label("Entrando no território...", statusStyle);
+                GUI.color = new Color(1f, 1f, 1f, screenAlpha);
+            }
+            else if (isFinishedLoading)
             {
                 float pulse = 0.85f + 0.15f * Mathf.Sin(Time.time * 5.0f);
                 GUI.color = new Color(0.2f, 0.8f, 0.4f, pulse * screenAlpha);
